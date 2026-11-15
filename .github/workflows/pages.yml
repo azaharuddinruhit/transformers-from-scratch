@@ -1,0 +1,47 @@
+# Publishes the guide to GitHub Pages.
+# One-time setup in the repository: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+name: Deploy guide to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deployment finish; queue the next one instead of cancelling it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      # Publish only the guide, served as the site's index page.
+      - name: Assemble site
+        run: |
+          test -f transformers-from-scratch.html
+          mkdir -p _site
+          cp transformers-from-scratch.html _site/index.html
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
