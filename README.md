@@ -21,7 +21,10 @@ Highlights:
 
 - A tiny Transformer (about 9,600 parameters) that trains in your browser, plus a generation playground with temperature, top-k and top-p.
 - Step-by-step attention, KV-cache, parameter-count and inference-cost calculators.
-- "Exact numbers" and "simplified explanation" modes, an "Essentials only" switch for a first pass, and light and dark themes.
+- A settings menu in the header with "Exact numbers" or "Simplified" detail, a Light, Dark or Auto (system) theme, an "Essentials only" switch for a first pass, and a progress reset.
+- A "Mark this section as done" button after every section. Progress (sections done and a percentage weighted by study time) shows in the contents panel together with the study time left, with ticks next to finished sections, and is saved in your browser only, so it does not sync between devices. A "Reset progress" button clears it.
+- On phones, a slim floating bar with previous and next buttons, the current section and a thin progress line. It hides while you scroll down to read and comes back when you scroll up; tapping it opens the contents as a bottom sheet.
+- Themed scrollbars and dropdown menus that follow the light or dark theme.
 - A five-session plan for teaching the material to a team.
 
 All numbers are computed in the browser. No pretrained model is used; where a demonstration is simplified (hand-picked attention weights, illustrative scaling curves), the page says so.
