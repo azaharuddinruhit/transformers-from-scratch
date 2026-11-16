@@ -35,6 +35,15 @@ jobs:
           cp *.html _site/
           cp -r assets _site/
 
+      # Stamp the version from VERSION (major.minor.patch) into the published site.js.
+      - name: Stamp version
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "VERSION must be major.minor.patch, got '$VERSION'"; exit 1; }
+          sed -i "s/__SITE_VERSION__/$VERSION/" _site/assets/js/site.js
+          grep -q "SITE_VERSION='$VERSION'" _site/assets/js/site.js
+          echo "Deploying version $VERSION"
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

@@ -60,6 +60,8 @@ To serve it the way GitHub Pages does, run `python -m http.server 8000` and open
 
 `.github/workflows/pages.yml` publishes the pages and `assets/` on every push to `main` or `master`.
 
+Each deployment carries the version in `VERSION` (`major.minor.patch`), shown at the bottom of the Settings menu. Bump it before pushing: patch for fixes and wording, minor for new sections or features, major for restructures. A local copy shows "Version: local copy".
+
 One-time setup: in the repository, go to **Settings → Pages → Build and deployment** and set **Source** to **GitHub Actions**.
 
 ## Caveats

@@ -1,5 +1,7 @@
 'use strict';
 /* ================= site: registry, settings, progress and navigation ================= */
+/* The deploy workflow replaces the placeholder with the contents of VERSION; a local copy keeps it. */
+const SITE_VERSION='__SITE_VERSION__';
 const PARTS=[
   {id:'a',name:'The big picture',goal:'What an LLM computes, and why the Transformer replaced recurrent networks.',secs:['intro','why']},
   {id:'b',name:'Building the model',goal:'Every layer of a decoder-only Transformer, from text to the probabilities of the next token.',secs:['tokens','position','attention','multihead','block','architecture']},
@@ -46,6 +48,8 @@ function applyPath(){
 }
 function setPath(p){P.path=p;store.save();applyPath();rerender();onPathChange.forEach(f=>f());}
 function initSettings(){
+  const menu=$('#setMenu');
+  if(menu){const v=document.createElement('p');v.className='sver';v.textContent=SITE_VERSION.startsWith('__')?'Version: local copy':'Version '+SITE_VERSION;menu.append(v);}
   const root=document.documentElement;
   // Light or dark; until the reader chooses, the page follows the system setting
   const sysTheme=()=>window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';

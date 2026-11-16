@@ -131,6 +131,7 @@ select.dd-native{display:none}
 .btn.danger{color:var(--warn);border-color:var(--warn)}
 .btn.danger:hover{background:var(--warn);color:var(--surface)}
 .sgrp{margin:0 0 14px}.sgrp:last-child{margin:0}
+.sver{margin:12px 0 0;padding-top:10px;border-top:1px solid var(--line);font:500 .78rem var(--sans);color:var(--muted);text-align:center}
 .slab{display:block;font:600 .86rem var(--sans);color:var(--muted);margin:0 0 6px}
 .seg.full{display:flex;width:100%}.seg.full button{flex:1;padding:9px 6px;font-size:.84rem}
 .btn.full{width:100%}
