@@ -22,7 +22,7 @@ An interactive guide used to learn Transformers and LLMs, train an engineering t
 
 - **Part A, the big picture**: `intro`, `why`
 - **Part B, building the model**: `tokens`, `position`, `attention`, `multihead`, `block`, `architecture`
-- **Part C, training and using it**: `training`, `scaling`, `posttrain`, `generation`, `hardware`, `inference`, `openmodels`
+- **Part C, training and using it**: `training`, `scaling`, `posttrain`, `prefs`, `generation`, `hardware`, `inference`, `openmodels`
 - **Part D, the wider picture**: `encdec`, `paper`, `modern`
 - **Interview drill** topics: `iv-core`, `iv-rag`, `iv-ft`, `iv-agents`, `iv-prod`, `iv-hw`
 - **Reference**: `glossary`, `notation`, `further`

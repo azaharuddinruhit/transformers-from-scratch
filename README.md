@@ -10,7 +10,7 @@ An interactive visual guide to how GPT-style language models work, from tokens t
 | --- | --- | --- |
 | Part A · The big picture | 2 | What an LLM computes, and why Transformers replaced recurrent networks |
 | Part B · Building the model | 6 | Tokens, positions, self-attention, multi-head attention, the Transformer block, the full model |
-| Part C · Training and using it | 7 | Cross-entropy training, scaling laws, post-training (SFT, RLHF and DPO, reasoning models), decoding, GPUs and CUDA, inference in practice, open-weight models with Ollama and vLLM |
+| Part C · Training and using it | 8 | Cross-entropy training, scaling laws, post-training (SFT, RLHF and DPO, reasoning models), decoding, GPUs and CUDA, inference in practice, open-weight models with Ollama and vLLM |
 | Part D · The wider picture | 3 | Encoder–decoder models, the 2017 paper in detail, and what modern LLMs change (RoPE, RMSNorm, SwiGLU, GQA, mixture of experts) |
 | Interview drill | 6 topics | 65 questions, each with a short sample answer and bullet points: fundamentals, RAG, fine-tuning, agents, production, hardware |
 | Reference | 3 | Glossary, notation and further learning |
@@ -19,7 +19,7 @@ Each section in Parts A to D has learning objectives, a running example, equatio
 
 Highlights:
 
-- Two paths: **Full depth** (about 4 h 25 min) and **Quick tour** (about 3 h 50 min, simplified worked examples, optional material hidden). You can switch at any time.
+- Two paths: **Full depth** (about 4 h 30 min) and **Quick tour** (about 3 h 50 min, simplified worked examples, optional material hidden). You can switch at any time.
 - A tiny Transformer (about 9,600 parameters) that trains in your browser, plus a generation playground with temperature, top-k and top-p.
 - Step-by-step attention, KV-cache, GPU-memory, parameter-count and inference-cost calculators.
 - "In Python" boxes with runnable NumPy and PyTorch code and its real output, collapsed by default.

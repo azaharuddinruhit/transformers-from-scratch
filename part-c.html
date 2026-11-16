@@ -387,28 +387,37 @@ print(f"floor with D=2e10 however large N is: {loss(float('inf'), 2e10):.3f}")
 </section>
 <section class="ch" id="posttrain" data-title="From base model to assistant">
 <h2>Post-training: from base model to assistant</h2>
-<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why a pretrained (base) model continues text instead of answering.</li><li>Describe supervised fine-tuning and the chat template, including which tokens carry the loss.</li><li>Explain preference tuning (RLHF and DPO) as a trade-off between reward and staying close to the starting model.</li><li>Say what a reasoning model does differently, and what it costs at inference time.</li></ul></div><p class="needs"><b>Builds on</b> The loss and teacher forcing from <a class="xref" data-ref="training"></a>; pretraining at scale from <a class="xref" data-ref="scaling"></a>.</p></div>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why a pretrained (base) model continues text instead of answering.</li><li>Name the stages that turn a base model into an assistant.</li><li>Describe supervised fine-tuning and the chat template, including which tokens carry the loss.</li></ul></div><p class="needs"><b>Builds on</b> The loss and teacher forcing from <a class="xref" data-ref="training"></a>; pretraining at scale from <a class="xref" data-ref="scaling"></a>.</p></div>
 <div class="story"><p>Give a base model “the cat sat on the” and it continues with “mat”. Give it “What did the cat sit on?” and it may continue with another question, as quiz pages on the web do. After post-training, the same question is followed by an answer: “The cat sat on the mat.”</p></div>
-<p>Pretraining produces a <b>base model</b>. It has absorbed a great deal of language and knowledge, but its only skill is continuing text the way the internet would. <b>Post-training</b> turns it into an assistant that follows instructions, answers in a useful format and declines harmful requests. It uses far less data than pretraining, thousands to millions of examples against trillions of tokens, because it shapes behaviour that the base model can already produce rather than teaching new knowledge.</p>
+<p>Pretraining produces a <b>base model</b>. It knows a great deal of language and facts, but it has one skill: continuing text the way the internet would. <b>Post-training</b> turns it into an assistant that follows instructions, answers in a useful format and declines harmful requests.</p>
+<p>Post-training needs far less data than pretraining: thousands to millions of examples, against trillions of tokens. That is enough because it does not teach new knowledge. It teaches the model which of the things it can already write it should write.</p>
 <div class="flow" role="img" aria-label="Diagram: base model, then supervised fine-tuning on demonstrations, then preference tuning, then reinforcement learning on checkable tasks for reasoning models, giving an assistant">
   <div><b>Base model</b><small>next-token prediction on web text</small></div><i>→</i>
-  <div class="fa"><b>Supervised fine-tuning</b><small>demonstrations in chat format</small></div><i>→</i>
-  <div class="fa"><b>Preference tuning</b><small>RLHF or DPO: prefer better answers</small></div><i>→</i>
+  <div class="fa"><b>Supervised fine-tuning</b><small>example conversations; this section</small></div><i>→</i>
+  <div><b>Preference tuning</b><small>prefer better answers; next section</small></div><i>→</i>
   <div><b>RL on checkable tasks</b><small>maths and code; makes reasoning models</small></div><i>→</i>
   <div><b>Assistant</b><small>what you chat with</small></div>
 </div>
+<p>This section covers the first stage. <a class="xref" data-ref="prefs"></a> covers the other two.</p>
 
 <h3>Supervised fine-tuning and the chat template</h3>
-<p><b>Supervised fine-tuning</b> (SFT) continues training on example conversations written or checked by people. A conversation has roles (system, user, assistant), but the model reads one sequence of tokens, so a <b>chat template</b> writes the roles into the text with special tokens. Qwen and several other families use this ChatML style:</p>
+<p><b>Supervised fine-tuning</b> (SFT) continues training on example conversations, written or checked by people. It uses the same loss as pretraining, with two changes: the text is laid out in a fixed format, and only some of the tokens are trained.</p>
+<p><b>The format.</b> A conversation has roles: system, user and assistant. The model, though, reads one sequence of tokens. A <b>chat template</b> writes the roles into that sequence with special tokens. Qwen and several other families use this style, called ChatML:</p>
 <pre class="sh"><code>&lt;|im_start|&gt;system
 You are a helpful assistant.&lt;|im_end|&gt;
 &lt;|im_start|&gt;user
 What did the cat sit on?&lt;|im_end|&gt;
 &lt;|im_start|&gt;assistant
 The cat sat on the mat.&lt;|im_end|&gt;</code></pre>
-<p><b>The question:</b> what should the model learn from this? Not to write questions like the user’s, only to answer them. So the loss from <a class="xref" data-ref="training"></a> is kept only at the positions inside assistant replies, including the end marker, so that the model also learns when to stop:</p>
+<p>The system message sets instructions for the whole conversation. The user message is the question. The assistant message is the answer the model should learn to give.</p>
+<p><b>The question:</b> which tokens should be trained? The model should learn to answer questions, not to write them. So the loss from <a class="xref" data-ref="training"></a> is kept only at the positions inside assistant replies. The end marker counts too, so the model also learns when to stop:</p>
 <div class="tex d">\mathcal{L}_{\text{SFT}}=-\frac{1}{|A|}\sum_{t\in A}\log p_{\theta}\!\left(w_t\mid w_{\lt t}\right)</div>
-<p class="sym"><span class="tex">A</span> is the set of positions inside assistant replies and <span class="tex">|A|</span> their number; everything else is as in pretraining. The other tokens are still read as context; they simply contribute no loss.</p>
+<p class="sym"><span class="tex">A</span> is the set of positions inside assistant replies, and <span class="tex">|A|</span> is how many there are. Everything else is as in pretraining. The other tokens are still read as context; they just add nothing to the loss.</p>
+<div class="worked">
+<h4>Worked example</h4>
+<p>Let words and punctuation stand in for tokens. Each message then adds five tokens around its text: a start marker, its role and a line break before it, and an end marker and a line break after it. The conversation above is 35 tokens long.</p>
+<p>Only 8 of them carry the loss: the 7 pieces of “The cat sat on the mat.” and the end marker after them, so <span class="tex">|A|=8</span>. The other 27 tokens, 77% of the sequence, are read but not trained.</p>
+</div>
 <div class="widget" id="w-chat">
   <h4 class="wt">Interactive · the chat template and the loss mask</h4>
   <p class="look"><b>The point:</b> A conversation becomes one token sequence, and only the assistant’s tokens are trained. <b>Do this:</b> Switch the system prompt off and on, add a second turn, then tick “Train on the prompt too”. <b>Watch for:</b> Which tokens are highlighted, and what share of the sequence carries the loss.</p>
@@ -421,53 +430,16 @@ The cat sat on the mat.&lt;|im_end|&gt;</code></pre>
   <div class="lg"><span><span class="tkkey tk-sp"></span> special token or role</span><span><span class="tkkey tk-cx"></span> context: read, no loss</span><span><span class="tkkey tk-tr"></span> trained: carries the loss</span></div>
   <div class="stats" id="ct-stats" aria-live="polite"></div>
   <small>What is simplified: words and punctuation stand in for tokens; a real tokenizer splits text differently, and each model family has its own template.</small>
-  <div class="wjh"><b>What just happened?</b> The template wraps every message in start and end markers with its role, and the reply begins after “assistant”. Only the reply and its end marker are highlighted, so the model is trained to produce answers, not questions; the system prompt and the user’s words shape those answers as context. With “Train on the prompt too” ticked, the model would also learn to imitate users, which is not what an assistant is for.</div>
+  <div class="wjh"><b>What just happened?</b> The template wraps every message in start and end markers with its role, and the reply begins after “assistant”. Only the reply and its end marker are highlighted, so the model is trained to produce answers, not questions. The system prompt and the user’s words still shape those answers, as context. With “Train on the prompt too” ticked, the model would also learn to imitate users, which is not what an assistant is for.</div>
 </div>
-<div class="callout mistake"><b>Pitfall: the wrong template</b><p>A model only behaves as trained when it sees its own template. Sending raw text, or another family’s markers, quietly degrades its answers. Ollama, vLLM and Hugging Face’s tokenizers apply the template stored with the model, so let them build the prompt from a list of messages instead of assembling the string yourself.</p></div>
-
-<h3>Preference tuning: RLHF and DPO</h3>
-<p>Demonstrations show one good answer. It is often easier to say which of two answers is better, and those judgements capture things that are hard to write down: tone, helpfulness, honesty. <b>Preference tuning</b> learns from pairs: a prompt, a preferred answer and a rejected one, judged by people or by a strong model.</p>
-<ul>
-  <li><b>RLHF</b> (reinforcement learning from human feedback) first trains a <b>reward model</b> that scores an answer, then adjusts the language model with reinforcement learning to earn higher scores.</li>
-  <li><b>DPO</b> (direct preference optimisation) skips the reward model and the reinforcement learning, and trains directly on the pairs with a loss much like classification.</li>
-</ul>
-<p><b>The question:</b> why not simply maximise the reward? Because a reward model is an imperfect judge, and a model pushed only towards its score finds the judge’s blind spots: answers that score well without being better. This is <b>reward hacking</b>. So both methods also penalise drifting away from the starting model, measured by the KL divergence, and a strength <span class="tex">\lambda</span> sets the balance. The best model for that objective has a simple form: start from the reference probabilities and reweight each answer by its reward.</p>
-<div class="tex d">\pi^{*}(y\mid\text{prompt})=\frac{1}{Z}\,\pi_{\text{ref}}(y\mid\text{prompt})\,\exp\!\left(\frac{\text{reward}(y)}{\lambda}\right)</div>
-<p class="sym"><span class="tex">y</span> is a whole answer; <span class="tex">\pi_{\text{ref}}</span> is the model before preference tuning (after SFT) and <span class="tex">\pi^{*}</span> the tuned one; <span class="tex">\lambda</span> is how strongly the tuned model is held to the reference; <span class="tex">Z</span> rescales the probabilities to add up to 1. A large <span class="tex">\lambda</span> barely moves the model; a small one chases the reward.</p>
-<div class="opt">
-<p><b>DPO’s loss.</b> For a pair with preferred answer <span class="tex">y_{+}</span> and rejected answer <span class="tex">y_{-}</span>, DPO raises the preferred answer’s probability relative to the reference and lowers the rejected one’s:</p>
-<div class="tex d">\mathcal{L}_{\text{DPO}}=-\log\operatorname{sigmoid}\!\left(\lambda\log\frac{\pi_{\theta}(y_{+}\mid\text{prompt})}{\pi_{\text{ref}}(y_{+}\mid\text{prompt})}-\lambda\log\frac{\pi_{\theta}(y_{-}\mid\text{prompt})}{\pi_{\text{ref}}(y_{-}\mid\text{prompt})}\right)</div>
-<p class="sym"><span class="tex">\pi_{\theta}</span> is the model being trained. Before training it equals the reference, both ratios are 1, and the loss is <span class="tex">\log 2\approx0.693</span>.</p>
-</div>
-<details class="why"><summary>Why does DPO not need a reward model?</summary><div class="whyb"><p>Rearranging the formula for <span class="tex">\pi^{*}</span> gives the reward in terms of the two models: <span class="tex">\text{reward}(y)=\lambda\log\frac{\pi^{*}(y)}{\pi_{\text{ref}}(y)}+\lambda\log Z</span>. The <span class="tex">\log Z</span> term cancels when two answers to the same prompt are compared, so a loss on pairs can train the policy directly, with the reward model implicit in it.</p></div></details>
-<div class="worked">
-<h4>Worked example</h4>
-<div class="x-only"><p>Three answers to “What did the cat sit on?”: A “The mat.”, B a long, flattering answer, and C “The sofa.”, which is wrong. The SFT model gives them <span class="tex">\pi_{\text{ref}}=[0.5,\ 0.3,\ 0.2]</span> and a careful reward model scores them <span class="tex">[2,\ 1,\ -2]</span>. With <span class="tex">\lambda=1</span> the weights are <span class="tex">0.5e^{2}=3.69</span>, <span class="tex">0.3e^{1}=0.82</span> and <span class="tex">0.2e^{-2}=0.027</span>; dividing by their sum, 4.54, gives <span class="tex">\pi^{*}=[0.814,\ 0.180,\ 0.006]</span>. The wrong answer almost disappears, at a KL cost of 0.284 nats. With <span class="tex">\lambda=4</span> the model moves less: <span class="tex">[0.619,\ 0.289,\ 0.091]</span>.</p></div>
-<div class="s-only"><p>Three answers: a short right one, a long flattering one and a wrong one, with probabilities 0.5, 0.3 and 0.2 before tuning. A careful reward model scores them 2, 1 and −2. After tuning with a moderate pull back to the original, the short right answer rises to about 0.81 and the wrong one falls to under 0.01.</p></div>
-</div>
-<div class="widget" id="w-pref">
-  <h4 class="wt">Interactive · preference tuning on three answers</h4>
-  <p class="look"><b>The point:</b> Preference tuning reweights the starting model towards higher reward, held back by <span class="tex">\lambda</span>. <b>Do this:</b> Lower <span class="tex">\lambda</span> with the careful reward model, then switch to the flawed one that likes long answers and lower it again. <b>Watch for:</b> How far the tuned bars move from the reference, and which answer wins when the judge is flawed.</p>
-  <div class="controls">
-    <div class="ctl"><span>Reward model</span><div class="chips" id="pf-rm" role="group" aria-label="Reward model"></div></div>
-    <label class="ctl"><span class="row">Strength of the pull back <output id="pf-lam-o"></output></span><input type="range" id="pf-lam" min="-1.5" max="1.2" step="0.05" value="0"></label>
-  </div>
-  <div id="pf-bars"></div>
-  <div class="stats" id="pf-stats" aria-live="polite"></div>
-  <small>What is simplified: a real model chooses among countless possible answers; here three whole answers stand in for them, and the rewards are hand-picked. The tuned probabilities are the exact optimum of the objective above, which RLHF approaches by gradient steps and DPO through its loss.</small>
-  <div class="wjh"><b>What just happened?</b> Each answer’s probability is multiplied by <span class="tex">e^{\text{reward}/\lambda}</span> and the three are rescaled to add up to 1. A large <span class="tex">\lambda</span> keeps the model close to where it started; a small one hands almost everything to the highest-scoring answer. With the careful judge that is the short, right answer. With the flawed judge, a small <span class="tex">\lambda</span> makes the long, flattering answer win: reward hacking. The KL figure measures how far the model has moved.</div>
-</div>
-
-<h3>Reasoning models and test-time compute</h3>
-<p>A <b>reasoning model</b> is trained further with reinforcement learning on tasks whose answers can be checked automatically, such as maths problems and code with tests. The model makes many attempts, attempts that reach the right answer are rewarded, and it learns to write out intermediate steps, often called <b>thinking</b>, before its final answer. Many problems that it fails to answer directly, it solves after a few hundred or thousand tokens of working.</p>
-<p>This moves cost from training to use. Every thinking token is a decode step (see <a class="xref" data-ref="inference"></a>), so a reasoning model answers more slowly and costs more per question; many APIs and open models such as gpt-oss offer a low, medium or high reasoning effort to choose the trade. Spending more computation per question is called <b>test-time compute</b>. Another form needs no special training: sample several answers and keep the most common one. If each attempt were right with probability 0.6 independently, a majority of 5 would be right with probability 0.68 and of 9 with probability 0.73; real attempts are correlated, so the gain is smaller.</p>
-<details class="callout code opt"><summary>In Python: chat template, preference tuning and majority voting</summary>
+<div class="callout mistake"><b>Pitfall: the wrong template</b><p>A model behaves as trained only when it sees its own template. Raw text, or another family’s markers, quietly makes its answers worse. Ollama, vLLM and Hugging Face’s tokenizers apply the template stored with the model, so give them a list of messages and let them build the prompt.</p></div>
+<div class="callout note"><b>Base, instruct and reasoning versions</b><p>Model cards often list several versions of one model: <i>base</i> (pretrained only, for further training), <i>instruct</i> or <i>it</i> (post-trained for chat), and sometimes a <i>thinking</i> version. For an application you almost always want the instruct or thinking version. A base model is a starting point for your own fine-tuning.</p></div>
+<details class="callout code opt"><summary>In Python: a chat template and its loss mask</summary>
 <div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
-<pre class="py" data-src="s12b_posttrain.py"><code>import math
-import re
+<pre class="py" data-src="s12b_posttrain.py"><code>import re
 
-# 1. A chat template turns a conversation into one token sequence (ChatML-style markers,
-#    as Qwen uses). Supervised fine-tuning puts the loss only on the assistant's reply.
+# A chat template turns a conversation into one token sequence (ChatML-style markers,
+# as Qwen uses). Supervised fine-tuning puts the loss only on the assistant's reply.
 conversation = [("system", "You are a helpful assistant."),
                 ("user", "What did the cat sit on?"),
                 ("assistant", "The cat sat on the mat.")]
@@ -483,7 +455,94 @@ for role, text in conversation:
 print(f"{len(tokens)} tokens, loss on {sum(trained)}:",
       " ".join(t for t, k in zip(tokens, trained) if k))
 
-# 2. Preference tuning: the best policy for "reward minus lambda x KL from the reference"
+# Output:
+# 35 tokens, loss on 8: The cat sat on the mat . &lt;|im_end|&gt;</code></pre></details>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Fine-tuning is how you teach a model new facts.”</b> Post-training mostly shapes behaviour and format; the broad knowledge comes from pretraining. For facts that change, retrieval (see <a class="xref" data-ref="iv-rag"></a>) usually works better.</li>
+  <li><b>“The whole conversation is training data.”</b> Only the assistant’s replies carry the loss. The rest is context.</li>
+  <li><b>Pitfall:</b> using a base model for chat. It continues your text instead of answering it.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>A base model continues text. Post-training turns it into an assistant, with far less data than pretraining.</li><li>A chat template writes the roles of a conversation into one token sequence. Each model family has its own.</li><li>SFT is the pretraining loss, applied only to the assistant’s tokens.</li><li>For applications, use the instruct version of a model and let the serving tool apply its template.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. In supervised fine-tuning on a chat, which tokens contribute to the loss?</legend><button type="button" class="qo">Every token in the conversation</button><button type="button" class="qo" data-ok="1">The assistant’s reply and its end marker</button><button type="button" class="qo">Only the user’s question</button><p class="qx" hidden aria-live="polite"><b></b> The rest is context. Training on it would teach the model to write prompts as well as answers.</p></fieldset>
+<fieldset><legend>2. Why does post-training need so much less data than pretraining?</legend><button type="button" class="qo">It uses a larger learning rate</button><button type="button" class="qo" data-ok="1">It shapes behaviour the base model can already produce, rather than teaching new knowledge</button><button type="button" class="qo">It trains only the last layer</button><p class="qx" hidden aria-live="polite"><b></b> The knowledge is already there from pretraining; post-training teaches the model how to use it.</p></fieldset>
+<fieldset><legend>3. An application sends a model a prompt built by hand with another family’s markers. What is the likely result?</legend><button type="button" class="qo">The server returns an error</button><button type="button" class="qo" data-ok="1">The answers are quietly worse</button><button type="button" class="qo">No difference: the model ignores markers</button><p class="qx" hidden aria-live="polite"><b></b> The model was trained on its own template only, so other markers look like ordinary text to it.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Which of our tasks would we fine-tune for, and which are better served by a good prompt and retrieval?</li><li>Find the chat template of a model we use, on its model card or in its tokenizer files. How does it mark the system message?</li></ul></details>
+<p class="bridge">Fine-tuning shows the model one good answer per prompt. <a class="xref" data-ref="prefs"></a> teaches it which of several answers is better.</p>
+</div>
+</section>
+
+<section class="ch" id="prefs" data-title="Preference tuning and reasoning">
+<h2>Preference tuning and reasoning models</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why preference tuning learns from pairs of answers, and how RLHF and DPO differ.</li><li>Explain the pull back to the starting model, and what goes wrong without it.</li><li>Say what a reasoning model does differently, and what it costs at inference time.</li></ul></div><p class="needs"><b>Builds on</b> Supervised fine-tuning from <a class="xref" data-ref="posttrain"></a>.</p></div>
+<div class="story"><p>After fine-tuning, the model answers “What did the cat sit on?”. But it may say “The mat.”, or a long, flattering paragraph that ends with the mat, or now and then “The sofa.” It learned all three from its training text. Preference tuning moves its probability towards the answers people prefer.</p></div>
+<p>Fine-tuning shows the model one good answer. It is often easier to compare two answers and say which is better. Such judgements capture things that are hard to write down, like tone, helpfulness and honesty.</p>
+<p><b>Preference tuning</b> learns from these judgements. Each example is a prompt, a preferred answer and a rejected one, judged by people or by a strong model.</p>
+<div class="flow" role="img" aria-label="Diagram: a prompt, several answers from the model, a judge picks the better one, the model moves probability towards it while being held close to where it started, giving the tuned model">
+  <div><b>Prompt</b><small>“What did the cat sit on?”</small></div><i>→</i>
+  <div><b>Answers</b><small>sampled from the fine-tuned model</small></div><i>→</i>
+  <div class="fa"><b>Judge</b><small>people or a strong model pick the better one</small></div><i>→</i>
+  <div class="fa"><b>Update</b><small>more probability on preferred answers, held back by <span class="tex">\lambda</span></small></div><i>→</i>
+  <div><b>Tuned model</b><small>prefers better answers</small></div>
+</div>
+
+<h3>Two ways to do it: RLHF and DPO</h3>
+<ul>
+  <li><b>RLHF</b> (reinforcement learning from human feedback) works in two steps. It first trains a <b>reward model</b> that gives an answer a score. It then adjusts the language model with reinforcement learning, so that its answers earn higher scores.</li>
+  <li><b>DPO</b> (direct preference optimisation) skips the reward model and the reinforcement learning. It trains directly on the pairs, with a loss much like classification.</li>
+</ul>
+
+<h3>The pull back to the starting model</h3>
+<p><b>The question:</b> why not just push the model towards whatever the judge scores highest? Because the judge is imperfect. Pushed hard enough, the model finds the judge’s blind spots: answers that score well without being better. A judge that likes long answers gets ever longer ones. This is <b>reward hacking</b>.</p>
+<p>So both methods add a penalty for moving too far from the starting model. The distance is measured by the <b>KL divergence</b>: a number that is 0 when two probability distributions are the same and grows as they differ. A strength <span class="tex">\lambda</span> sets the balance between earning reward and staying close.</p>
+<p>With that penalty, the best possible tuned model has a simple form. Take the starting probability of each answer, multiply it by a factor that grows with the answer’s reward, and rescale so the probabilities add up to 1:</p>
+<div class="tex d">\pi^{*}(y\mid\text{prompt})=\frac{1}{Z}\,\pi_{\text{ref}}(y\mid\text{prompt})\,\exp\!\left(\frac{\text{reward}(y)}{\lambda}\right)</div>
+<p class="sym"><span class="tex">y</span> is one whole answer. <span class="tex">\pi_{\text{ref}}</span> is the model before preference tuning (after fine-tuning), and <span class="tex">\pi^{*}</span> is the tuned model. <span class="tex">\lambda</span> is the strength of the pull back. <span class="tex">Z</span> rescales the probabilities so they add up to 1. A large <span class="tex">\lambda</span> barely moves the model; a small one hands almost everything to the highest-scoring answer.</p>
+<div class="worked">
+<h4>Worked example</h4>
+<div class="x-only"><p>Take the three answers from the story: A “The mat.”, B the long, flattering answer, and C “The sofa.”, which is wrong.</p>
+<ol>
+<li>Before tuning, the fine-tuned model gives them <span class="tex">\pi_{\text{ref}}=[0.5,\ 0.3,\ 0.2]</span>.</li>
+<li>A careful reward model scores them <span class="tex">[2,\ 1,\ -2]</span>.</li>
+<li>With <span class="tex">\lambda=1</span>, multiply each probability by <span class="tex">e^{\text{reward}}</span>: <span class="tex">0.5e^{2}=3.69</span>, <span class="tex">0.3e^{1}=0.82</span> and <span class="tex">0.2e^{-2}=0.027</span>.</li>
+<li>Divide by their sum, 4.54: <span class="tex">\pi^{*}=[0.814,\ 0.180,\ 0.006]</span>. The wrong answer almost disappears.</li>
+<li>The model has moved a KL distance of 0.284 nats from where it started. With <span class="tex">\lambda=4</span> it moves less, to <span class="tex">[0.619,\ 0.289,\ 0.091]</span>, a distance of 0.051.</li>
+</ol></div>
+<div class="s-only"><p>Three answers: a short right one, a long flattering one and a wrong one, with probabilities 0.5, 0.3 and 0.2 before tuning. A careful reward model scores them 2, 1 and −2. After tuning with a moderate pull back to the original, the short right answer rises to about 0.81 and the wrong one falls to under 0.01.</p></div>
+</div>
+<div class="widget" id="w-pref">
+  <h4 class="wt">Interactive · preference tuning on three answers</h4>
+  <p class="look"><b>The point:</b> Preference tuning reweights the starting model towards higher reward, held back by <span class="tex">\lambda</span>. <b>Do this:</b> Lower <span class="tex">\lambda</span> with the careful reward model, then switch to the flawed one that likes long answers and lower it again. <b>Watch for:</b> How far the tuned bars move from the reference, and which answer wins when the judge is flawed.</p>
+  <div class="controls">
+    <div class="ctl"><span>Reward model</span><div class="chips" id="pf-rm" role="group" aria-label="Reward model"></div></div>
+    <label class="ctl"><span class="row">Strength of the pull back <output id="pf-lam-o"></output></span><input type="range" id="pf-lam" min="-1.5" max="1.2" step="0.05" value="0"></label>
+  </div>
+  <div id="pf-bars"></div>
+  <div class="stats" id="pf-stats" aria-live="polite"></div>
+  <small>What is simplified: a real model chooses among countless possible answers; here three whole answers stand in for them, and the rewards are hand-picked. The tuned probabilities are the exact optimum of the objective above, which RLHF approaches by gradient steps and DPO through its loss.</small>
+  <div class="wjh"><b>What just happened?</b> Each answer’s probability is multiplied by <span class="tex">e^{\text{reward}/\lambda}</span>, and the three are rescaled to add up to 1. A large <span class="tex">\lambda</span> keeps the model close to where it started. A small one hands almost everything to the highest-scoring answer. With the careful judge, that is the short, right answer. With the flawed judge, a small <span class="tex">\lambda</span> makes the long, flattering answer win: reward hacking. The KL figure measures how far the model has moved.</div>
+</div>
+<div class="opt">
+<p><b>DPO’s loss.</b> For a pair with preferred answer <span class="tex">y_{+}</span> and rejected answer <span class="tex">y_{-}</span>, DPO raises the preferred answer’s probability relative to the reference and lowers the rejected one’s:</p>
+<div class="tex d">\mathcal{L}_{\text{DPO}}=-\log\operatorname{sigmoid}\!\left(\lambda\log\frac{\pi_{\theta}(y_{+}\mid\text{prompt})}{\pi_{\text{ref}}(y_{+}\mid\text{prompt})}-\lambda\log\frac{\pi_{\theta}(y_{-}\mid\text{prompt})}{\pi_{\text{ref}}(y_{-}\mid\text{prompt})}\right)</div>
+<p class="sym"><span class="tex">\pi_{\theta}</span> is the model being trained. Before training it equals the reference, both ratios are 1, and the loss is <span class="tex">\log 2\approx0.693</span>.</p>
+</div>
+<details class="why"><summary>Why does DPO not need a reward model?</summary><div class="whyb"><p>Rearranging the formula for <span class="tex">\pi^{*}</span> gives the reward in terms of the two models: <span class="tex">\text{reward}(y)=\lambda\log\frac{\pi^{*}(y)}{\pi_{\text{ref}}(y)}+\lambda\log Z</span>. The <span class="tex">\log Z</span> term cancels when two answers to the same prompt are compared. So a loss on pairs can train the model directly, with the reward model hidden inside it.</p></div></details>
+
+<h3>Reasoning models and test-time compute</h3>
+<p>A <b>reasoning model</b> gets one more stage of training: reinforcement learning on tasks whose answers can be checked automatically, such as maths problems or code with tests. The model makes many attempts at each task, and attempts that reach the right answer are rewarded. Over time it learns to write out intermediate steps before its final answer. These steps are often called <b>thinking</b>. Many problems it cannot answer directly, it solves after a few hundred or a few thousand tokens of working.</p>
+<p>The catch is the cost of using it. Each thinking token is one more decode step (see <a class="xref" data-ref="inference"></a>), so a reasoning model answers more slowly and costs more per question. Many APIs, and open models such as gpt-oss, let you choose a low, medium or high reasoning effort.</p>
+<p>Spending more computation per question like this is called <b>test-time compute</b>. A simpler form needs no special training: sample several answers and keep the most common one. Suppose each attempt is right with probability 0.6, independently. Then a majority of 5 attempts is right with probability 0.68, and a majority of 9 with probability 0.73. Real attempts tend to make the same mistakes, so the gain is smaller in practice.</p>
+<details class="callout code opt"><summary>In Python: preference tuning, DPO and majority voting</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s12c_prefs.py"><code>import math
+
+# 1. Preference tuning: the best policy for "reward minus lambda x KL from the reference"
 #    reweights the reference by exp(reward / lambda).
 answers = ["The mat.", "Great question! ... a soft woven mat ...", "The sofa."]
 ref = [0.5, 0.3, 0.2]                                  # the SFT model's probabilities
@@ -500,7 +559,7 @@ for lam in (4, 1, 0.25):
     kl = sum(p * math.log(p / q) for p, q in zip(pi, ref))
     print(f"lambda={lam:&lt;4} probabilities {[round(p, 3) for p in pi]}  KL {kl:.3f} nats")
 
-# 3. DPO trains on a pair (chosen, rejected). At the start the policy equals the
+# 2. DPO trains on a pair (chosen, rejected). At the start the policy equals the
 #    reference and the loss is log 2; at the optimum above the margin is the reward gap.
 def dpo_loss(pi, ref, lam, chosen, rejected):
     margin = lam * (math.log(pi[chosen] / ref[chosen]) - math.log(pi[rejected] / ref[rejected]))
@@ -511,14 +570,13 @@ lam = 1.0
 print(f"DPO loss before tuning {dpo_loss(ref, ref, lam, 0, 2):.3f}, "
       f"at the optimum {dpo_loss(tune(ref, reward, lam), ref, lam, 0, 2):.3f}")
 
-# 4. Test-time compute: sample several attempts and take the majority answer.
+# 3. Test-time compute: sample several attempts and take the majority answer.
 q = 0.6                                                # chance one attempt is right
 for n in (1, 5, 9):
     p = sum(math.comb(n, k) * q**k * (1 - q)**(n - k) for k in range(n // 2 + 1, n + 1))
     print(f"majority of {n} independent attempts is right with probability {p:.3f}")
 
 # Output:
-# 35 tokens, loss on 8: The cat sat on the mat . &lt;|im_end|&gt;
 # lambda=4    probabilities [0.619, 0.289, 0.091]  KL 0.051 nats
 # lambda=1    probabilities [0.814, 0.18, 0.006]  KL 0.284 nats
 # lambda=0.25 probabilities [0.989, 0.011, 0.0]  KL 0.639 nats
@@ -526,27 +584,26 @@ for n in (1, 5, 9):
 # majority of 1 independent attempts is right with probability 0.600
 # majority of 5 independent attempts is right with probability 0.683
 # majority of 9 independent attempts is right with probability 0.733</code></pre></details>
-<div class="callout note"><b>Base, instruct and reasoning versions</b><p>Model cards often list several versions of one model: <i>base</i> (pretrained only, for further training), <i>instruct</i> or <i>it</i> (post-trained for chat), and sometimes a <i>thinking</i> version. For an application you almost always want the instruct or thinking version; a base model is a starting point for your own fine-tuning.</p></div>
 <h3 class="opt">Common misconceptions</h3>
 <ul class="pit opt">
-  <li><b>“Fine-tuning is how you teach a model new facts.”</b> Post-training mostly shapes behaviour and format; the broad knowledge comes from pretraining. For facts that change, retrieval (see <a class="xref" data-ref="iv-rag"></a>) usually works better.</li>
   <li><b>“RLHF makes a model truthful.”</b> It optimises what the judges prefer, which can include confident or flattering answers.</li>
   <li><b>“A reasoning model’s thinking shows exactly how it reached the answer.”</b> The written steps help it, but they are generated text, not a trace of the computation.</li>
-  <li><b>Pitfall:</b> using a base model for chat. It continues your text instead of answering it.</li>
+  <li><b>Pitfall:</b> weakening the pull back to get the most out of a reward model. Any flaw in the judge is then exploited in full.</li>
 </ul>
 <div class="wrapup">
 <h3>Key takeaways</h3>
-<ul class="take"><li>A base model continues text; post-training turns it into an assistant with far less data than pretraining.</li><li>SFT is the pretraining loss applied only to the assistant’s tokens, in the model’s chat template.</li><li>Preference tuning reweights the model towards higher reward while a KL penalty, strength <span class="tex">\lambda</span>, keeps it close to where it started.</li><li>Too weak a penalty with an imperfect reward model leads to reward hacking.</li><li>Reasoning models spend extra output tokens thinking: better answers on hard problems, at higher latency and cost.</li></ul>
+<ul class="take"><li>Preference tuning learns from pairs of answers: RLHF through a reward model and reinforcement learning, DPO directly from the pairs.</li><li>A KL penalty with strength <span class="tex">\lambda</span> keeps the model close to where it started.</li><li>With too weak a penalty, an imperfect judge is exploited: reward hacking.</li><li>Reasoning models write out their thinking before answering: better on hard problems, slower and costlier per answer.</li></ul>
 <h3 class="checkh">Check yourself <span class="qscore"></span></h3>
 <div class="quiz">
-<fieldset><legend>1. In supervised fine-tuning on a chat, which tokens contribute to the loss?</legend><button type="button" class="qo">Every token in the conversation</button><button type="button" class="qo" data-ok="1">The assistant’s reply and its end marker</button><button type="button" class="qo">Only the user’s question</button><p class="qx" hidden aria-live="polite"><b></b> The rest is context. Training on it would teach the model to write prompts as well as answers.</p></fieldset>
-<fieldset><legend>2. During preference tuning, the KL penalty strength <span class="tex">\lambda</span> is made very small. What is the main risk?</legend><button type="button" class="qo">The model barely changes</button><button type="button" class="qo" data-ok="1">The model chases the reward model’s blind spots (reward hacking)</button><button type="button" class="qo">Training becomes slower</button><p class="qx" hidden aria-live="polite"><b></b> With little pull back to the reference, any flaw in the judge is exploited fully.</p></fieldset>
+<fieldset><legend>1. What does DPO do without, compared with RLHF?</legend><button type="button" class="qo">Pairs of preferred and rejected answers</button><button type="button" class="qo" data-ok="1">A separate reward model and reinforcement learning</button><button type="button" class="qo">The starting (reference) model</button><p class="qx" hidden aria-live="polite"><b></b> DPO trains directly on the pairs. It still needs the reference model, which appears in its loss.</p></fieldset>
+<fieldset><legend>2. During preference tuning, the penalty strength <span class="tex">\lambda</span> is made very small. What is the main risk?</legend><button type="button" class="qo">The model barely changes</button><button type="button" class="qo" data-ok="1">The model chases the reward model’s blind spots (reward hacking)</button><button type="button" class="qo">Training becomes slower</button><p class="qx" hidden aria-live="polite"><b></b> With little pull back to the reference, any flaw in the judge is exploited fully.</p></fieldset>
 <fieldset><legend>3. Why does a reasoning model usually take longer to answer?</legend><button type="button" class="qo">It has more parameters</button><button type="button" class="qo" data-ok="1">It generates many thinking tokens before the answer</button><button type="button" class="qo">It runs at a higher temperature</button><p class="qx" hidden aria-live="polite"><b></b> Each thinking token is a decode step, so latency and cost grow with the length of the working.</p></fieldset>
 </div>
-<details class="talk"><summary>For team discussion</summary><ul><li>Which of our tasks would we fine-tune for, and which are better served by a good prompt and retrieval?</li><li>If we used a model to judge answers for preference tuning or evaluation, what blind spots might it have, and how would we notice reward hacking?</li></ul></details>
-<p class="bridge">Base or assistant, the model still gives one distribution per step. <a class="xref" data-ref="generation"></a> is about how to choose a token from it.</p>
+<details class="talk"><summary>For team discussion</summary><ul><li>If we used a model to judge answers for preference tuning or evaluation, what blind spots might it have, and how would we notice reward hacking?</li><li>Where in our products would a reasoning model’s extra latency and cost be worth it, and where not?</li></ul></details>
+<p class="bridge">However it was tuned, the model still gives one probability distribution per step. <a class="xref" data-ref="generation"></a> is about how to choose a token from it.</p>
 </div>
 </section>
+
 <section class="ch" id="generation" data-title="Generation and decoding">
 <h2>Generation and decoding</h2>
 <div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain how temperature reshapes the distribution and why.</li><li>Describe greedy decoding, top-k and top-p and when each is useful.</li><li>Predict qualitatively what a change of settings does to the output.</li></ul></div><p class="needs"><b>Builds on</b> Softmax and the generation loop from <a class="xref" data-ref="intro"></a>; a trained model from <a class="xref" data-ref="training"></a>, made into an assistant in <a class="xref" data-ref="posttrain"></a>.</p></div>
