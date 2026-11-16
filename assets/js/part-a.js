@@ -1,5 +1,6 @@
 'use strict';
-/* Part A widgets: the next-token predictor, a tiny trainable neural network and the attention-versus-recurrence cost comparison. */
+/* Part A widgets: the next-token predictor, a tiny trainable neural network, a name generator that learns by counting
+   and the attention-versus-recurrence cost comparison. */
 /* ================= next-token predictor (What is an LLM?) ================= */
 const s1={p:0,temp:1,counts:null,last:null};
 function renderNext(){
@@ -110,5 +111,59 @@ function initNN(){
   $('#nn-reset').addEventListener('click',()=>{nnReset();renderNN();});
   nnReset();reg(renderNN);
 }
+/* ================= a generator that learns by counting (Generative AI: the big picture) ================= */
+/* A character n-gram table built from GEN_NAMES when the page loads; nothing is pretrained. "." marks start and end. */
+const GEN_NAMES=('aaron abdul adam adrian aisha akira alba alex alice alina amara amir amy ana andrea andrei anika anna anton arjun ava ayesha '+
+  'beatriz ben bianca boris bruno carla carlos carmen caroline chen chloe clara daniel david diana diego dmitri elena eli elias elif '+
+  'elise ella emil emily emma erik esther ethan eva farah felix fiona frida gabriel grace hana hannah hassan hector helen hugo ibrahim '+
+  'ida imran ines ingrid irene isaac isabel ivan jack jacob james jana jasmine javier jonas jose julia julian kai karim karin karl '+
+  'kate kenji kira lara laura layla leo leon lena liam lina linus lucas lucia luis luna maja malik marco maria marina mark marta '+
+  'martin maya mia mila mina miriam mohammed nadia naomi nathan nina noah nora olga oliver omar oscar pablo paula pedro peter '+
+  'priya rafael rahul rania ravi rina rosa ruby rupert sara sami samuel sana sofia sonia stefan sven tara theo thomas tomas '+
+  'valentina vera victor viktor william yara yasmin yusuf zara zoe').split(' ');
+const GEN_SET=new Set(GEN_NAMES),GEN_MAX=14;
+const GN={k:2,word:'',done:false,list:[],tables:{}};
+function genTable(k){
+  if(GN.tables[k])return GN.tables[k];
+  const T={};
+  GEN_NAMES.forEach(w=>{const s='.'.repeat(k)+w+'.';for(let i=k;i<s.length;i++){const c=s.slice(i-k,i),row=T[c]||(T[c]={});row[s[i]]=(row[s[i]]||0)+1;}});
+  return GN.tables[k]=T;
+}
+const genCtx=()=>('.'.repeat(GN.k)+GN.word).slice(-GN.k);
+/* one letter: draw from the counts for the current context; the end marker (or the length cap) finishes the name */
+function genStep(){
+  if(GN.done){GN.word='';GN.done=false;}
+  const row=genTable(GN.k)[genCtx()],keys=Object.keys(row),tot=keys.reduce((a,c)=>a+row[c],0);
+  let u=Math.random()*tot,ch=keys[keys.length-1];
+  for(const c of keys){u-=row[c];if(u<0){ch=c;break;}}
+  if(ch==='.'||GN.word.length>=GEN_MAX){GN.done=true;GN.list.unshift(GN.word);}else GN.word+=ch;
+}
+function genName(){do genStep();while(!GN.done);}
+function renderGen(){
+  const k=GN.k,ctx=genCtx(),row=genTable(k)[ctx],tot=Object.values(row).reduce((a,b)=>a+b,0);
+  const letters=ctx.replace(/\./g,''),after=letters?'after “'+letters+'”'+(ctx[0]==='.'?' at the start of a name':''):'for the first letter of a name';
+  const w=GN.word,cut=Math.max(0,w.length-k);
+  if(GN.done)$('#gn-word').innerHTML='<code>'+esc(w)+'</code> '+(GEN_SET.has(w)?'<span class="badge bad">a copy: this name is in the training list</span>':'<span class="badge ok">new: not in the training list</span>');
+  else $('#gn-word').innerHTML=w?'<code>'+esc(w.slice(0,cut))+'<mark>'+esc(w.slice(cut))+'</mark>▢</code> <small>The marked letters are the context for the next draw.</small>':'Press “Next letter” to draw the first letter, or “Generate a name”.';
+  $('#gn-lab').textContent=(GN.done?'Probabilities for the first letter of the next name':'Probabilities for the next letter, '+after)+' (counted from '+tot+' cases in the training names)';
+  const rows=Object.keys(row).map(c=>({c,n:row[c]})).sort((a,b)=>b.n-a.n),top=rows.slice(0,8),rest=rows.slice(8);
+  const bl=top.map(r=>({label:r.c==='.'?'end':esc(r.c),p:r.n/tot,right:fmt(r.n/tot,2),tip:'In the training names, '+(r.c==='.'?'the name ends':'“'+r.c+'” comes next')+' '+r.n+' of '+tot+' times '+esc(after)}));
+  if(rest.length){const n=rest.reduce((a,r)=>a+r.n,0);bl.push({label:'other',p:n/tot,right:fmt(n/tot,2),cls:'cut',tip:rest.length+' more letters: '+rest.map(r=>r.c==='.'?'end':r.c).join(', ')});}
+  $('#gn-bars').innerHTML=bars(bl,1);
+  $('#gn-list').innerHTML=GN.list.length?GN.list.slice(0,30).map(n=>'<span class="chip tok">'+esc(n)+'<small>'+(GEN_SET.has(n)?'copy':'new')+'</small></span>').join(''):'<small>None yet.</small>';
+  const N=GN.list.length,cp=GN.list.filter(n=>GEN_SET.has(n)).length;
+  $('#gn-stats').innerHTML=[['Names generated',N],['New names',N?Math.round(100*(N-cp)/N)+'%':'–'],['Copies',N?Math.round(100*cp/N)+'%':'–'],['Contexts in the table',Object.keys(genTable(k)).length]].map(r=>'<div><b>'+r[1]+'</b><span>'+r[0]+'</span></div>').join('');
+  $$('#gn-k button').forEach(b=>{const on=+b.dataset.v===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);});
+}
+function initGen(){
+  const el=$('#gn-k');
+  el.innerHTML=[1,2,3,4].map(v=>'<button class="chip" data-v="'+v+'" aria-pressed="false">'+v+'</button>').join('');
+  el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;GN.k=+b.dataset.v;GN.word='';GN.done=false;GN.list=[];renderGen();});
+  $('#gn-one').addEventListener('click',()=>{if(GN.done)GN.word='';GN.done=false;genName();renderGen();});
+  $('#gn-step').addEventListener('click',()=>{genStep();renderGen();});
+  $('#gn-many').addEventListener('click',()=>{for(let i=0;i<20;i++){GN.word='';GN.done=false;genName();}renderGen();});
+  $('#gn-clear').addEventListener('click',()=>{GN.word='';GN.done=false;GN.list=[];renderGen();});
+  reg(renderGen);
+}
 
-PAGE_INITS.push(initNext,initNN,initCX);
+PAGE_INITS.push(initNext,initNN,initGen,initCX);

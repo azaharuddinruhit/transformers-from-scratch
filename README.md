@@ -8,7 +8,7 @@ An interactive visual guide to how GPT-style language models work, from tokens t
 
 | Page | Sections | What you learn |
 | --- | --- | --- |
-| Part A · The big picture | 3 | What an LLM computes, neural networks in 15 minutes (neurons, layers, training, overfitting), and why Transformers replaced earlier networks |
+| Part A · The big picture | 4 | What an LLM computes, neural networks in 15 minutes (neurons, layers, training, overfitting), generative AI (autoregressive models, diffusion, where the Transformer sits), and why Transformers replaced earlier networks |
 | Part B · Building the model | 6 | Tokens, positions, self-attention, multi-head attention, the Transformer block, the full model |
 | Part C · Training and using it | 6 | Cross-entropy training and how it scales, from base model to assistant (fine-tuning and the chat template), preference tuning and reasoning models (RLHF, DPO), decoding, inference in practice, GPUs and CUDA |
 | Part D · The wider picture | 2 | Encoder–decoder models and the 2017 paper, and what modern LLMs change (RoPE, RMSNorm, SwiGLU, GQA, mixture of experts) |

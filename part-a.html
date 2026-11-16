@@ -261,7 +261,160 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
 <fieldset><legend>3. Training loss is falling, but validation loss has started to rise. What is happening?</legend><button type="button" class="qo">The learning rate is too small</button><button type="button" class="qo" data-ok="1">The network is memorising its training examples (overfitting)</button><button type="button" class="qo">The network has finished learning</button><p class="qx" hidden aria-live="polite"><b></b> It is getting better at examples it has seen and worse at ones it has not.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>In the interactive, one label in ten is wrong. Where would wrong labels come from in our own data, and what would overfitting to them look like?</li><li>Nobody programs what a neuron detects. What does that mean for explaining a model’s decision to a customer or an auditor?</li></ul></details>
-<p class="bridge">Any network learns this way. <a class="xref" data-ref="why"></a> looks at which kind of network suits text, and why the Transformer replaced the ones before it.</p>
+<p class="bridge">Any network learns this way. The one you trained sorts points into classes; <a class="xref" data-ref="genai"></a> shows how networks create new text and images instead.</p>
+</div>
+</section>
+<section class="ch" id="genai" data-title="Generative AI: the big picture">
+<h2>Generative AI: the big picture</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Tell a generative model from a classifier by what each one outputs.</li><li>Name the two main ways to generate: one piece at a time, and removing noise step by step.</li><li>Explain why the Transformer is a network and not a way of generating, and where it is used.</li></ul></div><p class="needs"><b>Builds on</b> Next-token prediction and the chain rule from <a class="xref" data-ref="intro"></a>, and the classifier you trained in <a class="xref" data-ref="nn"></a>.</p></div>
+<div class="story"><p>The network in <a class="xref" data-ref="nn"></a> answered a question about a point it was given: which class is this? An LLM is asked a different question: what could come next? Asked again and again, it writes “the cat sat on the mat” instead of judging it.</p></div>
+<p>Most machine learning in products used to sort things: spam or not, fraud or not, which product a photo shows. Those models are <b>classifiers</b>. A <b>generative model</b> does something else: it produces new examples that look as if they came from its training data, such as text, code, images or audio. “Generative AI” is the name for models of the second kind, usually steered by a prompt.</p>
+<h3>Sorting versus creating</h3>
+<ul>
+  <li>A <b>classifier</b> takes an example and returns a label: an email in, “spam” out. Its output is small, one probability per class.</li>
+  <li>A <b>generative model</b> returns an example: a prompt in, a paragraph or an image out. Its output is large, thousands of tokens or millions of pixel values, and every part has to fit with every other part.</li>
+</ul>
+<p><b>What does each kind of model have to learn?</b> A classifier only needs the boundary between the classes. It never has to know what a typical email looks like, only which side of the line one falls on. A generator has to know what the data itself looks like, so that it can draw new examples from it. In the language of probability:</p>
+<div class="tex d">\text{classifier: } p(y\mid x)\qquad \text{generative model: } p(x)\qquad \text{with a prompt: } p(x\mid c)</div>
+<p class="sym"><span class="tex">x</span> is an example, such as a text or an image. <span class="tex">y</span> is a label. <span class="tex">c</span> is the condition, usually the prompt. <span class="tex">p(x)</span> is high for examples that look like the training data and low for everything else.</p>
+<p>Training a generative model makes its training examples probable. Generating means drawing a new <span class="tex">x</span> from the learned distribution, which is called <b>sampling</b>.</p>
+<h3>Two ways to make something large</h3>
+<p>Choosing every token of a paragraph, or every pixel of an image, in one go is too hard, because the parts depend on each other. Every successful generator breaks the job into many small predictions. There are two main recipes.</p>
+<p><b>One piece at a time (autoregressive).</b> Predict the first token, then the second given the first, and so on. Each step is a choice over the vocabulary, the kind of prediction neural networks are good at. This is the chain rule from <a class="xref" data-ref="intro"></a>, and it is how LLMs work:</p>
+<div class="tex d">p(x)=\prod_{t=1}^{T}p(x_t\mid x_{\lt t})</div>
+<p class="sym"><span class="tex">x_t</span> is the piece at position <span class="tex">t</span>, usually a token. <span class="tex">x_{\lt t}</span> is every piece before it. <span class="tex">T</span> is the number of pieces.</p>
+<p><b>Remove noise, step by step (diffusion).</b> Start from pure random noise the size of the output, say an image. A network predicts which part of it is noise, and a little of that is removed. After many such steps, often 20 to 50, a clean image remains. Every step updates the whole image at once. Most image, video and audio generators work this way.</p>
+<div class="flow" role="img" aria-label="Diagram: an autoregressive model grows the text one token at a time; a diffusion model starts from noise and sharpens the whole image a little at each step">
+  <div><b>Autoregressive</b><small>one token per step</small></div><i>:</i>
+  <div><b>the</b><small>step 1</small></div><i>→</i>
+  <div><b>the cat</b><small>step 2</small></div><i>→</i>
+  <div class="fa"><b>the cat sat on the mat</b><small>stop when the end token is drawn</small></div>
+</div>
+<div class="flow" role="img" aria-hidden="true">
+  <div><b>Diffusion</b><small>whole output per step</small></div><i>:</i>
+  <div><b>pure noise</b><small>step 0</small></div><i>→</i>
+  <div><b>rough shapes</b><small>a few steps in</small></div><i>→</i>
+  <div class="fa"><b>clean image</b><small>after 20 to 50 steps</small></div>
+</div>
+<p class="opt"><b>Older recipes.</b> A <b>GAN</b> (generative adversarial network) trains a generator against a second network that tries to tell its output from real data. A <b>VAE</b> (variational autoencoder) learns to squeeze an example into a short code and rebuild it, then generates by rebuilding random codes. Both make a sample in a single pass. For images, diffusion has largely replaced them.</p>
+<div class="worked">
+  <h4>Worked example: a generator that learns by counting</h4>
+  <p>Train on three names: <b>ana</b>, <b>anna</b> and <b>nina</b>. The “model” looks at one letter of context and counts which letter came next. A dot marks the start and the end of a name.</p>
+  <div class="x-only"><p>After the start: <b>a</b> twice, <b>n</b> once, so <span class="tex">p(\text{a}\mid\text{start})=2/3</span>. After <b>a</b>: the end three times, <b>n</b> twice, so <span class="tex">p(\text{end}\mid\text{a})=3/5</span> and <span class="tex">p(\text{n}\mid\text{a})=2/5</span>. After <b>n</b>: <b>a</b> three times, <b>n</b> once, <b>i</b> once, so <span class="tex">p(\text{a}\mid\text{n})=3/5</span>.</p>
+  <p>The chain rule gives the probability of generating “ana”: <span class="tex">\tfrac23\times\tfrac25\times\tfrac35\times\tfrac35=0.096</span>.</p>
+  <p>And of “nana”, which is not in the training list: <span class="tex">\tfrac13\times\tfrac35\times\tfrac25\times\tfrac35\times\tfrac35=0.0288</span>. The model has never seen it, but every step in it is one it has seen.</p>
+  <p>“an” is impossible: no training name ends in <b>n</b>, so <span class="tex">p(\text{end}\mid\text{n})=0</span>.</p></div>
+  <p class="s-only">After <b>a</b>, the names end three times and continue with <b>n</b> twice, so the model ends a name after <b>a</b> with probability 3/5. Multiplying the step probabilities gives about a 10% chance of generating “ana”, and about 3% for “nana”, a name it never saw: each of its steps was seen, just not in that order.</p>
+</div>
+<details class="callout code opt"><summary>In Python: a name generator that learns by counting</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s02_ngram.py"><code>import random
+from collections import Counter, defaultdict
+
+NAMES = """aaron abdul adam adrian aisha akira alba alex alice alina amara amir amy ana andrea andrei anika anna anton
+arjun ava ayesha beatriz ben bianca boris bruno carla carlos carmen caroline chen chloe clara daniel david diana diego
+dmitri elena eli elias elif elise ella emil emily emma erik esther ethan eva farah felix fiona frida gabriel grace hana
+hannah hassan hector helen hugo ibrahim ida imran ines ingrid irene isaac isabel ivan jack jacob james jana jasmine
+javier jonas jose julia julian kai karim karin karl kate kenji kira lara laura layla leo leon lena liam lina linus lucas
+lucia luis luna maja malik marco maria marina mark marta martin maya mia mila mina miriam mohammed nadia naomi nathan
+nina noah nora olga oliver omar oscar pablo paula pedro peter priya rafael rahul rania ravi rina rosa ruby rupert sara
+sami samuel sana sofia sonia stefan sven tara theo thomas tomas valentina vera victor viktor william yara yasmin yusuf
+zara zoe""".split()
+END = "."  # marks the start and the end of a name
+
+
+def train(k):
+    """For every run of k letters, count which letter came next."""
+    table = defaultdict(Counter)
+    for name in NAMES:
+        s = END * k + name + END
+        for i in range(k, len(s)):
+            table[s[i - k:i]][s[i]] += 1
+    return table
+
+
+def generate(table, k, rng):
+    """Draw one letter at a time from the counts until the end marker is drawn."""
+    name = ""
+    while True:
+        counts = table[(END * k + name)[-k:]]
+        letter = rng.choices(list(counts), weights=list(counts.values()))[0]
+        if letter == END:
+            return name
+        name += letter
+
+
+table = train(2)
+after = table["ma"]
+total = sum(after.values())
+print("after 'ma':", {c: f"{n}/{total}" for c, n in after.most_common()})
+
+rng = random.Random(0)
+known = set(NAMES)
+for k in (1, 2, 3, 4):
+    table = train(k)
+    names = [generate(table, k, rng) for _ in range(1000)]
+    copies = sum(n in known for n in names) / len(names)
+    print(f"context {k}: {copies:5.1%} copies   e.g. {' '.join(names[:6])}")
+
+# Output:
+# after 'ma': {'r': '8/14', 's': '2/14', '.': '1/14', 'j': '1/14', 'l': '1/14', 'y': '1/14'}
+# context 1:  0.7% copies   e.g. ren jalelio er eofio nemara svilerar
+# context 2: 13.0% copies   e.g. lartine hugo lines rona va rahim
+# context 3: 72.4% copies   e.g. frid anna ami ines kate ana
+# context 4: 97.7% copies   e.g. gabriel sonia sven hana sara arjun</code></pre></details>
+<div class="widget" id="w-gen">
+  <h4 class="wt">Interactive · a generator that learns by counting</h4>
+  <p class="look"><b>The point:</b> Generating is next-piece prediction repeated, and how much context the model uses decides between nonsense, new names and copies. <b>Do this:</b> With 2 letters of context, press “Next letter” a few times and read the bars, then generate 20 names. Then switch to 1 letter, and to 4. <b>Watch for:</b> The share of copies: almost none with 1 letter, about three in four with 3, nearly all with 4.</p>
+  <div class="controls">
+    <div class="ctl"><span>Letters of context</span><div class="chips" id="gn-k" role="group" aria-label="Letters of context"></div></div>
+  </div>
+  <div class="controls"><button class="pri" id="gn-one">Generate a name</button><button id="gn-step">Next letter ›</button><button id="gn-many">Generate 20</button><button id="gn-clear">Clear</button></div>
+  <p class="cap" id="gn-word" aria-live="polite"></p>
+  <span class="lab" id="gn-lab"></span>
+  <div id="gn-bars"></div>
+  <span class="lab">Generated names, newest first</span>
+  <div class="chips" id="gn-list"></div>
+  <div class="stats" id="gn-stats"></div>
+  <small>What is simplified: the “model” is a table of counts, not a neural network. For each run of letters in 162 first names, it counts which letter came next. It works on letters where an LLM works on tokens, and it can only continue contexts it has seen. An LLM replaces the table with a Transformer, which can handle contexts it has never seen. The table is built in your browser when the page loads.</small>
+  <div class="wjh"><b>What just happened?</b> Each letter was drawn from the bars, as an LLM draws each token, and the name ended when the end marker was drawn. With 1 letter of context the model knows too little, and most names are unpronounceable. With 2 letters most names are new and some sound plausible. With 3 or 4 letters the names look real because most are copies: each context is so specific that only one training name continues it. That is memorising, the generative form of the overfitting in <a class="xref" data-ref="nn"></a>. A useful generator sits in between, producing outputs that are new but plausible. LLMs get there with a network that learns patterns shared across billions of examples, not a table.</div>
+</div>
+<h3>Where the Transformer sits</h3>
+<p>Two choices define a generative model, and they are independent:</p>
+<ul>
+  <li>the <b>recipe</b>: what the network is trained to predict, and how a sample is built from those predictions (one token at a time, or step-by-step denoising);</li>
+  <li>the <b>network</b>: the architecture that makes each prediction, such as a CNN or a Transformer.</li>
+</ul>
+<p>The Transformer is a network, not a recipe. LLMs pair it with the autoregressive recipe. Many recent image generators pair it with diffusion, in place of the convolutional network that earlier ones used. Speech and vision models use it too. That is why learning the Transformer pays off well beyond text.</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th>Model family</th><th>Makes</th><th>How one sample is made</th><th>Network inside</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Large language model</th><td>Text and code</td><td>One token at a time</td><td>Decoder-only Transformer</td></tr>
+    <tr><th scope="row">Multimodal LLM</th><td>Text, from text and images</td><td>The image is cut into patches that become extra input tokens; then one token at a time</td><td>Transformer</td></tr>
+    <tr><th scope="row">Diffusion model</th><td>Images, video, audio</td><td>Start from noise and remove a little in each step</td><td>A convolutional network at first; now often a Transformer</td></tr>
+    <tr><th scope="row">Speech recognition</th><td>Text, from audio</td><td>One token at a time, while reading the audio</td><td>Encoder–decoder Transformer (<a class="xref" data-ref="encdec"></a>)</td></tr>
+    <tr class="opt"><th scope="row">GAN</th><td>Images</td><td>One pass from random numbers</td><td>Convolutional network</td></tr>
+  </tbody>
+</table></div>
+<p>The rest of this guide follows the most important pairing: a decoder-only Transformer trained to predict the next token.</p>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Generative AI means chatbots.”</b> Text is one kind of output. The same ideas produce code, images, audio and video.</li>
+  <li><b>“A generative model stitches together pieces of its training data.”</b> It samples from learned probabilities, so most outputs are new. It can still memorise and repeat training data, especially text it saw many times, as the 4-letter setting shows.</li>
+  <li><b>“Diffusion models and Transformers are rival technologies.”</b> One is a recipe and the other is a network. Many diffusion models have a Transformer inside.</li>
+  <li><b>Pitfall:</b> treating fluent output as checked output. A generator is trained to be plausible, not to be true.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>A classifier returns a label for an example; a generative model returns a new example.</li><li>Generators break a large output into many small predictions: one token at a time (LLMs) or one denoising step at a time (diffusion).</li><li>The Transformer is a network; autoregressive generation and diffusion are recipes. They combine freely.</li><li>A good generator is new but plausible. Too little context gives nonsense; too much gives copies of the training data.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. Which of these is a generative model?</legend><button type="button" class="qo">A model that flags fraudulent payments</button><button type="button" class="qo">A model that sorts support tickets into five queues</button><button type="button" class="qo" data-ok="1">A model that writes product descriptions from a list of features</button><p class="qx" hidden aria-live="polite"><b></b> It produces new text. The other two map an input to a label.</p></fieldset>
+<fieldset><legend>2. A new image model is described as “a diffusion Transformer”. What does that mean?</legend><button type="button" class="qo">It is a language model that can also draw</button><button type="button" class="qo" data-ok="1">It generates by removing noise step by step, and the network that makes each step’s prediction is a Transformer</button><button type="button" class="qo">It runs a diffusion model and a Transformer and keeps the better output</button><p class="qx" hidden aria-live="polite"><b></b> Diffusion is the recipe and the Transformer is the network inside it.</p></fieldset>
+<fieldset><legend>3. In the interactive, with 4 letters of context almost every name is a copy of a training name. Why?</legend><button type="button" class="qo" data-ok="1">Each 4-letter context is so specific that usually only one training name continues it</button><button type="button" class="qo">The table has too few contexts</button><button type="button" class="qo">Longer contexts make sampling greedy</button><p class="qx" hidden aria-live="polite"><b></b> The table has memorised its training list: the generative form of overfitting.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Which of the features we build need generation, and which would be served better by a classifier, a search or a plain rule?</li><li>A generator can repeat text from its training data. Where would that be a legal or privacy problem for us?</li></ul></details>
+<p class="bridge">An LLM is the autoregressive recipe running on a Transformer. <a class="xref" data-ref="why"></a> explains why that network replaced the ones before it.</p>
 </div>
 </section>
 <section class="ch" id="why" data-title="Why Transformers?">

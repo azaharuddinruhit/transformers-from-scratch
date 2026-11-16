@@ -157,6 +157,9 @@
   <div class="term"><dt>Activation function</dt><dd>The non-linear function applied after a layer’s weighted sums (tanh, ReLU, GELU). Without it, stacked layers collapse into one.</dd></div>
   <div class="term"><dt>Backpropagation</dt><dd>The method that computes the gradient of the loss for every weight, by applying the chain rule backwards through the layers.</dd></div>
   <div class="term"><dt>Overfitting</dt><dd>Memorising the training examples instead of the pattern: training loss falls while validation loss rises.</dd></div>
+  <div class="term"><dt>Generative model</dt><dd>A model that produces new examples like its training data (text, images, audio), as opposed to a classifier, which returns a label for an example it is given.</dd></div>
+  <div class="term"><dt>Autoregressive</dt><dd>Generating one piece at a time, each conditioned on the pieces before it. LLMs generate text this way, one token per step.</dd></div>
+  <div class="term"><dt>Diffusion model</dt><dd>A generative model that starts from random noise and removes a little of it in each of many steps until a clean output, usually an image, remains.</dd></div>
   <div class="term"><dt>Loss</dt><dd>A single number measuring how wrong the model’s predictions were; training tries to lower it.</dd></div>
   <div class="term"><dt>Gradient</dt><dd>For every parameter, the rate at which the loss changes when that parameter changes.</dd></div>
   <div class="term"><dt>Optimizer</dt><dd>The algorithm that converts gradients into parameter updates, for example SGD or AdamW.</dd></div>
