@@ -752,12 +752,194 @@ print("tau=2.0:  ", repr(generate("the ", 30, rng, tau=2.0)))
 <fieldset><legend>3. Does a higher temperature change which token is ranked first?</legend><button type="button" class="qo">Yes</button><button type="button" class="qo" data-ok="1">No, only how much the ranking matters</button><button type="button" class="qo">Only with top-k</button><p class="qx" hidden aria-live="polite"><b></b> Dividing all logits by the same positive number preserves their order.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>Which settings would you choose for code generation, and which for brainstorming? Why?</li><li>The same prompt can give different answers on each run. Where in our workflows is that acceptable and where is it not?</li></ul></details>
-<p class="bridge">Generation runs the model once per token, billions of multiply-adds each time. <a class="xref" data-ref="hardware"></a> looks at the hardware that does that work, and <a class="xref" data-ref="inference"></a> at what makes it fast enough to use.</p>
+<p class="bridge">Generation runs the model once per token, billions of multiply-adds each time. <a class="xref" data-ref="inference"></a> looks at what makes that fast enough to use, and <a class="xref" data-ref="hardware"></a> at the hardware that does the work.</p>
+</div>
+</section>
+<section class="ch" id="inference" data-title="Inference in practice">
+<h2>Inference in practice</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain what the KV cache stores and why it is valid to reuse it.</li><li>Count the work with and without a cache.</li><li>Estimate KV-cache memory and response time from a model’s configuration.</li><li>Distinguish time to first token from tokens per second.</li></ul></div><p class="needs"><b>Builds on</b> The generation loop from <a class="xref" data-ref="generation"></a>; keys and values from <a class="xref" data-ref="attention"></a>; parameter counts from <a class="xref" data-ref="architecture"></a>.</p></div>
+<div class="story"><p>After writing “mat”, the model needs the next token. The keys and values of “the cat sat on the” cannot have changed, because the causal mask stops earlier positions from seeing later ones. They are read from the cache; only “mat” is processed.</p></div>
+<p><a class="xref" data-ref="generation"></a> covered <i>what</i> a model generates. This section covers what it costs to run one: how long a response takes, how much memory it needs, and why serving many users at once changes both. Training happens once; inference happens on every request, so these numbers decide whether a model is practical to use.</p>
+<p>A request has two phases with very different behaviour:</p>
+<ul>
+  <li><b>Prefill</b>: the whole prompt is processed in a single parallel pass, exactly as in training. Its keys and values are stored in the KV cache. The time this takes is, roughly, the <b>time to first token</b> (TTFT).</li>
+  <li><b>Decode</b>: output tokens are produced one at a time. Each step processes only the newest token and reads the cache for everything earlier. This phase is sequential and cannot be parallelised across the tokens of one response.</li>
+</ul>
+<div class="flow" role="img" aria-label="Diagram: prompt, prefill pass that builds the KV cache, first token, decode loop producing one token per step, tokens streamed to the user">
+  <div><b>Prompt</b><small>P tokens</small></div><i>→</i>
+  <div class="fa"><b>Prefill</b><small>one parallel pass · builds the KV cache</small></div><i>→</i>
+  <div><b>First token</b><small>time to first token</small></div><i>→</i>
+  <div class="fa"><b>Decode loop</b><small>one token per step · cache grows</small></div><i>→</i>
+  <div><b>Streamed output</b><small>tokens shown as they arrive</small></div>
+</div>
+<h3>The vocabulary of serving</h3>
+<p>Four terms come up in every conversation about serving a model:</p>
+<ul>
+  <li><b>Latency</b>: how long one request takes. Usually split into time to first token and the generation speed after it, in tokens per second.</li>
+  <li><b>Streaming</b>: sending each token to the user as soon as it is produced. It does not make generation faster, but the wait people feel becomes the time to first token and not the full response time.</li>
+  <li><b>Throughput</b>: tokens per second summed over all requests being served. This is what determines cost.</li>
+  <li><b>Batching</b>: running several requests through the model in the same step. One pass over the weights serves all of them, so throughput rises; past a point each request slows down. Throughput and latency pull in opposite directions.</li>
+</ul>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>How much work does the cache save?</b> Write <span class="tex">P</span> for the number of prompt tokens and <span class="tex">n</span> for the number of tokens to generate. To predict the first new token the model must process all <span class="tex">P</span> prompt positions; for the second, <span class="tex">P+1</span> positions; and so on. Without a cache every pass starts from scratch, so the totals add up. With a cache, each pass after the first processes only the one position that is new:</p>
+<div class="tex d">\text{without cache: }\sum_{j=0}^{n-1}(P+j)=nP+\frac{n(n-1)}{2}\qquad\qquad\text{with cache: }P+(n-1)</div>
+<p class="sym"><span class="tex">j</span> counts the passes from 0. The first total grows with <span class="tex">n^2</span>, the second with <span class="tex">n</span>.</p>
+<p><b>What does the cache cost?</b> For every layer and every token it stores one key vector and one value vector. Summed over the heads, each has <span class="tex">d_{\text{model}}</span> numbers:</p>
+<div class="tex d">M_{\text{KV}}=2\times L\times T\times d_{\text{model}}\times \text{bytes per number}\times B,\qquad M_{\text{weights}}=N\times\text{bytes per parameter}</div>
+<p class="sym">The 2 is for keys and values. <span class="tex">L</span> is the number of layers. <span class="tex">T=P+n</span> is the context length in use. <span class="tex">B</span> is the number of requests in the batch. <span class="tex">N</span> is the number of parameters.</p>
+<p><b>How long does a response take?</b> The two phases simply add:</p>
+<div class="tex d">t_{\text{response}}\approx t_{\text{first token}}+\frac{n}{\text{tokens per second}}</div>
+
+<div class="worked">
+  <h4>Worked example</h4>
+  <div class="x-only"><p><b>Work saved.</b> Prompt of <span class="tex">P=3</span> tokens, generate <span class="tex">n=5</span>. Without a cache the passes process <span class="tex">3+4+5+6+7=25</span> token positions. With a cache: <span class="tex">3</span> in prefill, then <span class="tex">1</span> for each of the 4 later steps, <span class="tex">7</span> in all.</p>
+  <p><b>Cache memory.</b> A GPT-2-small-sized model, <span class="tex">L=12,\ d_{\text{model}}=768</span>, with <span class="tex">T=1024</span> tokens of context at 2 bytes per number: <span class="tex">2\times12\times1024\times768\times2=37{,}748{,}736</span> bytes, about 37.7 MB, next to 248.9 MB of weights. A larger model with <span class="tex">L=32,\ d_{\text{model}}=4096</span> and <span class="tex">T=8192</span>: <span class="tex">2\times32\times8192\times4096\times2=4{,}294{,}967{,}296</span> bytes, about 4.29 GB, for one request.</p>
+  <p><b>Response time.</b> Time to first token 0.4 s, then 50 tokens per second, for a 200-token answer: <span class="tex">0.4+200/50=4.4</span> seconds.</p></div>
+  <p class="s-only">Generating 5 tokens after a 3-token prompt takes 25 units of work if the model starts over each time, and 7 if it remembers its earlier work. The memory for that remembering is modest for a small model and several gigabytes per conversation for a large model with a long context.</p>
+</div>
+<details class="callout code opt"><summary>In Python: a KV cache gives identical outputs with less work</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s11a_kvcache.py"><code>import numpy as np
+
+
+def softmax(s):
+    e = np.exp(s - s.max())
+    return e / e.sum()
+
+
+rng = np.random.default_rng(0)
+d_model, P, n = 8, 3, 5               # prompt of 3 tokens, generate 5
+W_Q, W_K, W_V = (rng.normal(size=(d_model, d_model)) for _ in range(3))
+X = rng.normal(size=(P + n - 1, d_model))  # token vectors that will be processed
+
+
+def attend(q, K, V):
+    return softmax(K @ q / np.sqrt(d_model)) @ V
+
+
+# Without a cache: every pass recomputes keys and values for all positions
+no_cache, work_no_cache = [], 0
+for t in range(P - 1, P + n - 1):     # one pass per generated token
+    seen = X[:t + 1]
+    K, V = seen @ W_K, seen @ W_V     # recomputed every time
+    work_no_cache += len(seen)
+    no_cache.append(attend(X[t] @ W_Q, K, V))
+
+# With a cache: prefill the prompt once, then add one row per step
+K_cache, V_cache = X[:P] @ W_K, X[:P] @ W_V
+work_cache = P
+with_cache = [attend(X[P - 1] @ W_Q, K_cache, V_cache)]
+for t in range(P, P + n - 1):
+    K_cache = np.vstack([K_cache, X[t] @ W_K])        # append the new key
+    V_cache = np.vstack([V_cache, X[t] @ W_V])        # append the new value
+    work_cache += 1
+    with_cache.append(attend(X[t] @ W_Q, K_cache, V_cache))
+
+print("identical outputs:", np.allclose(no_cache, with_cache))
+print("positions computed without cache:", work_no_cache,
+      "=", P * n + n * (n - 1) // 2)
+print("positions computed with cache:   ", work_cache, "=", P + n - 1)
+
+# Output:
+# identical outputs: True
+# positions computed without cache: 25 = 25
+# positions computed with cache:    7 = 7</code></pre></details>
+<details class="callout code opt"><summary>In Python: memory and speed estimates</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s11b_memory.py"><code>def kv_cache_bytes(L, T, d_model, bytes_per_number=2, B=1):
+    return 2 * L * T * d_model * bytes_per_number * B  # 2 = keys and values
+
+
+def weight_bytes(N, bytes_per_param=2):
+    return N * bytes_per_param
+
+
+def response_seconds(t_first_token, n_tokens, tokens_per_second):
+    return t_first_token + n_tokens / tokens_per_second
+
+
+def rough_speed(N, P, B, F, R, bytes_per_param=2):
+    """Order-of-magnitude bounds; real systems are slower."""
+    m_weights = weight_bytes(N, bytes_per_param)
+    throughput = min(F / (2 * N), B * R / m_weights)    # tokens/s, all requests
+    t_first = max(2 * N * P * B / F, m_weights / R)     # seconds
+    return throughput, throughput / B, t_first
+
+
+print(f"KV cache, GPT-2 small, T=1024: {kv_cache_bytes(12, 1024, 768):,} bytes")
+print(f"weights, GPT-2 small:          {weight_bytes(124_439_808):,} bytes")
+print(f"KV cache, L=32, d=4096, T=8192: {kv_cache_bytes(32, 8192, 4096):,} bytes")
+print("response time:", response_seconds(0.4, 200, 50), "s")
+
+# Generic hardware numbers, not a specific product
+F, R = 100e12, 1e12            # 100 TFLOP/s of compute, 1 TB/s of bandwidth
+for B in (1, 16, 256):
+    total, per_request, ttft = rough_speed(N=7e9, P=1000, B=B, F=F, R=R)
+    print(f"7B model, batch {B:3}: {total:7.0f} tok/s total, "
+          f"{per_request:5.1f} tok/s per request, first token ~{ttft:.2f} s")
+
+# Output:
+# KV cache, GPT-2 small, T=1024: 37,748,736 bytes
+# weights, GPT-2 small:          248,879,616 bytes
+# KV cache, L=32, d=4096, T=8192: 4,294,967,296 bytes
+# response time: 4.4 s
+# 7B model, batch   1:      71 tok/s total,  71.4 tok/s per request, first token ~0.14 s
+# 7B model, batch  16:    1143 tok/s total,  71.4 tok/s per request, first token ~2.24 s
+# 7B model, batch 256:    7143 tok/s total,  27.9 tok/s per request, first token ~35.84 s</code></pre></details>
+
+<div class="widget" id="w-kc">
+  <h4 class="wt">Interactive · the KV cache, pass by pass</h4>
+  <p class="look"><b>The point:</b> The KV cache replaces repeated work with a lookup. <b>Do this:</b> Press Play with the cache on, reset, then untick the cache and play again. <b>Watch for:</b> How many cells are freshly computed (●) in each pass, and the two totals at the bottom.</p>
+  <div class="controls">
+    <label class="ctl"><span class="row">Prompt length P <output id="kc-P-o"></output></span><input type="range" id="kc-P" min="1" max="8" step="1" value="5"></label>
+    <label class="ctl"><span class="row">Tokens to generate n <output id="kc-n-o"></output></span><input type="range" id="kc-n" min="1" max="12" step="1" value="6"></label>
+    <label class="chk"><input type="checkbox" id="kc-cache" checked> Use the KV cache</label>
+  </div>
+  <div class="controls"><button class="pri" id="kc-play">▶ Play</button><button id="kc-step">Step ›</button><button id="kc-reset">Reset</button></div>
+  <p class="cap" id="kc-cap" aria-live="polite"></p>
+  <div class="scroll" id="kc-grid"></div>
+  <div class="lg"><span><b>●</b> computed in this pass</span><span><b>↺</b> reused from the cache</span><span><b>★</b> token predicted by this pass</span><span>underlined = prompt</span></div>
+  <div class="stats" id="kc-stats"></div>
+  <span class="lab">Token positions computed over the whole run</span>
+  <div id="kc-bars"></div>
+  <small>Each row is one pass through the model; each column is one token position. The words are a fixed script, since no model is running in this widget: it counts work, and the counts are exact for the formulas above.</small>
+  <div class="wjh"><b>What just happened?</b> With the cache on, the prefill row computes the whole prompt and every later row computes a single new position, reading the rest from the cache: the work forms a thin diagonal. With the cache off, every row recomputes everything to its left, and the work fills a triangle. The predicted tokens are the same in both cases; only the amount of work differs, and the difference grows with the square of the output length.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>Set P to 8 and n to 12, then tick and untick the cache. Now drop n to 1: with a single output token there is nothing to reuse, and the cache makes no difference.</p></div>
+
+<h3 class="opt">Other techniques you will hear about</h3>
+<ul class="opt">
+  <li><b>Prompt caching</b>: keeping the KV cache of a prefix that many requests share, such as a long system prompt, so its prefill is paid once.</li>
+  <li><b>Beam search</b>: keeping several candidate continuations alive and choosing the most probable overall. Common in translation; rare in chat models, where sampling gives more natural text.</li>
+  <li><b>FlashAttention</b>: computes attention in tiles that fit in the GPU’s fast on-chip memory, so the full <span class="tex">T\times T</span> score matrix is never written out. The result is exact; it saves memory traffic, which is what makes long contexts affordable. Some long-context models also use <b>sliding-window attention</b> in some layers, where each token attends only to the most recent few thousand tokens.</li>
+  <li><b>A smaller cache</b>: most current models share each key and value head between several query heads (grouped-query attention, see <a class="xref" data-ref="modern"></a>), which divides the cache by the same factor.</li>
+  <li><b>Speculative decoding</b>: a small, fast model drafts a few tokens and the large model checks them in one parallel pass, keeping those it agrees with. Done correctly, the output distribution is unchanged and only the speed improves.</li>
+</ul>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“The KV cache saves memory.”</b> It spends memory to save computation.</li>
+  <li><b>“Generation can be parallelised like training.”</b> A prompt is processed in parallel, but each output token depends on the one before it, so decoding is sequential.</li>
+  <li><b>“Tokens per second is a property of the model.”</b> It depends on hardware, precision, batch size and context length together.</li>
+  <li><b>“Streaming makes the model faster.”</b> The total time is unchanged. Only the wait before the first visible word shrinks.</li>
+  <li><b>“Quantization only matters for fitting in memory.”</b> Fewer bytes per weight also means fewer bytes to read on every step, which is often the real speed limit.</li>
+  <li><b>Pitfall:</b> sizing hardware for the weights alone. Leave room for one KV cache per concurrent request at the longest context you intend to allow.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Because of the causal mask, earlier positions’ keys and values never change, so they can be cached.</li><li>Without a cache the work grows with <span class="tex">n^2</span>; with it, with <span class="tex">n</span>.</li><li>Cache memory = 2 × layers × tokens × <span class="tex">d_{\text{model}}</span> × bytes, per request.</li><li>Response time ≈ time to first token + output tokens ÷ tokens per second.</li><li>Batching raises total throughput but not the speed of a single request.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. Prompt of 3 tokens, 5 tokens generated, with a KV cache. How many token positions are processed in total?</legend><button type="button" class="qo">25</button><button type="button" class="qo" data-ok="1">7</button><button type="button" class="qo">15</button><p class="qx" hidden aria-live="polite"><b></b> 3 in prefill, then 1 for each of the 4 later passes.</p></fieldset>
+<fieldset><legend>2. Why is it valid to reuse the keys and values of earlier tokens?</legend><button type="button" class="qo">They are approximately the same</button><button type="button" class="qo" data-ok="1">The causal mask means earlier positions never depend on later tokens</button><button type="button" class="qo">The model is deterministic</button><p class="qx" hidden aria-live="polite"><b></b> Appending a token cannot change anything computed at earlier positions, so the reuse is exact.</p></fieldset>
+<fieldset><legend>3. Which grows with the length of the conversation?</legend><button type="button" class="qo">The weights</button><button type="button" class="qo" data-ok="1">The KV cache</button><button type="button" class="qo">Neither</button><p class="qx" hidden aria-live="polite"><b></b> The weights are fixed. The cache holds a key and a value for every token, in every layer.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>A long system prompt is sent with every request. What does that do to time to first token, and what could reduce it?</li><li>Our users care about a streaming answer feeling fast. Which of the two speed figures matters most for that?</li></ul></details>
+<p class="bridge">Every figure here depends on the hardware. <a class="xref" data-ref="hardware"></a> shows how memory capacity and bandwidth decide whether a model fits and how fast it runs.</p>
 </div>
 </section>
 <section class="ch" id="hardware" data-title="GPUs and CUDA">
 <h2>Hardware: GPUs and CUDA</h2>
-<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why GPUs, not CPUs, run Transformers.</li><li>Read a GPU’s specification: memory, bandwidth and tensor throughput.</li><li>Say what the CUDA driver, toolkit and libraries each do, and fix the usual version mismatch.</li><li>Work out whether a model fits on a GPU, and roughly how fast it will generate.</li></ul></div><p class="needs"><b>Builds on</b> Matrix multiplications from <a class="xref" data-ref="attention"></a> and <a class="xref" data-ref="block"></a>; parameter counts from <a class="xref" data-ref="architecture"></a>; the training loop from <a class="xref" data-ref="training"></a>.</p></div>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why GPUs, not CPUs, run Transformers.</li><li>Read a GPU’s specification: memory, bandwidth and tensor throughput.</li><li>Say what CUDA is, and which versions have to match.</li><li>Work out whether a model fits on a GPU, and roughly how fast it will generate.</li></ul></div><p class="needs"><b>Builds on</b> Matrix multiplications from <a class="xref" data-ref="attention"></a> and <a class="xref" data-ref="block"></a>; parameter counts from <a class="xref" data-ref="architecture"></a>; the training loop from <a class="xref" data-ref="training"></a>; the KV cache from <a class="xref" data-ref="inference"></a>.</p></div>
 <div class="story"><p>A team wants to run a model with 7 billion parameters on one 24 GB graphics card. In 16-bit numbers the weights alone take 14 GB. Is there room for a 4,096-token conversation, and how many tokens per second will the card produce?</p></div>
 <p>Almost all the work in a Transformer is matrix multiplication: billions of multiply-adds that do not depend on each other. A CPU has a few dozen powerful cores built for varied, step-by-step code. A GPU has thousands of simpler cores that apply one instruction to many numbers at once, plus <b>tensor cores</b> that multiply a small block of a matrix in one step at reduced precision.</p>
 <p>A GPU has its own memory, often called <b>VRAM</b>. The weights, the KV cache (<a class="xref" data-ref="inference"></a>) and the intermediate values must all fit in it. Two figures matter: <b>capacity</b> decides whether a model fits at all; <b>bandwidth</b>, the bytes per second the GPU can read from that memory, decides how fast it generates.</p>
@@ -769,8 +951,9 @@ print("tau=2.0:  ", repr(generate("the ", 30, rng, tau=2.0)))
   <div><b>GPU</b><small>cores, tensor cores, VRAM</small></div>
 </div>
 <h3>What “CUDA” means</h3>
-<p><b>CUDA</b> is NVIDIA’s platform for running general-purpose programs on its GPUs. Several separately versioned pieces share the name, and most installation problems come from mixing them up:</p>
-<ul>
+<p><b>CUDA</b> is NVIDIA’s platform for running general-purpose programs on its GPUs. For PyTorch, one rule covers most cases: the NVIDIA driver must be new enough for the CUDA version your PyTorch build was made for. PyTorch brings the rest of CUDA with it.</p>
+<p class="opt">Several separately versioned pieces share the name, and most installation problems come from mixing them up:</p>
+<ul class="opt">
   <li><b>Driver</b>: part of the operating system. <code>nvidia-smi</code> prints its version and the newest CUDA version it supports, which is not necessarily one you have installed.</li>
   <li><b>Toolkit and runtime</b>: the compiler (<code>nvcc</code>) and libraries for building and running GPU programs. PyTorch’s pip packages bring the runtime they need, so for PyTorch you usually need only a recent enough driver.</li>
   <li><b>Kernels and libraries</b>: a kernel is a function that runs on the GPU across many threads at once. PyTorch calls ready-made ones from cuBLAS (matrix multiplication), cuDNN (neural-network operations) and NCCL (traffic between GPUs).</li>
@@ -792,8 +975,8 @@ print("tau=2.0:  ", repr(generate("the ", 30, rng, tau=2.0)))
 </table></div>
 <h3>The equations, and the reasoning behind them</h3>
 <p><b>Will the model fit?</b> The weights take one number per parameter. The KV cache adds memory for every token of every request being served. The CUDA context, intermediate values and gaps between allocations come on top; a common rule of thumb allows another 20%:</p>
-<div class="tex d">M_{\text{needed}}\approx1.2\times\left(N\times\text{bytes per parameter}+M_{\text{KV}}\right)\le n_{\text{GPU}}\times M_{\text{GPU}},\qquad M_{\text{KV}}=2\times L\times T\times d_{\text{model}}\times2\times B</div>
-<p class="sym"><span class="tex">N</span> is the number of parameters, with 4, 2, 1 or 0.5 bytes each; <span class="tex">L</span> is the number of layers, <span class="tex">T</span> the context length and <span class="tex">B</span> the number of requests served at once; the cache holds a key and a value (the first 2) at 2 bytes each (the second 2); <span class="tex">n_{\text{GPU}}</span> GPUs have <span class="tex">M_{\text{GPU}}</span> bytes each. The 1.2 is an allowance, not a measured constant.</p>
+<div class="tex d">M_{\text{needed}}\approx1.2\times\left(N\times\text{bytes per parameter}+M_{\text{KV}}\right)\le n_{\text{GPU}}\times M_{\text{GPU}}</div>
+<p class="sym"><span class="tex">N</span> is the number of parameters, at 4, 2, 1 or 0.5 bytes each. <span class="tex">M_{\text{KV}}</span> is the KV cache from <a class="xref" data-ref="inference"></a>: <span class="tex">2\times L\times T\times d_{\text{model}}\times2\times B</span> bytes at 16 bits. <span class="tex">n_{\text{GPU}}</span> GPUs have <span class="tex">M_{\text{GPU}}</span> bytes each. The 1.2 is an allowance, not a measured constant.</p>
 <p><b>How fast can it generate?</b> Each decode step reads every weight, and every cached key and value, from memory once. With few requests that reading takes longer than the arithmetic, so bandwidth sets the speed:</p>
 <div class="tex d">\text{tokens per second per request}\lesssim\frac{n_{\text{GPU}}\times R}{N\times\text{bytes per parameter}+M_{\text{KV}}}</div>
 <p class="sym"><span class="tex">R</span> is one GPU’s memory bandwidth in bytes per second. This is an upper bound; real systems reach a fraction of it.</p>
@@ -957,6 +1140,38 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
   <div class="wjh"><b>What just happened?</b> The weights are fixed by the parameter count and the format, so changing the format moves the blue bar most. The KV cache grows with context length and with every extra request, and at long contexts it overtakes the weights. Devices with the same memory give the same verdict but different speeds, because speed follows bandwidth: the DGX Spark holds what an H100 cannot, yet generates more slowly than any card here. Adding GPUs adds memory and bandwidth together.</div>
 </div>
 <div class="callout try opt"><b>Try this</b><p>1. 7B model in bf16 on an RTX 4090: raise the context to 131,072 tokens and watch the KV cache overtake the weights. 2. Switch the GPU to the L4: same verdict, under a third of the speed. 3. 70B model in int4: compare one H100 with one DGX Spark.</p></div>
+<div class="callout note"><b>Why a model that fits can still fail</b><p>This is why a model that “fits” on a device can still feel slow, and why a long conversation can run out of memory even though the model itself has not changed: the weights are fixed, but the cache grows with every token.</p></div>
+<h3 class="opt">Serving many requests at once</h3>
+<p class="opt">Batching (<a class="xref" data-ref="inference"></a>) lets one read of the weights serve several requests. That raises total throughput until compute, not bandwidth, becomes the limit.</p>
+<details class="callout math opt"><summary>Math detail: throughput, speed per request and time to first token</summary>
+<p>Processing one token costs about <span class="tex">2N</span> floating-point operations (one multiply and one add per parameter), so hardware delivering <span class="tex">F</span> operations per second can do at most <span class="tex">F/2N</span> tokens per second in total. There is a second limit: every decode step has to read all the weights from memory once, however many requests share that step. With a memory bandwidth of <span class="tex">R</span> bytes per second, that allows <span class="tex">R/M_{\text{weights}}</span> steps per second, or <span class="tex">B\cdot R/M_{\text{weights}}</span> tokens per second for a batch of <span class="tex">B</span>. Whichever limit is lower wins:</p>
+<div class="tex d">\text{throughput}\approx\min\!\left(\frac{F}{2N},\ \frac{B\,R}{M_{\text{weights}}}\right),\qquad \text{speed per request}=\frac{\text{throughput}}{B},\qquad t_{\text{first token}}\approx\max\!\left(\frac{2N\,P\,B}{F},\ \frac{M_{\text{weights}}}{R}\right)</div>
+<p>These are order-of-magnitude bounds. They ignore attention’s extra cost at long contexts, software overhead and hardware details, all of which make real systems slower.</p></details>
+<div class="widget opt" id="w-ie">
+  <h4 class="wt">Interactive · latency and memory estimator (conceptual)</h4>
+  <p class="look"><b>The point:</b> Memory and speed follow from a few numbers about the model and the hardware. <b>Do this:</b> Choose a model, then raise the batch size and the prompt length. <b>Watch for:</b> Which bar grows (the KV cache, not the weights) and when the bottleneck label changes.</p>
+  <p class="cap"><b>Order-of-magnitude illustration, not a benchmark.</b> It applies the bounds above. Real systems are slower, and the hardware sliders are generic quantities, not specific products; the table of real GPUs above gives their actual figures.</p>
+  <div class="controls">
+    <label class="ctl">Model<select id="ie-model"></select></label>
+    <label class="ctl">Weight precision<select id="ie-prec"><option value="4">32-bit floats</option><option value="2" selected>16-bit floats</option><option value="1">8-bit quantized</option><option value="0.5">4-bit quantized</option></select></label>
+    <label class="ctl"><span class="row">Prompt tokens P <output id="ie-P-o"></output></span><input type="range" id="ie-P" min="1" max="5" step="0.1" value="3"></label>
+    <label class="ctl"><span class="row">Output tokens n <output id="ie-n-o"></output></span><input type="range" id="ie-n" min="1" max="3.6" step="0.1" value="2.5"></label>
+    <label class="ctl"><span class="row">Requests in the batch B <output id="ie-B-o"></output></span><input type="range" id="ie-B" min="0" max="6" step="1" value="0"></label>
+    <label class="ctl"><span class="row">Memory bandwidth R <output id="ie-bw-o"></output></span><input type="range" id="ie-bw" min="1" max="3.5" step="0.1" value="2.7"></label>
+    <label class="ctl"><span class="row">Usable compute F <output id="ie-fl-o"></output></span><input type="range" id="ie-fl" min="-1" max="3" step="0.1" value="2"></label>
+    <label class="ctl"><span class="row">Device memory <output id="ie-mem-o"></output></span><input type="range" id="ie-mem" min="2" max="10" step="0.5" value="4.5"></label>
+  </div>
+  <span class="lab">Memory</span>
+  <div class="stack" id="ie-bar" role="img" aria-label="Stacked bar of memory use"></div>
+  <p class="readout" id="ie-fit" aria-live="polite"></p>
+  <div class="stats" id="ie-stats" aria-live="polite"></div>
+  <span class="lab">Batch size: total throughput versus speed per request (log scale)</span>
+  <svg id="ie-chart" role="img" aria-label="Line chart of total throughput and per-request speed as batch size grows"></svg>
+  <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> total throughput (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> speed per request (dashed)</span><span>● current batch size</span></div>
+  <small>What is simplified: the KV cache is assumed to be stored at 16 bits with keys and values of full width <span class="tex">d_{\text{model}}</span>; attention’s own cost, which grows with context length, is ignored; so are software overhead, activations and the fact that real hardware rarely reaches its nominal figures. Model shapes are typical for each size class, not a particular released model.</small>
+  <div class="wjh"><b>What just happened?</b> At batch size 1 the limit is usually how fast the weights can be read from memory, which is why halving the bits per weight roughly doubles the speed. Raising the batch size lets one read of the weights serve many requests, so total throughput climbs while each request keeps its speed. Once the compute limit is reached, the solid line goes flat and the dashed line starts to fall: more users are now sharing a fixed amount of work. Meanwhile every extra request adds its own KV cache to the memory bar.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>1. Switch the precision from 16-bit to 4-bit and watch both the memory bar and the tokens per second. 2. Push the prompt to 100,000 tokens and the batch to 16: the cache overtakes the weights. 3. Lower the compute slider until the bottleneck changes from memory bandwidth to compute.</p></div>
 <h3 class="opt">One GPU or several; local or cloud</h3>
 <ul class="opt">
   <li><b>Fit first.</b> If the model fits on one GPU, use one. Otherwise it is split: <b>tensor parallelism</b> divides every weight matrix across GPUs that exchange results in every layer, over a fast link such as NVLink; <b>pipeline parallelism</b> puts consecutive layers on different GPUs. <b>Data parallelism</b>, a full copy per GPU, raises throughput but does not help a model that does not fit.</li>
@@ -979,218 +1194,9 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
 <div class="quiz">
 <fieldset><legend>1. A model with 7 billion parameters is stored in bf16. How much memory do its weights take?</legend><button type="button" class="qo">7 GB</button><button type="button" class="qo" data-ok="1">14 GB</button><button type="button" class="qo">28 GB</button><p class="qx" hidden aria-live="polite"><b></b> 7 × 10⁹ parameters × 2 bytes. In fp32 it would be 28 GB; in int8, 7 GB.</p></fieldset>
 <fieldset><legend>2. One person is chatting with a model on a single GPU. What mostly limits the tokens per second?</legend><button type="button" class="qo">The tensor cores’ TFLOPS</button><button type="button" class="qo" data-ok="1">The memory bandwidth</button><button type="button" class="qo">The CPU’s clock speed</button><p class="qx" hidden aria-live="polite"><b></b> Every step reads all the weights to do only one token’s worth of arithmetic, so the tensor cores wait for memory.</p></fieldset>
-<fieldset><legend>3. <code>nvidia-smi</code> reports “CUDA Version: 12.4”. What does that tell you?</legend><button type="button" class="qo">Which CUDA toolkit is installed</button><button type="button" class="qo" data-ok="1">The newest CUDA version the driver supports</button><button type="button" class="qo">Which CUDA version PyTorch was built for</button><p class="qx" hidden aria-live="polite"><b></b> PyTorch’s own CUDA version is <code>torch.version.cuda</code>. When PyTorch cannot use the GPU, compare the two numbers first.</p></fieldset>
+<fieldset><legend>3. A 7B model fits on a 24 GB card in testing but runs out of memory when many people use it. What grew?</legend><button type="button" class="qo">The weights</button><button type="button" class="qo" data-ok="1">The KV cache: one per request, growing with each conversation</button><button type="button" class="qo">The CUDA libraries</button><p class="qx" hidden aria-live="polite"><b></b> The weights are fixed. Each request adds its own cache, and it grows with every token.</p></fieldset>
 </div>
-<details class="talk"><summary>For team discussion</summary><ul><li>We want to run an open 70B model for 50 internal users. Would you buy GPUs, buy a DGX Spark, rent cloud GPUs or use a hosted API, and what would change your answer?</li><li>Our 7B model fits on a 24 GB card in testing but runs out of memory in production. What grew, and what are the options?</li></ul></details>
-<p class="bridge"><a class="xref" data-ref="inference"></a> uses these memory and bandwidth figures to explain the KV cache, batching and response time.</p>
-</div>
-</section>
-<section class="ch" id="inference" data-title="Inference in practice">
-<h2>Inference in practice</h2>
-<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain what the KV cache stores and why it is valid to reuse it.</li><li>Count the work with and without a cache.</li><li>Estimate KV-cache memory and response time from a model’s configuration.</li><li>Distinguish time to first token from tokens per second.</li></ul></div><p class="needs"><b>Builds on</b> The generation loop from <a class="xref" data-ref="generation"></a>; keys and values from <a class="xref" data-ref="attention"></a>; parameter counts from <a class="xref" data-ref="architecture"></a>; memory and bandwidth from <a class="xref" data-ref="hardware"></a>.</p></div>
-<div class="story"><p>After writing “mat”, the model needs the next token. The keys and values of “the cat sat on the” cannot have changed, because the causal mask stops earlier positions from seeing later ones. They are read from the cache; only “mat” is processed.</p></div>
-<p><a class="xref" data-ref="generation"></a> covered <i>what</i> a model generates. This section covers what it costs to run one: how long a response takes, how much memory it needs, and why serving many users at once changes both. Training happens once; inference happens on every request, so these numbers decide whether a model is practical to use.</p>
-<p>A request has two phases with very different behaviour:</p>
-<ul>
-  <li><b>Prefill</b>: the whole prompt is processed in a single parallel pass, exactly as in training. Its keys and values are stored in the KV cache. The time this takes is, roughly, the <b>time to first token</b> (TTFT).</li>
-  <li><b>Decode</b>: output tokens are produced one at a time. Each step processes only the newest token and reads the cache for everything earlier. This phase is sequential and cannot be parallelised across the tokens of one response.</li>
-</ul>
-<div class="flow" role="img" aria-label="Diagram: prompt, prefill pass that builds the KV cache, first token, decode loop producing one token per step, tokens streamed to the user">
-  <div><b>Prompt</b><small>P tokens</small></div><i>→</i>
-  <div class="fa"><b>Prefill</b><small>one parallel pass · builds the KV cache</small></div><i>→</i>
-  <div><b>First token</b><small>time to first token</small></div><i>→</i>
-  <div class="fa"><b>Decode loop</b><small>one token per step · cache grows</small></div><i>→</i>
-  <div><b>Streamed output</b><small>tokens shown as they arrive</small></div>
-</div>
-<h3>The vocabulary of serving</h3>
-<ul>
-  <li><b>Latency</b>: how long one request takes. Usually split into time to first token and the generation speed after it, in tokens per second.</li>
-  <li><b>Streaming</b>: sending each token to the user as soon as it is produced. It does not make generation faster, but the wait people feel becomes the time to first token and not the full response time.</li>
-  <li><b>Throughput</b>: tokens per second summed over all requests being served. This is what determines cost.</li>
-  <li><b>Batching</b>: running several requests through the model in the same step. One pass over the weights serves all of them, so throughput rises; past a point each request slows down. Throughput and latency pull in opposite directions.</li>
-  <li><b>Memory</b>: the weights, plus one KV cache per active request, plus working space. The cache grows with every token of context.</li>
-  <li><b>Prompt caching</b>: keeping the KV cache of a prefix that many requests share, such as a long system prompt, so its prefill is paid once.</li>
-  <li><b>Beam search</b>: keeping several candidate continuations alive and choosing the most probable overall. Common in translation; rare in chat models, where sampling gives more natural text.</li>
-  <li><b>FlashAttention</b>: computes attention in tiles that fit in the GPU’s fast on-chip memory, so the full <span class="tex">T\times T</span> score matrix is never written out. The result is exact; it saves memory traffic, which is what makes long contexts affordable. Some long-context models also use <b>sliding-window attention</b> in some layers, where each token attends only to the most recent few thousand tokens.</li>
-  <li><b>A smaller cache</b>: most current models share each key and value head between several query heads (grouped-query attention, see <a class="xref" data-ref="modern"></a>), which divides the cache by the same factor.</li>
-  <li><b>Speculative decoding</b>: a small, fast model drafts a few tokens and the large model checks them in one parallel pass, keeping those it agrees with. Done correctly, the output distribution is unchanged and only the speed improves.</li>
-</ul>
-<h3>The equations, and the reasoning behind them</h3>
-<p><b>How much work does the cache save?</b> Write <span class="tex">P</span> for the number of prompt tokens and <span class="tex">n</span> for the number of tokens to generate. To predict the first new token the model must process all <span class="tex">P</span> prompt positions; for the second, <span class="tex">P+1</span> positions; and so on. Without a cache every pass starts from scratch, so the totals add up. With a cache, each pass after the first processes only the one position that is new:</p>
-<div class="tex d">\text{without cache: }\sum_{j=0}^{n-1}(P+j)=nP+\frac{n(n-1)}{2}\qquad\qquad\text{with cache: }P+(n-1)</div>
-<p class="sym"><span class="tex">j</span> counts the passes from 0. The first total grows with <span class="tex">n^2</span>, the second with <span class="tex">n</span>.</p>
-<p><b>What does the cache cost?</b> For every layer and every token it stores one key vector and one value vector. Summed over the heads, each has <span class="tex">d_{\text{model}}</span> numbers:</p>
-<div class="tex d">M_{\text{KV}}=2\times L\times T\times d_{\text{model}}\times \text{bytes per number}\times B,\qquad M_{\text{weights}}=N\times\text{bytes per parameter}</div>
-<p class="sym">The 2 is for keys and values; <span class="tex">L</span> is the number of layers; <span class="tex">T=P+n</span> is the context length in use; <span class="tex">B</span> is the number of requests in the batch; <span class="tex">N</span> is the number of parameters.</p>
-<p><b>How long does a response take?</b> The two phases simply add:</p>
-<div class="tex d">t_{\text{response}}\approx t_{\text{first token}}+\frac{n}{\text{tokens per second}}</div>
-<details class="callout math opt"><summary>Math detail: the rough speed model used by the estimator below</summary>
-<p>Processing one token costs about <span class="tex">2N</span> floating-point operations (one multiply and one add per parameter), so hardware delivering <span class="tex">F</span> operations per second can do at most <span class="tex">F/2N</span> tokens per second in total. There is a second limit: every decode step has to read all the weights from memory once, however many requests share that step. With a memory bandwidth of <span class="tex">R</span> bytes per second, that allows <span class="tex">R/M_{\text{weights}}</span> steps per second, or <span class="tex">B\cdot R/M_{\text{weights}}</span> tokens per second for a batch of <span class="tex">B</span>. Whichever limit is lower wins:</p>
-<div class="tex d">\text{throughput}\approx\min\!\left(\frac{F}{2N},\ \frac{B\,R}{M_{\text{weights}}}\right),\qquad \text{speed per request}=\frac{\text{throughput}}{B},\qquad t_{\text{first token}}\approx\max\!\left(\frac{2N\,P\,B}{F},\ \frac{M_{\text{weights}}}{R}\right)</div>
-<p>These are order-of-magnitude bounds. They ignore attention’s extra cost at long contexts, software overhead and hardware details, all of which make real systems slower.</p></details>
-<div class="worked">
-  <h4>Worked example</h4>
-  <div class="x-only"><p><b>Work saved.</b> Prompt of <span class="tex">P=3</span> tokens, generate <span class="tex">n=5</span>. Without a cache the passes process <span class="tex">3+4+5+6+7=25</span> token positions. With a cache: <span class="tex">3</span> in prefill, then <span class="tex">1</span> for each of the 4 later steps, <span class="tex">7</span> in all.</p>
-  <p><b>Cache memory.</b> A GPT-2-small-sized model, <span class="tex">L=12,\ d_{\text{model}}=768</span>, with <span class="tex">T=1024</span> tokens of context at 2 bytes per number: <span class="tex">2\times12\times1024\times768\times2=37{,}748{,}736</span> bytes, about 37.7 MB, next to 248.9 MB of weights. A larger model with <span class="tex">L=32,\ d_{\text{model}}=4096</span> and <span class="tex">T=8192</span>: <span class="tex">2\times32\times8192\times4096\times2=4{,}294{,}967{,}296</span> bytes, about 4.29 GB, for one request.</p>
-  <p><b>Response time.</b> Time to first token 0.4 s, then 50 tokens per second, for a 200-token answer: <span class="tex">0.4+200/50=4.4</span> seconds.</p></div>
-  <p class="s-only">Generating 5 tokens after a 3-token prompt takes 25 units of work if the model starts over each time, and 7 if it remembers its earlier work. The memory for that remembering is modest for a small model and several gigabytes per conversation for a large model with a long context.</p>
-</div>
-<details class="callout code opt"><summary>In Python: a KV cache gives identical outputs with less work</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
-<pre class="py" data-src="s11a_kvcache.py"><code>import numpy as np
-
-
-def softmax(s):
-    e = np.exp(s - s.max())
-    return e / e.sum()
-
-
-rng = np.random.default_rng(0)
-d_model, P, n = 8, 3, 5               # prompt of 3 tokens, generate 5
-W_Q, W_K, W_V = (rng.normal(size=(d_model, d_model)) for _ in range(3))
-X = rng.normal(size=(P + n - 1, d_model))  # token vectors that will be processed
-
-
-def attend(q, K, V):
-    return softmax(K @ q / np.sqrt(d_model)) @ V
-
-
-# Without a cache: every pass recomputes keys and values for all positions
-no_cache, work_no_cache = [], 0
-for t in range(P - 1, P + n - 1):     # one pass per generated token
-    seen = X[:t + 1]
-    K, V = seen @ W_K, seen @ W_V     # recomputed every time
-    work_no_cache += len(seen)
-    no_cache.append(attend(X[t] @ W_Q, K, V))
-
-# With a cache: prefill the prompt once, then add one row per step
-K_cache, V_cache = X[:P] @ W_K, X[:P] @ W_V
-work_cache = P
-with_cache = [attend(X[P - 1] @ W_Q, K_cache, V_cache)]
-for t in range(P, P + n - 1):
-    K_cache = np.vstack([K_cache, X[t] @ W_K])        # append the new key
-    V_cache = np.vstack([V_cache, X[t] @ W_V])        # append the new value
-    work_cache += 1
-    with_cache.append(attend(X[t] @ W_Q, K_cache, V_cache))
-
-print("identical outputs:", np.allclose(no_cache, with_cache))
-print("positions computed without cache:", work_no_cache,
-      "=", P * n + n * (n - 1) // 2)
-print("positions computed with cache:   ", work_cache, "=", P + n - 1)
-
-# Output:
-# identical outputs: True
-# positions computed without cache: 25 = 25
-# positions computed with cache:    7 = 7</code></pre></details>
-<details class="callout code opt"><summary>In Python: memory and speed estimates</summary>
-<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
-<pre class="py" data-src="s11b_memory.py"><code>def kv_cache_bytes(L, T, d_model, bytes_per_number=2, B=1):
-    return 2 * L * T * d_model * bytes_per_number * B  # 2 = keys and values
-
-
-def weight_bytes(N, bytes_per_param=2):
-    return N * bytes_per_param
-
-
-def response_seconds(t_first_token, n_tokens, tokens_per_second):
-    return t_first_token + n_tokens / tokens_per_second
-
-
-def rough_speed(N, P, B, F, R, bytes_per_param=2):
-    """Order-of-magnitude bounds; real systems are slower."""
-    m_weights = weight_bytes(N, bytes_per_param)
-    throughput = min(F / (2 * N), B * R / m_weights)    # tokens/s, all requests
-    t_first = max(2 * N * P * B / F, m_weights / R)     # seconds
-    return throughput, throughput / B, t_first
-
-
-print(f"KV cache, GPT-2 small, T=1024: {kv_cache_bytes(12, 1024, 768):,} bytes")
-print(f"weights, GPT-2 small:          {weight_bytes(124_439_808):,} bytes")
-print(f"KV cache, L=32, d=4096, T=8192: {kv_cache_bytes(32, 8192, 4096):,} bytes")
-print("response time:", response_seconds(0.4, 200, 50), "s")
-
-# Generic hardware numbers, not a specific product
-F, R = 100e12, 1e12            # 100 TFLOP/s of compute, 1 TB/s of bandwidth
-for B in (1, 16, 256):
-    total, per_request, ttft = rough_speed(N=7e9, P=1000, B=B, F=F, R=R)
-    print(f"7B model, batch {B:3}: {total:7.0f} tok/s total, "
-          f"{per_request:5.1f} tok/s per request, first token ~{ttft:.2f} s")
-
-# Output:
-# KV cache, GPT-2 small, T=1024: 37,748,736 bytes
-# weights, GPT-2 small:          248,879,616 bytes
-# KV cache, L=32, d=4096, T=8192: 4,294,967,296 bytes
-# response time: 4.4 s
-# 7B model, batch   1:      71 tok/s total,  71.4 tok/s per request, first token ~0.14 s
-# 7B model, batch  16:    1143 tok/s total,  71.4 tok/s per request, first token ~2.24 s
-# 7B model, batch 256:    7143 tok/s total,  27.9 tok/s per request, first token ~35.84 s</code></pre></details>
-
-<div class="widget" id="w-kc">
-  <h4 class="wt">Interactive · the KV cache, pass by pass</h4>
-  <p class="look"><b>The point:</b> The KV cache replaces repeated work with a lookup. <b>Do this:</b> Press Play with the cache on, reset, then untick the cache and play again. <b>Watch for:</b> How many cells are freshly computed (●) in each pass, and the two totals at the bottom.</p>
-  <div class="controls">
-    <label class="ctl"><span class="row">Prompt length P <output id="kc-P-o"></output></span><input type="range" id="kc-P" min="1" max="8" step="1" value="5"></label>
-    <label class="ctl"><span class="row">Tokens to generate n <output id="kc-n-o"></output></span><input type="range" id="kc-n" min="1" max="12" step="1" value="6"></label>
-    <label class="chk"><input type="checkbox" id="kc-cache" checked> Use the KV cache</label>
-  </div>
-  <div class="controls"><button class="pri" id="kc-play">▶ Play</button><button id="kc-step">Step ›</button><button id="kc-reset">Reset</button></div>
-  <p class="cap" id="kc-cap" aria-live="polite"></p>
-  <div class="scroll" id="kc-grid"></div>
-  <div class="lg"><span><b>●</b> computed in this pass</span><span><b>↺</b> reused from the cache</span><span><b>★</b> token predicted by this pass</span><span>underlined = prompt</span></div>
-  <div class="stats" id="kc-stats"></div>
-  <span class="lab">Token positions computed over the whole run</span>
-  <div id="kc-bars"></div>
-  <small>Each row is one pass through the model; each column is one token position. The words are a fixed script, since no model is running in this widget: it counts work, and the counts are exact for the formulas above.</small>
-  <div class="wjh"><b>What just happened?</b> With the cache on, the prefill row computes the whole prompt and every later row computes a single new position, reading the rest from the cache: the work forms a thin diagonal. With the cache off, every row recomputes everything to its left, and the work fills a triangle. The predicted tokens are the same in both cases; only the amount of work differs, and the difference grows with the square of the output length.</div>
-</div>
-<div class="callout try opt"><b>Try this</b><p>Set P to 8 and n to 12, then tick and untick the cache. Now drop n to 1: with a single output token there is nothing to reuse, and the cache makes no difference.</p></div>
-<h3>Estimating memory and speed</h3>
-<p>A handful of numbers explains most of what you observe when running a model: its size, how many bits each weight uses, how long the context is, how many requests share the hardware, and how quickly that hardware can move and multiply numbers.</p>
-<div class="widget opt" id="w-ie">
-  <h4 class="wt">Interactive · latency and memory estimator (conceptual)</h4>
-  <p class="look"><b>The point:</b> Memory and speed follow from a few numbers about the model and the hardware. <b>Do this:</b> Choose a model, then raise the batch size and the prompt length. <b>Watch for:</b> Which bar grows (the KV cache, not the weights) and when the bottleneck label changes.</p>
-  <p class="cap"><b>Order-of-magnitude illustration, not a benchmark.</b> It applies the simple bounds from the “Math detail” box above. Real systems are slower, and the hardware sliders are generic quantities, not specific products; <a class="xref" data-ref="hardware"></a> lists the figures for real GPUs.</p>
-  <div class="controls">
-    <label class="ctl">Model<select id="ie-model"></select></label>
-    <label class="ctl">Weight precision<select id="ie-prec"><option value="4">32-bit floats</option><option value="2" selected>16-bit floats</option><option value="1">8-bit quantized</option><option value="0.5">4-bit quantized</option></select></label>
-    <label class="ctl"><span class="row">Prompt tokens P <output id="ie-P-o"></output></span><input type="range" id="ie-P" min="1" max="5" step="0.1" value="3"></label>
-    <label class="ctl"><span class="row">Output tokens n <output id="ie-n-o"></output></span><input type="range" id="ie-n" min="1" max="3.6" step="0.1" value="2.5"></label>
-    <label class="ctl"><span class="row">Requests in the batch B <output id="ie-B-o"></output></span><input type="range" id="ie-B" min="0" max="6" step="1" value="0"></label>
-    <label class="ctl"><span class="row">Memory bandwidth R <output id="ie-bw-o"></output></span><input type="range" id="ie-bw" min="1" max="3.5" step="0.1" value="2.7"></label>
-    <label class="ctl"><span class="row">Usable compute F <output id="ie-fl-o"></output></span><input type="range" id="ie-fl" min="-1" max="3" step="0.1" value="2"></label>
-    <label class="ctl"><span class="row">Device memory <output id="ie-mem-o"></output></span><input type="range" id="ie-mem" min="2" max="10" step="0.5" value="4.5"></label>
-  </div>
-  <span class="lab">Memory</span>
-  <div class="stack" id="ie-bar" role="img" aria-label="Stacked bar of memory use"></div>
-  <p class="readout" id="ie-fit" aria-live="polite"></p>
-  <div class="stats" id="ie-stats" aria-live="polite"></div>
-  <span class="lab">Batch size: total throughput versus speed per request (log scale)</span>
-  <svg id="ie-chart" role="img" aria-label="Line chart of total throughput and per-request speed as batch size grows"></svg>
-  <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> total throughput (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> speed per request (dashed)</span><span>● current batch size</span></div>
-  <small>What is simplified: the KV cache is assumed to be stored at 16 bits with keys and values of full width <span class="tex">d_{\text{model}}</span>; attention’s own cost, which grows with context length, is ignored; so are software overhead, activations and the fact that real hardware rarely reaches its nominal figures. Model shapes are typical for each size class, not a particular released model.</small>
-  <div class="wjh"><b>What just happened?</b> At batch size 1 the limit is usually how fast the weights can be read from memory, which is why halving the bits per weight roughly doubles the speed. Raising the batch size lets one read of the weights serve many requests, so total throughput climbs while each request keeps its speed. Once the compute limit is reached, the solid line goes flat and the dashed line starts to fall: more users are now sharing a fixed amount of work. Meanwhile every extra request adds its own KV cache to the memory bar.</div>
-</div>
-<div class="callout try opt"><b>Try this</b><p>1. Switch the precision from 16-bit to 4-bit and watch both the memory bar and the tokens per second. 2. Push the prompt to 100,000 tokens and the batch to 16: the cache overtakes the weights. 3. Lower the compute slider until the bottleneck changes from memory bandwidth to compute.</p></div>
-<div class="callout note"><b>Beginner note</b><p>This is why a model that “fits” on a device can still feel slow, and why a long conversation can run out of memory even though the model itself has not changed: the weights are fixed, but the cache grows with every token.</p></div>
-<h3 class="opt">Common misconceptions</h3>
-<ul class="pit opt">
-  <li><b>“The KV cache saves memory.”</b> It spends memory to save computation.</li>
-  <li><b>“Generation can be parallelised like training.”</b> A prompt is processed in parallel, but each output token depends on the one before it, so decoding is sequential.</li>
-  <li><b>“Tokens per second is a property of the model.”</b> It depends on hardware, precision, batch size and context length together.</li>
-  <li><b>“Streaming makes the model faster.”</b> The total time is unchanged. Only the wait before the first visible word shrinks.</li>
-  <li><b>“Quantization only matters for fitting in memory.”</b> Fewer bytes per weight also means fewer bytes to read on every step, which is often the real speed limit.</li>
-  <li><b>Pitfall:</b> sizing hardware for the weights alone. Leave room for one KV cache per concurrent request at the longest context you intend to allow.</li>
-</ul>
-<div class="wrapup">
-<h3>Key takeaways</h3>
-<ul class="take"><li>Because of the causal mask, earlier positions’ keys and values never change, so they can be cached.</li><li>Without a cache the work grows with <span class="tex">n^2</span>; with it, with <span class="tex">n</span>.</li><li>Cache memory = 2 × layers × tokens × <span class="tex">d_{\text{model}}</span> × bytes, per request.</li><li>Response time ≈ time to first token + output tokens ÷ tokens per second.</li><li>Batching raises total throughput but not the speed of a single request.</li></ul>
-<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
-<div class="quiz">
-<fieldset><legend>1. Prompt of 3 tokens, 5 tokens generated, with a KV cache. How many token positions are processed in total?</legend><button type="button" class="qo">25</button><button type="button" class="qo" data-ok="1">7</button><button type="button" class="qo">15</button><p class="qx" hidden aria-live="polite"><b></b> 3 in prefill, then 1 for each of the 4 later passes.</p></fieldset>
-<fieldset><legend>2. Why is it valid to reuse the keys and values of earlier tokens?</legend><button type="button" class="qo">They are approximately the same</button><button type="button" class="qo" data-ok="1">The causal mask means earlier positions never depend on later tokens</button><button type="button" class="qo">The model is deterministic</button><p class="qx" hidden aria-live="polite"><b></b> Appending a token cannot change anything computed at earlier positions, so the reuse is exact.</p></fieldset>
-<fieldset><legend>3. Which grows with the length of the conversation?</legend><button type="button" class="qo">The weights</button><button type="button" class="qo" data-ok="1">The KV cache</button><button type="button" class="qo">Neither</button><p class="qx" hidden aria-live="polite"><b></b> The weights are fixed. The cache holds a key and a value for every token, in every layer.</p></fieldset>
-</div>
-<details class="talk"><summary>For team discussion</summary><ul><li>A long system prompt is sent with every request. What does that do to time to first token, and what could reduce it?</li><li>Our users care about a streaming answer feeling fast. Which of the two speed figures matters most for that?</li></ul></details>
+<details class="talk"><summary>For team discussion</summary><ul><li>We want to run an open 70B model for 50 internal users. Would you buy GPUs, buy a DGX Spark, rent cloud GPUs or use a hosted API, and what would change your answer?</li><li>For serving our users, would we rather have more memory, more bandwidth or more compute, and why?</li></ul></details>
 <p class="bridge">You can now build, train, sample from and serve a model. <a class="xref" data-ref="openmodels"></a> shows how to run real models that others have trained.</p>
 </div>
 </section>
