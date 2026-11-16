@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transformers and LLMs from Scratch: An Interactive Visual Guide</title>
+<meta name="description" content="An interactive, visual, from-scratch guide to decoder-only Transformers and large language models.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c2230'/%3E%3Crect x='5' y='5' width='10' height='10' rx='2' fill='%23fde725'/%3E%3Crect x='17' y='5' width='10' height='10' rx='2' fill='%2321918c'/%3E%3Crect x='5' y='17' width='10' height='10' rx='2' fill='%233b528b'/%3E%3Crect x='17' y='17' width='10' height='10' rx='2' fill='%235ec962'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/content.css">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body data-page="home">
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="Transformers and LLMs from Scratch, home"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c2230"/><rect x="5" y="5" width="10" height="10" rx="2" fill="#fde725"/><rect x="17" y="5" width="10" height="10" rx="2" fill="#21918c"/><rect x="5" y="17" width="10" height="10" rx="2" fill="#3b528b"/><rect x="17" y="17" width="10" height="10" rx="2" fill="#5ec962"/></svg><span class="lgt">Transformers &amp; LLMs from Scratch</span><span class="sm">Transformers &amp; LLMs</span></a>
+  <span class="crumb" id="crumb"></span>
+  <div class="setwrap">
+    <button type="button" class="btn icon" id="setBtn" aria-haspopup="true" aria-expanded="false" aria-controls="setMenu" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="lgt">Settings</span></button>
+    <div id="setMenu" class="setmenu" role="dialog" aria-label="Settings" hidden>
+      <div class="sgrp"><span class="slab" id="lab-path">Path</span>
+        <div class="seg full" role="group" aria-labelledby="lab-path">
+          <button type="button" class="pathBtn" data-p="quick" aria-pressed="false">Quick tour</button>
+          <button type="button" class="pathBtn" data-p="full" aria-pressed="true">Full depth</button>
+        </div>
+        <small class="shint">Quick tour simplifies the worked examples and hides optional material.</small></div>
+      <div class="sgrp"><span class="slab" id="lab-theme">Theme</span>
+        <div class="seg full" role="group" aria-labelledby="lab-theme">
+          <button type="button" class="thBtn" data-t="light" aria-pressed="false">Light</button>
+          <button type="button" class="thBtn" data-t="dark" aria-pressed="false">Dark</button>
+          <button type="button" class="thBtn" data-t="auto" aria-pressed="true">Auto</button>
+        </div></div>
+      <div class="sgrp"><span class="slab" id="lab-code">Python code</span>
+        <div class="seg full" role="group" aria-labelledby="lab-code">
+          <button type="button" class="codeBtn" data-c="closed" aria-pressed="true">Collapsed</button>
+          <button type="button" class="codeBtn" data-c="open" aria-pressed="false">Expanded</button>
+        </div></div>
+      <div class="sgrp"><span class="slab">Progress</span>
+        <button type="button" class="btn full" id="pgReset">Reset progress</button></div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"><div id="progBar"></div></div>
+</header>
+<div id="texwarn" hidden>The maths renderer (KaTeX) could not be loaded, so equations are shown as LaTeX source. Everything else works offline.</div>
+<div class="layout single">
+<main id="main">
+<header class="hero">
+<h1>Transformers and LLMs from Scratch</h1>
+<p class="lede">How a GPT-style model turns text into a prediction of the next token, and how it learns to. Each idea comes with a diagram, the equation, a worked example and an interactive you can check by hand.</p>
+<p class="pre">You need programming and basic linear algebra.</p>
+</header>
+<section class="pathpick" aria-labelledby="pp-h">
+<h2 id="pp-h">Choose your path</h2>
+<div class="paths" id="paths"></div>
+<p class="hint">You can switch at any time in Settings.</p>
+</section>
+<p id="resume"></p>
+<section class="journey" aria-labelledby="jr-h">
+<h2 id="jr-h">The journey</h2>
+<ol id="journey"></ol>
+</section>
+<section class="more" aria-labelledby="mo-h">
+<h2 id="mo-h">Practise and look things up</h2>
+<div class="cards">
+<a class="card" href="interview.html"><b>Interview drill</b><span id="drillStat">Questions with answers to reveal and mark</span></a>
+<a class="card" href="reference.html"><b>Reference</b><span>Glossary, notation and further learning</span></a>
+</div>
+<details class="callout note" id="plan"><summary>Teaching this to a team: a five-session plan</summary>
+<div class="scroll"><table class="numt cmp">
+<thead><tr><th>Session (60 to 75 min)</th><th>Sections</th><th>The one thing people should leave with</th></tr></thead>
+<tbody>
+<tr><th scope="row">1. What and why</th><td><a class="xref" data-ref="intro"></a>, <a class="xref" data-ref="why"></a>, <a class="xref" data-ref="tokens"></a></td><td>An LLM maps text to a probability for every next token, and text enters as vectors.</td></tr>
+<tr><th scope="row">2. Attention</th><td><a class="xref" data-ref="position"></a>, <a class="xref" data-ref="attention"></a></td><td>Attention is a weighted average, with weights from query–key dot products.</td></tr>
+<tr><th scope="row">3. The model</th><td><a class="xref" data-ref="multihead"></a>, <a class="xref" data-ref="block"></a>, <a class="xref" data-ref="architecture"></a></td><td>A Transformer is one block repeated: attention, MLP, residuals, normalisation.</td></tr>
+<tr><th scope="row">4. Training and use</th><td><a class="xref" data-ref="training"></a>, <a class="xref" data-ref="generation"></a>, <a class="xref" data-ref="hardware"></a>, <a class="xref" data-ref="inference"></a>, <a class="xref" data-ref="openmodels"></a></td><td>Training lowers surprise at real text; generation samples one token at a time; memory and bandwidth set the cost, including for the open models you can run yourself.</td></tr>
+<tr><th scope="row">5. The wider picture</th><td><a class="xref" data-ref="scaling"></a>, <a class="xref" data-ref="encdec"></a>, <a class="xref" data-ref="paper"></a></td><td>What scale buys, and how the original paper relates to today’s models.</td></tr>
+<tr><th scope="row">6. Interview practice (optional)</th><td><a href="interview.html">The interview drill</a></td><td>Pairs ask each other questions and give feedback on structure: define, why, how, trade-off, example.</td></tr>
+</tbody>
+</table></div>
+<p>A format that works: people read the sections and do the checks beforehand; the session opens with the running example, walks through one interactive together on a shared screen, and spends the rest on the “For team discussion” questions.</p></details>
+</section>
+<footer>Everything here runs locally in your browser. The only network request is for the KaTeX maths renderer.</footer>
+</main>
+</div>
+<div id="tip" role="tooltip"></div>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/site.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous" onload="renderAllTex()" onerror="texFailed()"></script>
+</body>
+</html>

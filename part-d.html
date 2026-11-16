@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part D: The wider picture · Transformers and LLMs from Scratch</title>
+<meta name="description" content="An interactive, visual, from-scratch guide to decoder-only Transformers and large language models.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c2230'/%3E%3Crect x='5' y='5' width='10' height='10' rx='2' fill='%23fde725'/%3E%3Crect x='17' y='5' width='10' height='10' rx='2' fill='%2321918c'/%3E%3Crect x='5' y='17' width='10' height='10' rx='2' fill='%233b528b'/%3E%3Crect x='17' y='17' width='10' height='10' rx='2' fill='%235ec962'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/content.css">
+<link rel="stylesheet" href="assets/css/widgets.css">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body data-page="part-d">
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="Transformers and LLMs from Scratch, home"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c2230"/><rect x="5" y="5" width="10" height="10" rx="2" fill="#fde725"/><rect x="17" y="5" width="10" height="10" rx="2" fill="#21918c"/><rect x="5" y="17" width="10" height="10" rx="2" fill="#3b528b"/><rect x="17" y="17" width="10" height="10" rx="2" fill="#5ec962"/></svg><span class="lgt">Transformers &amp; LLMs from Scratch</span><span class="sm">Transformers &amp; LLMs</span></a>
+  <span class="crumb" id="crumb"></span>
+  <div class="setwrap">
+    <button type="button" class="btn icon" id="setBtn" aria-haspopup="true" aria-expanded="false" aria-controls="setMenu" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="lgt">Settings</span></button>
+    <div id="setMenu" class="setmenu" role="dialog" aria-label="Settings" hidden>
+      <div class="sgrp"><span class="slab" id="lab-path">Path</span>
+        <div class="seg full" role="group" aria-labelledby="lab-path">
+          <button type="button" class="pathBtn" data-p="quick" aria-pressed="false">Quick tour</button>
+          <button type="button" class="pathBtn" data-p="full" aria-pressed="true">Full depth</button>
+        </div>
+        <small class="shint">Quick tour simplifies the worked examples and hides optional material.</small></div>
+      <div class="sgrp"><span class="slab" id="lab-theme">Theme</span>
+        <div class="seg full" role="group" aria-labelledby="lab-theme">
+          <button type="button" class="thBtn" data-t="light" aria-pressed="false">Light</button>
+          <button type="button" class="thBtn" data-t="dark" aria-pressed="false">Dark</button>
+          <button type="button" class="thBtn" data-t="auto" aria-pressed="true">Auto</button>
+        </div></div>
+      <div class="sgrp"><span class="slab" id="lab-code">Python code</span>
+        <div class="seg full" role="group" aria-labelledby="lab-code">
+          <button type="button" class="codeBtn" data-c="closed" aria-pressed="true">Collapsed</button>
+          <button type="button" class="codeBtn" data-c="open" aria-pressed="false">Expanded</button>
+        </div></div>
+      <div class="sgrp"><span class="slab">Progress</span>
+        <button type="button" class="btn full" id="pgReset">Reset progress</button></div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"><div id="progBar"></div></div>
+</header>
+<div id="texwarn" hidden>The maths renderer (KaTeX) could not be loaded, so equations are shown as LaTeX source. Everything else works offline.</div>
+<div class="layout">
+<div id="scrim" hidden></div>
+<nav id="mbar" aria-label="Section navigation">
+  <span class="mpb" aria-hidden="true"><i id="mFill"></i></span>
+  <button type="button" id="mPrev" aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button type="button" id="mMid" aria-haspopup="true" aria-expanded="false" aria-controls="toc"><span id="mNum"></span><span id="mTxt">Contents</span><svg class="mico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>
+  <button type="button" id="mNext" aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+</nav>
+<nav id="toc" aria-label="Contents"></nav>
+<main id="main">
+<section class="view opener" id="start" data-title="Part D: The wider picture">
+<p class="kicker">Part D</p>
+<h1>The wider picture</h1>
+<p class="lede" id="partGoal"></p>
+<ol class="partlist" id="partList"></ol>
+<p id="partGo"></p>
+</section>
+<section class="ch" id="encdec" data-title="Encoder–decoder and cross-attention">
+<h2>Encoder–decoder Transformers and cross-attention</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Describe the roles of the encoder and the decoder.</li><li>Explain cross-attention as attention with queries from one sequence and keys and values from another.</li><li>Compare encoder–decoder and decoder-only designs and say when each fits.</li></ul></div><p class="needs"><b>Builds on</b> Self-attention and the causal mask from <a class="xref" data-ref="attention"></a>; the block from <a class="xref" data-ref="block"></a>.</p></div>
+<div class="story"><p>A different task for this section: translating <b>“le chat noir dort”</b>. To write “black”, the decoder queries the encoder’s output and puts 61% of its attention on “noir”.</p></div>
+<p>Everything so far described a single stack that reads and writes one sequence. The original 2017 Transformer was built differently, for translation: one stack, the <b>encoder</b>, reads the whole input sentence; a second stack, the <b>decoder</b>, writes the output sentence one token at a time. The two are joined by a third kind of attention, <b>cross-attention</b>, through which the decoder consults the encoder’s result at every step.</p>
+<ul>
+  <li><b>Encoder</b>: self-attention with <i>no</i> causal mask. The input is fully known, so every source token may look at every other, left and right. It runs once.</li>
+  <li><b>Decoder</b>: causal self-attention over the output written so far, exactly as in <a href="part-b.html">Part B</a>, because the rest of the output does not exist yet.</li>
+  <li><b>Cross-attention</b>: the same query–key–value computation, with one change. The <b class="tq">queries</b> come from the decoder, while the <b class="tk">keys</b> and <b class="tv">values</b> come from the encoder’s output. In the library analogy, the readers are in one building and the books in another.</li>
+</ul>
+<div class="ed" role="img" aria-label="Diagram: an encoder stack processes the source sentence with unmasked self-attention and outputs X_enc. A decoder stack processes the target so far with masked self-attention, then cross-attention that takes keys and values from X_enc, then a feed-forward network, and predicts the next target token.">
+  <div class="col">
+    <b>Encoder</b>
+    <div class="bx">Source tokens<small>le · chat · noir · dort</small></div>
+    <div class="bx">Embeddings + positions<small><code>[B, T_src, d_model]</code></small></div>
+    <div class="rep"><span>L ×</span>
+      <div class="bx">Self-attention<small>no mask: sees left and right</small></div>
+      <div class="bx">Feed-forward</div>
+    </div>
+    <div class="bx kv">Encoder output <span class="tex">X_{\text{enc}}</span><small><code>[B, T_src, d_model]</code> · computed once</small></div>
+  </div>
+  <div class="mid"><b class="tk">K</b>, <b class="tv">V</b><span class="arrow" aria-hidden="true"></span><small>to every decoder layer</small></div>
+  <div class="col">
+    <b>Decoder</b>
+    <div class="bx">Target so far<small>&lt;s&gt; · the · black</small></div>
+    <div class="bx">Embeddings + positions<small><code>[B, T_tgt, d_model]</code></small></div>
+    <div class="rep"><span>L ×</span>
+      <div class="bx">Masked self-attention<small>causal: sees earlier output only</small></div>
+      <div class="bx x">Cross-attention<small><b class="tq">Q</b> from decoder · <b class="tk">K</b>, <b class="tv">V</b> from <span class="tex">X_{\text{enc}}</span></small></div>
+      <div class="bx">Feed-forward</div>
+    </div>
+    <div class="bx">Linear + softmax<small>next target token: “cat”</small></div>
+  </div>
+</div>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>The question:</b> how does the decoder read the source sentence? It already has a tool for “one set of vectors gathers information from another set”: attention. The only change is where the three inputs come from. The decoder is the one asking, so it supplies the queries. The encoder holds the answers, so it supplies the keys and values.</p>
+<p>Let <span class="tex">X_{\text{dec}}</span> be the decoder’s vectors, shape <code>[T_tgt, d_model]</code>, and <span class="tex">X_{\text{enc}}</span> the encoder’s output, shape <code>[T_src, d_model]</code>.</p>
+<div class="tex d">Q=X_{\text{dec}}W_Q,\qquad K=X_{\text{enc}}W_K,\qquad V=X_{\text{enc}}W_V</div>
+<div class="tex d">\mathrm{CrossAttention}(X_{\text{dec}},X_{\text{enc}})=\mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V</div>
+<p class="sym">Compare with <a class="xref" data-ref="attention"></a>: the formula is identical. <span class="tex">Q</span> has <span class="tex">T_{\text{tgt}}</span> rows and <span class="tex">K</span> has <span class="tex">T_{\text{src}}</span> rows, so the weight table <span class="tex">QK^{\top}</span> has shape <code>[T_tgt, T_src]</code>: a rectangle, not a square.</p>
+<details class="why"><summary>Why no causal mask here?</summary><div class="whyb">The mask exists to hide tokens that have not been produced yet. The whole source sentence is known before decoding starts, so nothing in it is “in the future”, and every decoder position may read all of it.</div></details>
+<p>A decoder block therefore has three sublayers, each an update added to the stream:</p>
+<div class="tex d">\begin{aligned}x' &amp;= x + \mathrm{MaskedSelfAttention}(\mathrm{LayerNorm}(x))\\ x'' &amp;= x' + \mathrm{CrossAttention}(\mathrm{LayerNorm}(x'),\,X_{\text{enc}})\\ y &amp;= x'' + \mathrm{FFN}(\mathrm{LayerNorm}(x''))\end{aligned}</div>
+<p class="sym">First look at what has been written so far, then consult the source, then process the result. This is written in the pre-norm style of <a class="xref" data-ref="block"></a> for consistency; the 2017 paper normalised after each addition instead (<a class="xref" data-ref="paper"></a>).</p>
+<div class="worked">
+  <h4>Worked example: the decoder is about to write “black”</h4>
+  <div class="x-only"><p>Translating “le chat noir dort”. The decoder has written “the” and its query is <span class="tex">q=[0,0,2,0]</span>, with <span class="tex">d_k=4</span> and the encoder keys and values shown in the visualizer below.</p>
+  <div class="tex d">\begin{aligned}\text{dot products } q\cdot k_j &amp;= [0,\ 2,\ 4,\ 0]\quad(\text{le, chat, noir, dort})\\ \text{divide by }\sqrt{4}=2 &amp;\Rightarrow [0,\ 1,\ 2,\ 0]\\ \exp &amp;\Rightarrow [1,\ 2.7183,\ 7.3891,\ 1],\ \text{sum}=12.1073\\ \alpha &amp;= [0.0826,\ 0.2245,\ 0.6103,\ 0.0826]\\ c=\textstyle\sum_j\alpha_jv_j &amp;= [0.1239,\ 0.5316,\ 1.2206,\ -0.1793]\end{aligned}</div>
+  <p>61% of the attention lands on “noir”, the third source word, even though “black” is the second target word. Cross-attention is free to reorder.</p>
+  <p>Parameter cost, with <span class="tex">d_{\text{model}}=8,\ d_{\text{ff}}=32</span> and the formulas of <a class="xref" data-ref="architecture"></a>: an encoder block, like a decoder-only block, has <span class="tex">288+552+32=872</span> parameters. A decoder block adds a second attention layer and a third LayerNorm: <span class="tex">872+288+16=1176</span>.</p></div>
+  <p class="s-only">To write “black”, the decoder asks the encoder “which source word should I translate now?”. The answer is mostly “noir” (61%), with some weight on “chat” (22%), the noun that “noir” describes. French puts the adjective after the noun and English before it, and cross-attention handles the swap without any special rule.</p>
+</div>
+<details class="callout code opt"><summary>In Python: cross-attention</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s13_cross.py"><code>import numpy as np
+
+
+def softmax(S, axis=-1):
+    e = np.exp(S - S.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+def attention(Q, K, V):              # the same function as self-attention
+    A = softmax(Q @ K.T / np.sqrt(Q.shape[-1]))
+    return A @ V, A
+
+
+source = ["le", "chat", "noir", "dort"]           # encoder side
+written = ["&lt;s&gt;", "the", "black"]                 # decoder input so far
+Q_dec = np.array([[2, 1, 0, 0], [0, 0, 2, 0], [0, 2, 0, 0]], dtype=float)
+K_enc = np.array([[2, 0, 0, 0], [0, 2, 1, 0], [0, 1, 2, 0], [0, 0, 0, 2]],
+                 dtype=float)
+V_enc = np.array([[1, 0, 0, 0.5], [0, 2, 0, 1], [0, 0, 2, -1], [0.5, 1, 0, 2]])
+
+# Queries from the decoder; keys and values from the encoder. No causal mask.
+context, weights = attention(Q_dec, K_enc, V_enc)
+print("weights shape:", weights.shape, "= [T_tgt, T_src], a rectangle")
+
+i = 1                                             # decoder has written "the"
+print("after 'the', alpha =", weights[i].round(4))
+print("context c         =", context[i].round(4))
+print("most attended     =", source[weights[i].argmax()])
+for word, row in zip(written, weights):
+    print(f"query from {word!r:8} attends most to {source[row.argmax()]!r}")
+
+# Output:
+# weights shape: (3, 4) = [T_tgt, T_src], a rectangle
+# after 'the', alpha = [0.0826 0.2245 0.6103 0.0826]
+# context c         = [ 0.1239  0.5316  1.2206 -0.1793]
+# most attended     = noir
+# query from '&lt;s&gt;'    attends most to 'le'
+# query from 'the'    attends most to 'noir'
+# query from 'black'  attends most to 'chat'</code></pre></details>
+
+<div class="widget" id="w-cross">
+  <h4 class="wt">Interactive · cross-attention visualizer</h4>
+  <p class="look"><b>The point:</b> Cross-attention lets each output word look at the relevant input words. <b>Do this:</b> Click each decoder step in turn. <b>Watch for:</b> Which French word gets the most weight, and that the order is not simply left to right.</p>
+  <div class="controls">
+    <div class="ctl" style="max-width:none"><span>Decoder step (which target word is being predicted)</span><div class="chips" id="xa-toks" role="group" aria-label="Choose the decoder step"></div></div>
+  </div>
+  <p class="cap" id="xa-cap" aria-live="polite"></p>
+  <svg id="xa-svg" class="xa" role="group" aria-label="Alignment diagram: lines from the selected decoder position to each source token, thicker for larger attention weight"></svg>
+  <div id="xa-q"></div>
+  <div class="scroll"><table class="numt" id="xa-table"></table></div>
+  <div class="grid2" style="margin-top:12px">
+    <div><span class="lab">Softmax over the source tokens</span><div id="xa-soft"></div></div>
+    <div><span class="lab">All decoder steps at once (rows = decoder query, columns = encoder key)</span><div id="xa-mat"></div></div>
+  </div>
+  <div id="xa-ctx"></div>
+  <small>As in <a class="xref" data-ref="attention"></a>, Q, K and V are small hand-picked numbers so that every step can be checked, not the output of a trained translation model. Line thickness and the printed percentage both show the attention weight. Click a decoder word in the diagram or a row of the table on the right to change the step.</small>
+  <div class="wjh"><b>What just happened?</b> One decoder position asked a question, and the answer was assembled entirely from the encoder’s vectors. Step through the four positions and the strongest link moves le → noir → chat → dort: the middle two cross over, because the two languages order adjective and noun differently. In the full table the bright cells are not on the diagonal, which is the signature of reordering.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>Select “predict cat” and read the dot-product column: the query scores 4 against “chat” and 2 against “noir”. Then switch to the simplified explanation in Settings and compare the bars for “predict black” and “predict cat”. They are mirror images.</p></div>
+<h3>Contrast with the decoder-only design</h3>
+<p>A decoder-only model has no encoder and no cross-attention. To translate, it puts the source and the target in <b>one</b> sequence, “le chat noir dort &lt;s&gt; the black cat …”, and relies on ordinary causal self-attention. The target tokens can still look back at the source tokens, so the job cross-attention did is absorbed into self-attention. The widget below shows who may attend to whom in each design.</p>
+<div class="widget opt" id="w-contrast">
+  <h4 class="wt">Interactive · who can attend to whom?</h4>
+  <p class="look"><b>The point:</b> The two designs differ in who is allowed to attend to whom. <b>Do this:</b> Switch between the two architectures. <b>Watch for:</b> Which cells are blocked in each grid.</p>
+  <div class="controls"><div class="ctl" style="max-width:none"><span>Architecture</span><div class="chips" id="xc-view" role="group" aria-label="Choose the architecture"></div></div></div>
+  <div id="xc-out"></div>
+  <div class="lg"><span><b>S</b> source reads source</span><span><b>X</b> target reads source (the job of cross-attention)</span><span><b>T</b> target reads earlier target</span><span><b>−∞</b> blocked (hatched)</span></div>
+  <p class="readout" id="xc-read" aria-live="polite"></p>
+  <div class="wjh"><b>What just happened?</b> In the encoder–decoder view there are three separate tables, each with its own weights. In the decoder-only view the same three kinds of connection appear as regions of a single lower-triangular table, computed by one set of attention weights. One region shrinks: source tokens can no longer see <i>later</i> source tokens, because the single causal mask applies to them too.</div>
+</div>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th></th><th>Encoder–decoder</th><th>Decoder-only (GPT-style)</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Stacks</th><td>Two, with separate weights</td><td>One</td></tr>
+    <tr><th scope="row">Attention per block</th><td>Encoder: self. Decoder: masked self + cross</td><td>Masked self only</td></tr>
+    <tr><th scope="row">How the input conditions the output</th><td>Through cross-attention to <span class="tex">X_{\text{enc}}</span></td><td>The input is the start of the same sequence</td></tr>
+    <tr><th scope="row">View of the input</th><td>Bidirectional</td><td>Left to right only</td></tr>
+    <tr><th scope="row">Reading the input during generation</th><td>Encoded once, then reused at every step</td><td>Processed once, kept in the KV cache</td></tr>
+    <tr><th scope="row">Parameters per block (<a class="xref" data-ref="architecture"></a> formulas)</th><td>Decoder block has an extra <span class="tex">4(d_{\text{model}}^2 + d_{\text{model}}) + 2\,d_{\text{model}}</span></td><td><span class="tex">4(d_{\text{model}}^2 + d_{\text{model}}) + \text{MLP} + 4\,d_{\text{model}}</span></td></tr>
+    <tr><th scope="row">Training signal</th><td>Predict each target token given source and earlier target</td><td>Predict every next token of the whole sequence</td></tr>
+    <tr><th scope="row">Well-known examples</th><td>Original Transformer, T5, BART, Whisper</td><td>The GPT family and most current chat LLMs</td></tr>
+  </tbody>
+</table></div>
+<p>Neither design is strictly better. Encoder–decoder models fit tasks with a clear input and a clear output, such as translation or speech recognition, and give the input a bidirectional reading. Decoder-only models are simpler, treat every task as “continue this text”, and can be pretrained on raw text with no input–output pairs, which is a large part of why they became the default for general-purpose LLMs.</p>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Cross-attention needs a causal mask.”</b> It does not. The whole source is available from the start. Only the decoder’s self-attention is masked.</li>
+  <li><b>“The encoder runs again for every generated token.”</b> It runs once. Its output is fixed and reused by every decoder step.</li>
+  <li><b>“Decoder-only models cannot translate or summarise.”</b> They can: the source goes in the prompt and self-attention reaches back to it.</li>
+  <li><b>“Cross-attention is a different mechanism.”</b> It is the same scaled dot-product attention, with queries from one sequence and keys and values from another.</li>
+  <li><b>Pitfall:</b> each kind of attention has its own <span class="tex">W_Q, W_K, W_V</span>. The decoder’s self-attention and cross-attention do not share weights.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>The encoder reads the whole source with unmasked self-attention; the decoder writes the target with masked self-attention.</li><li>Cross-attention: <span class="tex">Q</span> from the decoder, <span class="tex">K</span> and <span class="tex">V</span> from the encoder. Same formula as before.</li><li>Its weight table is a rectangle, <code>[T_tgt, T_src]</code>, and needs no causal mask.</li><li>Decoder-only models do the same job by putting source and target in one sequence.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. In cross-attention, where do the keys and values come from?</legend><button type="button" class="qo">The decoder</button><button type="button" class="qo" data-ok="1">The encoder’s output</button><button type="button" class="qo">The embedding table</button><p class="qx" hidden aria-live="polite"><b></b> The decoder asks (queries); the encoder’s output is what it reads (keys and values).</p></fieldset>
+<fieldset><legend>2. The source has 4 tokens and the target so far has 3. What is the shape of the cross-attention weight table?</legend><button type="button" class="qo" data-ok="1">[3, 4]</button><button type="button" class="qo">[4, 4]</button><button type="button" class="qo">[3, 3]</button><p class="qx" hidden aria-live="polite"><b></b> One row per decoder position, one column per source token.</p></fieldset>
+<fieldset><legend>3. Why does the encoder not need a causal mask?</legend><button type="button" class="qo">It has no attention</button><button type="button" class="qo" data-ok="1">The whole source is known in advance, so nothing is “in the future”</button><button type="button" class="qo">It would be too slow</button><p class="qx" hidden aria-live="polite"><b></b> The mask only exists to hide tokens that have not been produced yet.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>For which of our tasks is there a clear “input” and a separate “output”? Would an encoder–decoder model have any advantage there?</li><li>A decoder-only model handles translation by treating source and target as one sequence. What is gained and lost?</li></ul></details>
+<p class="bridge">With both designs understood, <a class="xref" data-ref="paper"></a> returns to the 2017 paper and reads it as written.</p>
+</div>
+</section>
+<section class="ch" id="paper" data-title="The 2017 paper in detail">
+<h2>The 2017 paper in detail: “Attention Is All You Need”</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>List the details in which the 2017 model differs from GPT-style models.</li><li>Explain the warm-up learning-rate schedule and why it is shaped that way.</li><li>Place the paper in the line from RNNs to today’s LLMs.</li></ul></div><p class="needs"><b>Builds on</b> Every earlier section, especially <a class="xref" data-ref="block"></a> and <a class="xref" data-ref="encdec"></a>.</p></div>
+<p><a class="xref" data-ref="why"></a> used this paper as motivation. Now that you know every component, this section reads it as written: the model it described, the details that differ from the GPT-style recipe in the rest of this guide, and what it achieved.</p>
+<h3>What the paper’s model looked like</h3>
+<p>It is the encoder–decoder design of <a class="xref" data-ref="encdec"></a>: 6 encoder layers and 6 decoder layers. The paper trained two sizes on the WMT 2014 translation benchmarks.</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th></th><th>Base model</th><th>Big model</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Layers (encoder + decoder)</th><td>6 + 6</td><td>6 + 6</td></tr>
+    <tr><th scope="row"><span class="tex">d_{\text{model}}</span></th><td>512</td><td>1024</td></tr>
+    <tr><th scope="row">Attention heads <span class="tex">h</span> (<span class="tex">d_k</span> per head)</th><td>8 (64)</td><td>16 (64)</td></tr>
+    <tr><th scope="row">FFN hidden width <span class="tex">d_{\text{ff}}</span></th><td>2048</td><td>4096</td></tr>
+    <tr><th scope="row">Dropout</th><td>0.1</td><td>0.3</td></tr>
+    <tr><th scope="row">Parameters</th><td>about 65 million</td><td>about 213 million</td></tr>
+    <tr><th scope="row">Training</th><td>100,000 steps, about 12 hours on 8 GPUs</td><td>300,000 steps, about 3.5 days on 8 GPUs</td></tr>
+    <tr><th scope="row">English → German (BLEU)</th><td>27.3</td><td>28.4</td></tr>
+    <tr><th scope="row">English → French (BLEU)</th><td>38.1</td><td>41.8</td></tr>
+  </tbody>
+</table></div>
+<p><b>BLEU</b> is a translation score from 0 to 100 that measures word-sequence overlap with human reference translations. At the time, 28.4 on English–German was the best published result, including against ensembles of several models, and it was reached at a fraction of the usual training cost.</p>
+<h3>The equations that are specific to the paper</h3>
+<p>The attention and multi-head formulas of <a class="xref" data-ref="attention"></a> and <a class="xref" data-ref="multihead"></a> are the paper’s own, unchanged. Four other details differ from the GPT-style recipe used in the rest of this guide.</p>
+<p><b>1. Normalisation after the residual add (“post-norm”).</b></p>
+<div class="tex d">x\leftarrow\mathrm{LayerNorm}\big(x+\mathrm{Sublayer}(x)\big)</div>
+<details class="why"><summary>How this differs from <a class="xref" data-ref="block"></a>.</summary><div class="whyb">There, the stream is left alone and only a copy is normalised before each sublayer. Here the stream itself is normalised after every addition, so there is no untouched path from the first layer to the last. That makes deep stacks harder to train, which is why later models moved the normalisation.</div></details>
+<p><b>2. ReLU in the feed-forward network</b>, not GELU, and fixed <b>sinusoidal</b> positional encodings (<a class="xref" data-ref="position"></a>):</p>
+<div class="tex d">\mathrm{FFN}(x)=\max(0,\;xW_1+b_1)\,W_2+b_2</div>
+<p><b>3. Scaled, shared embeddings.</b> One weight matrix serves as the source embedding, the target embedding and the output projection, and embeddings are multiplied by <span class="tex">\sqrt{d_{\text{model}}}</span> before the positional encoding is added. The reason for the scaling: embedding values start out small, while positional encodings range up to 1, so without it the position signal would drown out the token.</p>
+<p><b>4. A learning-rate schedule with warm-up</b>, which became a standard ingredient of Transformer training:</p>
+<div class="tex d">\eta(\text{step})=d_{\text{model}}^{-0.5}\cdot\min\!\left(\text{step}^{-0.5},\ \ \text{step}\cdot\text{warmup}^{-1.5}\right)</div>
+<p class="sym"><span class="tex">\eta</span> is the learning rate (the paper calls it <i>lrate</i>); <span class="tex">\text{step}</span> counts training steps from 1; <span class="tex">\text{warmup}</span> is a fixed number of steps, 4000 in the paper.</p>
+<details class="why"><summary>Reading the formula.</summary><div class="whyb">The <span class="tex">\min</span> chooses between two candidates. <span class="tex">\text{step}\cdot\text{warmup}^{-1.5}</span> is a straight line rising from zero; it is the smaller one early on. <span class="tex">\text{step}^{-0.5}</span> is a slowly falling curve; it is the smaller one later. They are equal exactly when <span class="tex">\text{step}=\text{warmup}</span>, which is where the rate peaks. The factor <span class="tex">d_{\text{model}}^{-0.5}</span> gives wider models smaller steps. The gentle start stops a randomly initialised model from being thrown off course by its first, very noisy gradients.</div></details>
+<p>The paper also used the Adam optimizer with <span class="tex">\beta_1=0.9,\ \beta_2=0.98,\ \epsilon=10^{-9}</span>, and label smoothing of 0.1, which trains towards targets that are slightly less than 100% certain.</p>
+<div class="worked">
+  <h4>Worked example: the learning-rate schedule</h4>
+  <div class="x-only"><p>Base model, <span class="tex">d_{\text{model}}=512</span>, <span class="tex">\text{warmup}=4000</span>. First, <span class="tex">512^{-0.5}=0.044194</span>.</p>
+  <p>At step 1 the second term of the minimum is smaller: <span class="tex">1\times4000^{-1.5}=3.9528\times10^{-6}</span>, so <span class="tex">\eta=0.044194\times3.9528\times10^{-6}=1.747\times10^{-7}</span>.</p>
+  <p>At step 4000 the two terms are equal, <span class="tex">4000^{-0.5}=0.015811</span>, and the rate peaks: <span class="tex">\eta=0.044194\times0.015811=6.988\times10^{-4}</span>.</p>
+  <p>At step 100,000: <span class="tex">100000^{-0.5}=0.0031623</span>, so <span class="tex">\eta=0.044194\times0.0031623=1.398\times10^{-4}</span>, one fifth of the peak.</p></div>
+  <p class="s-only">The learning rate starts almost at zero, climbs in a straight line for 4,000 steps to about 0.0007, then slides down slowly. By the end of training it is a fifth of its peak.</p>
+</div>
+<details class="callout code opt"><summary>In Python: the learning-rate schedule, post-norm and pre-norm</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s14_paper.py"><code>import numpy as np
+
+
+def paper_lr(step, d_model=512, warmup=4000):
+    return d_model ** -0.5 * min(step ** -0.5, step * warmup ** -1.5)
+
+
+for step in (1, 4000, 100_000):
+    print(f"step {step:&gt;7,}: lr = {paper_lr(step):.4g}")
+print("peak = (d_model * warmup) ** -0.5 =", round((512 * 4000) ** -0.5, 7))
+
+
+def layer_norm(x, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    return (x - mu) / np.sqrt(x.var(axis=-1, keepdims=True) + eps)
+
+
+def post_norm(x, sublayer):          # 2017 paper: normalise after the add
+    return layer_norm(x + sublayer(x))
+
+
+def pre_norm(x, sublayer):           # GPT-style: normalise a copy first
+    return x + sublayer(layer_norm(x))
+
+
+rng = np.random.default_rng(0)
+W = rng.normal(0, 0.1, size=(8, 8))
+sublayer = lambda x: np.tanh(x @ W)
+x = rng.normal(3, 2, size=(4, 8))
+
+print("post-norm stream: mean", post_norm(x, sublayer).mean().round(3),
+      "std", post_norm(x, sublayer).std().round(3), "(rescaled every layer)")
+print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
+      "std", pre_norm(x, sublayer).std().round(3), "(the input passes through)")
+
+# Output:
+# step       1: lr = 1.747e-07
+# step   4,000: lr = 0.0006988
+# step 100,000: lr = 0.0001398
+# peak = (d_model * warmup) ** -0.5 = 0.0006988
+# post-norm stream: mean 0.0 std 1.0 (rescaled every layer)
+# pre-norm stream:  mean 3.391 std 1.99 (the input passes through)</code></pre></details>
+
+<div class="widget opt" id="w-lr">
+  <h4 class="wt">Interactive · the paper’s learning-rate schedule</h4>
+  <p class="look"><b>The point:</b> The schedule is a straight rise followed by a slow fall. <b>Do this:</b> Move the warm-up slider, then the inspect-step slider. <b>Watch for:</b> The peak sits exactly at the warm-up step and gets lower as warm-up gets longer.</p>
+  <div class="controls">
+    <label class="ctl"><span class="row"><span class="tex">d_{\text{model}}</span> <output id="lr-d-o"></output></span><input type="range" id="lr-d" min="7" max="11" step="1" value="9"></label>
+    <label class="ctl"><span class="row">Warm-up steps <output id="lr-w-o"></output></span><input type="range" id="lr-w" min="500" max="16000" step="500" value="4000"></label>
+    <label class="ctl"><span class="row">Inspect step <output id="lr-s-o"></output></span><input type="range" id="lr-s" min="0" max="100" step="1" value="4"></label>
+  </div>
+  <svg id="lr-chart" role="img" aria-label="Learning rate against training step: a linear rise during warm-up followed by inverse square root decay"></svg>
+  <p class="readout" id="lr-read" aria-live="polite"></p>
+  <div class="wjh"><b>What just happened?</b> The curve is the formula above, evaluated for 100,000 steps. Its peak sits exactly at the warm-up step, where the two terms of the minimum meet, and its height is <span class="tex">(d_{\text{model}}\cdot\text{warmup})^{-0.5}</span>. A wider model or a longer warm-up both lower the peak. The toy model in <a class="xref" data-ref="training"></a> uses the same idea, warm-up followed by decay, with a cosine curve in place of the inverse square root.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>Set the warm-up to 500 steps and note how high the peak becomes; very short warm-ups were found to make training unstable. Then set <span class="tex">d_{\text{model}}</span> to 2048 and watch the whole curve drop.</p></div>
+<h3>From the 2017 paper to today’s LLMs</h3>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th></th><th>2017 Transformer</th><th>Typical GPT-style LLM</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Structure</th><td>Encoder + decoder with cross-attention</td><td>Decoder only</td></tr>
+    <tr><th scope="row">Task</th><td>Translation, trained on sentence pairs</td><td>Next-token prediction on raw text, then fine-tuning</td></tr>
+    <tr><th scope="row">Normalisation</th><td>After the residual add (post-norm)</td><td>Before the sublayer (pre-norm), plus a final LayerNorm</td></tr>
+    <tr><th scope="row">Activation</th><td>ReLU</td><td>GELU or a close relative</td></tr>
+    <tr><th scope="row">Positions</th><td>Fixed sinusoids added to the input</td><td>Learned or relative (for example rotary) schemes</td></tr>
+    <tr><th scope="row">Size</th><td>65 to 213 million parameters</td><td>Billions of parameters and beyond</td></tr>
+    <tr><th scope="row">Decoding</th><td>Beam search</td><td>Sampling with temperature, top-k, top-p</td></tr>
+    <tr><th scope="row">Unchanged</th><td colspan="2">Scaled dot-product attention, multiple heads, residual connections, layer normalisation, a position-wise feed-forward network, learned embeddings, warm-up</td></tr>
+  </tbody>
+</table></div>
+<p>The line of descent is short. In 2018, GPT kept only the decoder and pretrained it on unlabelled text, and BERT kept only the encoder and pretrained it by filling in masked words. Scaling the decoder-only branch, with the handful of adjustments in the table, leads to the models described in <a class="xref" data-ref="architecture" data-to="scaling"></a>.</p>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Modern LLMs use the paper’s architecture as written.”</b> The core is intact, but normalisation placement, activation, positional scheme and overall structure have all changed.</li>
+  <li><b>Pitfall:</b> code or diagrams that follow the paper (post-norm, encoder–decoder) do not match GPT-style code (pre-norm, decoder-only). Check which one a tutorial is describing before comparing details.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>The 2017 model is an encoder–decoder with post-norm, ReLU and sinusoidal positions.</li><li>Its attention and multi-head formulas are unchanged in every model since.</li><li>Warm-up then decay: a small learning rate while gradients are noisy, a peak, then a slow decline.</li><li>GPT kept the decoder, BERT kept the encoder; scaling the decoder-only branch led to LLMs.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. In the paper’s schedule, at which step is the learning rate highest?</legend><button type="button" class="qo">Step 1</button><button type="button" class="qo" data-ok="1">The warm-up step</button><button type="button" class="qo">The last step</button><p class="qx" hidden aria-live="polite"><b></b> The rising line and the falling curve meet exactly at step = warmup.</p></fieldset>
+<fieldset><legend>2. Which of these is unchanged between the 2017 model and modern LLMs?</legend><button type="button" class="qo">Where LayerNorm sits</button><button type="button" class="qo" data-ok="1">Scaled dot-product attention</button><button type="button" class="qo">The activation function</button><p class="qx" hidden aria-live="polite"><b></b> Normalisation placement and activation both changed; the attention formula did not.</p></fieldset>
+<fieldset><legend>3. What does post-norm mean?</legend><button type="button" class="qo" data-ok="1">LayerNorm is applied after the residual addition</button><button type="button" class="qo">LayerNorm is applied only at the end of the model</button><button type="button" class="qo">There is no LayerNorm</button><p class="qx" hidden aria-live="polite"><b></b> The stream itself is normalised after every addition, unlike pre-norm where only a copy is normalised.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>When you read a tutorial or code base, how can you tell quickly whether it follows the paper or the GPT-style variant?</li><li>The paper’s claim was narrow (translation). What made the idea generalise so widely?</li></ul></details>
+<p class="bridge">That completes the explanation of the model. The <a href="interview.html">interview drill</a> turns it into interview answers and adds the applied topics: retrieval, fine-tuning, agents and production.</p>
+</div>
+</section>
+<section class="view complete" id="complete" data-title="Part D complete"><div id="partDone"></div></section>
+<footer>Everything here runs locally in your browser. The only network request is for the KaTeX maths renderer.</footer>
+</main>
+</div>
+<div id="tip" role="tooltip"></div>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/shared.js"></script>
+<script src="assets/js/part-d.js"></script>
+<script src="assets/js/site.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous" onload="renderAllTex()" onerror="texFailed()"></script>
+</body>
+</html>

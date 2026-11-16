@@ -1,0 +1,111 @@
+/* Section content: notes, worked examples, equations, flow diagrams, tables, code boxes, quizzes and interview answers. */
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.88rem;color:var(--muted);margin:14px 0}
+.sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;background:var(--c)}
+.sw.q{--c:var(--q)}.sw.k{--c:var(--k)}.sw.v{--c:var(--v)}.sw.r{--c:var(--res)}
+.sw.vir{width:64px;background:linear-gradient(90deg,#440154,#3b528b,#21918c,#5ec962,#fde725)}
+.worked,.callout{overflow-x:auto}
+.scroll,.tex.d,.worked,.callout{position:relative}
+/* callouts */
+.callout{border-left:3px solid var(--c,var(--accent));padding:2px 0 2px 16px;margin:20px 0}
+.callout>b:first-child{display:block;font:600 .86rem var(--sans);color:var(--c,var(--accent));margin-bottom:2px}
+.callout p{margin:.35em 0}
+.callout.math{--c:var(--q)}.callout.mistake{--c:var(--warn)}.callout.try{--c:var(--v)}.callout.note{--c:var(--accent)}
+details.callout summary{cursor:pointer;font:600 .86rem var(--sans);color:var(--c)}
+/* Python snippets */
+.callout.code{border:0;padding:0;margin:14px 0}
+details.callout.code>summary{font:600 .92rem var(--sans);color:var(--accent);list-style:none;display:inline-flex;align-items:center;gap:8px;min-height:32px}
+details.callout.code>summary::-webkit-details-marker{display:none}
+details.callout.code>summary::before{content:"›";font:700 1.1rem var(--mono);transition:transform .15s}
+details.callout.code[open]>summary::before{transform:rotate(90deg)}
+.cbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:10px 0 6px}
+.cbar small{font-size:.8rem}
+.cpy{display:inline-grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid transparent;border-radius:7px;background:none;color:var(--muted);cursor:pointer}
+.cpy:hover{color:var(--ink);border-color:var(--line)}.cpy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cpy svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cpy .i-ok,.cpy.ok .i-cp{display:none}.cpy.ok .i-ok{display:block}.cpy.ok{color:var(--v)}
+/* Code colours (--cd-* variables): Gruvbox Light in the light theme, with comments (#665c54) and strings (#5f5b0a) darkened
+   to pass 4.5:1, on a paler cream background (#fcf9f1); Dracula (draculatheme.com/spec) in the dark theme, with the comment colour lightened from
+   #6272a4 to #8a96c8 for 4.9:1. */
+pre.py,pre.sh{margin:0;padding:12px 14px;background:var(--cd-bg);color:var(--cd-fg);border:1px solid var(--cd-line);border-radius:8px;overflow-x:auto;font:.8rem/1.6 var(--mono);tab-size:4;scrollbar-color:var(--cd-c) var(--cd-bg)}
+pre.py ::selection,pre.sh ::selection{background:var(--cd-line)}
+pre.py code,pre.sh code{background:none;border:0;padding:0;font:inherit;white-space:pre}
+.py .k{color:var(--cd-k)}.py .s{color:var(--cd-s)}.py .n{color:var(--cd-n)}.py .f{color:var(--cd-f)}.py .b{color:var(--cd-b)}.py .c,.py .d{color:var(--cd-c);font-style:italic}
+.worked{background:var(--panel);border-radius:12px;padding:14px 18px;margin:20px 0}
+.wjh{border-top:1px solid var(--line);margin-top:16px;padding-top:12px;font-size:.96rem}
+.wjh>b{color:var(--accent)}
+ul.pit{padding-left:1.1em}ul.pit li{margin:.45em 0}
+body.simple .x-only{display:none!important}body:not(.simple) .s-only{display:none!important}
+/* equations */
+.tex{font-family:var(--mono);font-size:.86em;text-transform:none;letter-spacing:normal}
+.msym{text-transform:none;letter-spacing:normal;white-space:nowrap}.msym sub{font-size:.75em;line-height:0}
+.tex[data-done]{font-family:inherit;font-size:1em}
+.tex.d{display:block;margin:14px 0;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto;text-align:center;white-space:pre-wrap}
+.tex.d[data-done]{white-space:normal}
+#texwarn{background:var(--mark);padding:8px 16px;font-size:.9rem;text-align:center}
+/* flow diagrams */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px 0;margin:18px 0}
+.flow>div{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;font-size:.88rem;display:flex;flex-direction:column;justify-content:center;max-width:210px}
+.flow>div b{font-size:.9rem}
+.flow>div small{line-height:1.3}
+.flow>i{align-self:center;font-style:normal;color:var(--muted);padding:0 7px;font-size:1.1rem}
+.flow .fq{border-color:var(--q)}.flow .fk{border-color:var(--k)}.flow .fv{border-color:var(--v)}.flow .fr{border-color:var(--res);border-style:dashed}.flow .fa{border-color:var(--accent);background:var(--accent-soft)}
+/* tables */
+table.numt{border-collapse:collapse;font-size:.86rem;width:100%}
+table.numt th,table.numt td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;white-space:nowrap}
+table.numt thead th{font:600 .86rem var(--sans);color:var(--muted)}
+table.numt td{font-family:var(--mono)}
+table.numt td.hid,table.numt th.hid{visibility:hidden}
+table.numt td.cur{background:var(--mark)}
+table.numt tr.mk{opacity:.5}
+table.numt small.ex{display:block;font-size:.7rem}
+/* glossary + nav */
+#gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin:14px 0}
+#gloss .term{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+#gloss dt{font-weight:700}#gloss dd{margin:2px 0 0;font-size:.92rem;color:var(--muted)}
+.res-list li{margin:.5em 0}
+table.cmp td{font-family:var(--sans);white-space:normal;min-width:150px}
+table.cmp th{white-space:normal}
+/* learning scaffolding */
+.sym{font-size:.93rem;color:var(--muted);margin-top:-.15em}
+ul.take li,ul.talk li{margin:.4em 0}
+.quiz fieldset{border:1px solid var(--line);border-radius:12px;padding:8px 14px 12px;margin:12px 0;min-width:0;background:var(--surface)}
+.quiz legend{font-weight:600;padding:0 6px;font-size:.96rem}
+.qo{display:block;width:100%;text-align:left;font:inherit;font-size:.93rem;margin:6px 0;padding:8px 12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);cursor:pointer;min-height:38px}
+.qo:hover{border-color:var(--accent)}
+.qo.right{border-color:var(--v);box-shadow:inset 5px 0 0 var(--v);font-weight:600}
+.qo.wrong{border-color:var(--warn);box-shadow:inset 5px 0 0 var(--warn)}
+.qx{font-size:.92rem;margin:.5em 0 0}
+a.xref{white-space:nowrap}
+body.ess .opt{display:none!important}
+/* interview prep */
+.qa{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px 16px 8px;margin:12px 0;min-width:0;overflow-x:auto;position:relative}
+.qa h4.q{margin:.25em 0 .35em;font:600 1.02rem/1.45 var(--sans);letter-spacing:0;text-transform:none;color:var(--ink);display:flex;gap:10px;align-items:baseline}
+.qn{font:700 .72rem var(--mono);color:var(--on-accent);background:var(--accent);border-radius:6px;padding:2px 6px;flex:none}
+.qa ul{margin:.2em 0 .4em;padding-left:1.2em}.qa li{margin:.22em 0;font-size:.95rem}
+.qa .fu{font-size:.9rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px;margin:.4em 0 .2em}
+.qa .fu b{color:var(--ink)}
+.qa .dstep{font:600 .86rem var(--sans);color:var(--accent);margin:.9em 0 .1em}
+.callout ul{margin:.3em 0;padding-left:1.2em}
+/* section opener */
+.sopen{margin:6px 0 22px}
+.learn>b,.needs>b{font-weight:600;color:var(--ink)}
+.learn ul{margin:.3em 0 .6em;padding-left:1.2em}.learn li{margin:.2em 0}
+.needs{font-size:.92rem;color:var(--muted);margin:.4em 0}
+.needs>b::after{content:":"}
+.story{border-left:3px solid var(--v);padding:2px 0 2px 16px;margin:18px 0;font-size:.95rem}
+.story::before{content:"Running example";display:block;font:600 .86rem var(--sans);color:var(--v)}
+.story p{margin:.25em 0}
+.legend{margin:18px 0}
+/* collapsible notes */
+details.why,details.talk{margin:14px 0}
+details.why>summary,details.talk>summary{cursor:pointer;font-weight:600;color:var(--accent);min-height:32px}
+details.why[open]{border-left:3px solid var(--accent);padding:0 0 2px 16px}
+details.why .whyb{font-size:.96rem;overflow-x:auto;position:relative}
+details.talk ul{margin:.4em 0;padding-left:1.2em}
+.look{font-size:.92rem;color:var(--muted);margin:6px 0 14px}
+.look b{color:var(--ink)}
+.checkh .qscore{font:500 .9rem var(--sans);color:var(--v);margin-left:8px}
+.quiz fieldset{padding:6px 14px 10px}
+.qa .sample{background:var(--panel);border-radius:8px;padding:8px 12px;margin:.5em 0 .6em;font-size:.96rem}
+.qa .sample>b{display:block;font:600 .86rem var(--sans);color:var(--accent)}
+pre.sh{margin:12px 0}
