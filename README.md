@@ -25,7 +25,7 @@ Each section in Parts A to D shows its level (Foundation, Core or Deep dive) and
 
 ## Highlights
 
-- Two paths: **Full depth** (about 4 h 20 min) and **Quick tour** (about 3 h 35 min, simplified worked examples, optional material hidden). You can switch at any time.
+- Two paths: **Full depth** (about 4 h 35 min) and **Quick tour** (about 3 h 50 min, simplified worked examples, optional material hidden). You can switch at any time.
 - A tiny neural network and a tiny Transformer (about 9,600 parameters) that both train in your browser, plus a generation playground with temperature, top-k and top-p.
 - Step-by-step attention, KV-cache, GPU-memory, parameter-count and inference-cost calculators, plus interactives for the chat template, preference tuning, rotary positions and grouped-query attention.
 - "In Python" boxes with runnable NumPy and PyTorch code and its real output, collapsed by default.
