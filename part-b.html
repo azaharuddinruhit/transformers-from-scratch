@@ -91,7 +91,7 @@
 </ul>
 <p>The vectors are stored as the rows of one matrix, and using a token means reading its row:</p>
 <div class="tex d">x_t = E[w_t], \qquad E\in\mathbb{R}^{n_{\text{vocab}}\times d_{\text{model}}}</div>
-<p class="sym"><span class="tex">w_t</span> is the token ID at position <span class="tex">t</span>; <span class="tex">E</span> is the embedding table; <span class="tex">E[w_t]</span> is its row number <span class="tex">w_t</span>; <span class="tex">x_t</span> is the resulting vector of length <span class="tex">d_{\text{model}}</span>.</p>
+<p class="sym"><span class="tex">w_t</span> is the token ID at position <span class="tex">t</span>. <span class="tex">E</span> is the embedding table. <span class="tex">E[w_t]</span> is its row number <span class="tex">w_t</span>. <span class="tex">x_t</span> is the resulting vector of length <span class="tex">d_{\text{model}}</span>.</p>
 <details class="callout math opt"><summary>Math detail: lookup is a matrix product in disguise</summary>
 <p>Multiplying a one-hot row vector by <span class="tex">E</span> picks out exactly one row: <span class="tex">x_t=\mathrm{onehot}(w_t)\,E</span>. Nobody computes it that way because indexing is far cheaper, but it shows that the embedding table is an ordinary weight matrix, trained by gradient descent like every other one.</p></details>
 <div class="worked">
@@ -340,12 +340,13 @@ print("shape is unchanged:", X.shape)
 <div class="tex d">Q = XW_Q,\qquad K = XW_K,\qquad V = XW_V</div>
 <p class="sym">Row <span class="tex">i</span> of <span class="tex">Q</span> is the query <span class="tex">q_i</span>; row <span class="tex">j</span> of <span class="tex">K</span> and <span class="tex">V</span> are the key <span class="tex">k_j</span> and value <span class="tex">v_j</span>. Each matrix has shape <code>[T, d_k]</code>, where <span class="tex">d_k</span> is the length of a query or key.</p>
 <p><b>2. Relevance is a dot product.</b> We need one number for “how relevant is token <span class="tex">j</span> to token <span class="tex">i</span>?”. The dot product <span class="tex">q_i\cdot k_j</span> is large when the two vectors point the same way, near zero when they are unrelated and negative when they are opposed. It is cheap, and because <span class="tex">W_Q</span> and <span class="tex">W_K</span> are learned, the model itself decides what “pointing the same way” should mean.</p>
-<p><b>3. Divide by <span class="tex">\sqrt{d_k}</span>.</b> A dot product adds up <span class="tex">d_k</span> terms. If each term varies by about 1, the sum varies by about <span class="tex">\sqrt{d_k}</span>, so longer vectors give larger scores for no meaningful reason. Dividing by <span class="tex">\sqrt{d_k}</span> returns the scores to a typical size of 1 whatever the dimension. Without it, large scores push softmax into a near one-hot output where gradients vanish.</p>
+<p><b>3. Divide by <span class="tex">\sqrt{d_k}</span>.</b> A dot product adds up <span class="tex">d_k</span> terms, so longer vectors give larger scores for no meaningful reason. If each term varies by about 1, the sum varies by about <span class="tex">\sqrt{d_k}</span>. Dividing by <span class="tex">\sqrt{d_k}</span> brings the scores back to a typical size of about 1, whatever <span class="tex">d_k</span> is.</p>
+<details class="why"><summary>Why do large scores hurt?</summary><div class="whyb">With large scores, softmax gives almost all the weight to one token. Its output then hardly changes when the scores change a little, so the gradients that training relies on become tiny, and learning stalls.</div></details>
 <p><b>4. Softmax turns scores into a budget.</b> Token <span class="tex">i</span> should distribute a fixed amount of attention: weights that are positive and sum to 1. That is exactly what softmax produces (<a class="xref" data-ref="intro"></a>).</p>
 <p><b>5. Blend the values.</b> The new vector is the average of the value vectors, weighted by the budget.</p>
 <div class="tex d">s_{ij}=\frac{q_i\cdot k_j}{\sqrt{d_k}},\qquad \alpha_{ij}=\frac{e^{s_{ij}}}{\sum_{j'}e^{s_{ij'}}},\qquad c_i=\sum_j \alpha_{ij}\,v_j</div>
-<p class="sym"><span class="tex">s_{ij}</span> is the scaled score of key <span class="tex">j</span> for query <span class="tex">i</span>; <span class="tex">\alpha_{ij}</span> is the attention weight; <span class="tex">c_i</span> is the <b>context vector</b> for token <span class="tex">i</span>.</p>
-<p><b>6. All tokens at once.</b> Stack the three steps into matrices. Entry <span class="tex">(i,j)</span> of <span class="tex">QK^{\top}</span> is <span class="tex">q_i\cdot k_j</span>, softmax is applied to each row, and multiplying by <span class="tex">V</span> forms every weighted sum in one go:</p>
+<p class="sym"><span class="tex">s_{ij}</span> is the scaled score of key <span class="tex">j</span> for query <span class="tex">i</span>. <span class="tex">\alpha_{ij}</span> is the attention weight. <span class="tex">c_i</span> is the <b>context vector</b> for token <span class="tex">i</span>.</p>
+<p><b>6. All tokens at once.</b> The same steps, written with matrices, handle every token in one go. Entry <span class="tex">(i,j)</span> of <span class="tex">QK^{\top}</span> is <span class="tex">q_i\cdot k_j</span>. Softmax is applied to each row. Multiplying by <span class="tex">V</span> then forms every weighted sum:</p>
 <div class="tex d">\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V</div>
 <ul>
   <li><span class="tex">Q</span>, <span class="tex">K</span>, <span class="tex">V</span>: one row per token, shape <code>[T, d_k]</code>.</li>
@@ -513,8 +514,9 @@ print("X", X.shape, "-&gt; weights", A.shape, "-&gt; output", out.shape)
 <section class="ch" id="multihead" data-title="Multi-head attention">
 <h2>Multi-head attention</h2>
 <div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why one attention pattern per token is not enough.</li><li>Describe how <span class="tex">d_{\text{model}}</span> is split between heads and put back together.</li><li>Follow the tensor shapes through a multi-head layer.</li></ul></div><p class="needs"><b>Builds on</b> The single-head formula from <a class="xref" data-ref="attention"></a>.</p></div>
-<div class="story"><p>One head could link “sat” to its subject “cat” while another links each word to the word before it. (The demonstration uses “the cat sat because it purred” so that there is a pronoun to resolve.)</p></div>
-<p>A single attention computation gives each token one set of weights, so it can ask only one kind of question at a time. But a token often needs several things at once: the previous word, the subject of the sentence, what “it” refers to. <b>Multi-head attention</b> runs several smaller attention computations in parallel, each with its own learned projections, and joins the results.</p>
+<div class="story"><p>One head could link “sat” to its subject “cat”, while another links each word to the word before it. The widget below uses a longer sentence, “the cat sat because it purred”, so that a third head can link “it” back to “cat”.</p></div>
+<p>A single attention computation gives each token one set of weights, so it can ask only one kind of question at a time. But a token often needs several things at once: the previous word, the subject of the sentence, what “it” refers to.</p>
+<p><b>Multi-head attention</b> runs several smaller attention computations side by side, each with its own learned projections, and joins the results.</p>
 <div class="flow" role="img" aria-label="Diagram: the input is projected separately for each head, each head runs attention, the outputs are concatenated and passed through a final linear layer">
   <div><b>X</b><small><code>[B, T, d_model]</code></small></div><i>→</i>
   <div class="fq"><b>head 1 … head h</b><small>each: own <span class="tex">W_Q, W_K, W_V</span> of width <span class="tex">d_{\text{model}} / h</span></small></div><i>→</i>
@@ -523,9 +525,9 @@ print("X", X.shape, "-&gt; weights", A.shape, "-&gt; output", out.shape)
   <div class="fa"><b><span class="tex">W_O</span></b><small>mix the heads</small></div>
 </div>
 <h3>The equations, and the reasoning behind them</h3>
-<p><b>The limitation:</b> in <a class="xref" data-ref="attention"></a>, each token gets one row of weights, one softmax, one “question”. <b>The fix:</b> run <span class="tex">h</span> separate attention computations, called heads. To keep the cost unchanged, each head works in a smaller space of <span class="tex">d_k=d_{\text{model}}/h</span> dimensions, with its own projection matrices of shape <code>[d_model, d_k]</code>:</p>
+<p>Run <span class="tex">h</span> separate attention computations, called <b>heads</b>. Each head works in a smaller space of <span class="tex">d_k=d_{\text{model}}/h</span> dimensions, so all of them together cost about the same as one full-width head. Each has its own projection matrices of shape <code>[d_model, d_k]</code>:</p>
 <div class="tex d">\mathrm{head}_m=\mathrm{Attention}\!\left(XW_Q^{(m)},\;XW_K^{(m)},\;XW_V^{(m)}\right),\qquad m=1,\dots,h</div>
-<p class="sym">This is the single-head formula with matrices that belong to head <span class="tex">m</span>; the superscript <span class="tex">(m)</span> only says “which head”. Each head’s output has shape <code>[T, d_k]</code>. The 2017 paper writes these matrices as <span class="tex">W_i^{Q}, W_i^{K}, W_i^{V}</span>.</p>
+<p class="sym">This is the single-head formula from <a class="xref" data-ref="attention"></a>, with matrices that belong to head <span class="tex">m</span>. The superscript <span class="tex">(m)</span> only says “which head”. Each head’s output has shape <code>[T, d_k]</code>. The 2017 paper writes these matrices as <span class="tex">W_i^{Q}, W_i^{K}, W_i^{V}</span>.</p>
 <p>The <span class="tex">h</span> outputs are placed side by side, which restores the width <span class="tex">h\cdot d_k=d_{\text{model}}</span>, and one more matrix mixes them:</p>
 <div class="tex d">\mathrm{MultiHead}(X)=\mathrm{Concat}(\mathrm{head}_1,\dots,\mathrm{head}_h)\,W_O</div>
 <details class="why"><summary>Why <span class="tex">W_O</span>?</summary><div class="whyb">Concatenation alone would confine each head to its own fixed slice of the output vector. The matrix <span class="tex">W_O</span>, of shape <code>[d_model, d_model]</code>, lets the model combine what different heads found and write the result anywhere in the vector that later layers read. In code the per-head projections are usually one big matrix whose output is reshaped into <span class="tex">h</span> slices, which is the same thing.</div></details>
@@ -643,6 +645,7 @@ print("2 heads:", h * 3 * d_model * d_k, "weights in W_Q, W_K, W_V")
 <p>Attention moves information between tokens. Three more ingredients turn it into a layer you can stack dozens of times: a small network that processes each token on its own, shortcut connections that keep signals alive through depth, and a normalisation step that keeps numbers in a sensible range. Together they form a <b>Transformer block</b>.</p>
 
 <h3>The feed-forward network (MLP)</h3>
+<p><b>Why it is needed.</b> Attention mostly averages: each output is a weighted sum of value vectors. Something has to transform what was gathered.</p>
 <p>After attention has gathered context, each token’s vector is passed through the same small network, independently of every other token. Attention decides <i>what to collect</i>; the MLP decides <i>what to make of it</i>. Most of a Transformer’s parameters live here. It works in three moves:</p>
 <ul>
   <li><b>Expand.</b> <span class="tex">W_1</span> maps the vector from <span class="tex">d_{\text{model}}</span> up to <span class="tex">d_{\text{ff}}</span> numbers, typically 4 times as many. Think of each of these as a detector for one pattern.</li>
@@ -650,9 +653,9 @@ print("2 heads:", h * 3 * d_model * d_k, "weights in W_Q, W_K, W_V")
   <li><b>Contract.</b> <span class="tex">W_2</span> maps back to <span class="tex">d_{\text{model}}</span>, writing what the detectors found into the token’s vector.</li>
 </ul>
 <div class="tex d">\mathrm{FFN}(x)=\mathrm{GELU}(xW_1+b_1)\,W_2+b_2</div>
-<p class="sym"><span class="tex">x</span> is one token’s vector (length <span class="tex">d_{\text{model}}</span>); <span class="tex">W_1</span> has shape <code>[d_model, d_ff]</code> and <span class="tex">W_2</span> has shape <code>[d_ff, d_model]</code>; <span class="tex">b_1</span> and <span class="tex">b_2</span> are bias vectors.</p>
+<p class="sym"><span class="tex">x</span> is one token’s vector, of length <span class="tex">d_{\text{model}}</span>. <span class="tex">W_1</span> has shape <code>[d_model, d_ff]</code> and <span class="tex">W_2</span> has shape <code>[d_ff, d_model]</code>. <span class="tex">b_1</span> and <span class="tex">b_2</span> are bias vectors.</p>
 <details class="why"><summary>Why the non-linearity?</summary><div class="whyb">Without it the formula would be <span class="tex">(xW_1)W_2=x(W_1W_2)</span>: two matrices in a row are just one matrix, so the second layer would add nothing. The bend in the middle is what lets the network compute things a single matrix cannot. <b>A note on notation:</b> many texts write this as <span class="tex">W_2\,\mathrm{GELU}(W_1x+b_1)+b_2</span> with column vectors. It is the same computation transposed. This guide writes vectors as rows, so <span class="tex">xW</span> lines up with the shapes <code>[T, d_model]</code> you see in code.</div></details>
-<p>This guide uses <b>GELU</b>, the activation in GPT-2 and most LLMs since. It is applied to each number <span class="tex">a</span> separately:</p>
+<p>This guide uses <b>GELU</b>, the activation in GPT-2 and GPT-3. Many newer models use a gated variant, SwiGLU (see <a class="xref" data-ref="modern"></a>). GELU is applied to each number <span class="tex">a</span> separately:</p>
 <div class="tex d">\mathrm{GELU}(a)=a\,\Phi(a),\qquad \mathrm{ReLU}(a)=\max(0,a)</div>
 <p class="sym"><span class="tex">\Phi(a)</span> is the probability that a standard normal random number is below <span class="tex">a</span>, a value between 0 and 1.</p>
 <details class="why"><summary>Why this form?</summary><div class="whyb">Read <span class="tex">\Phi(a)</span> as a smooth gate: close to 1 for large positive <span class="tex">a</span> (the input passes through), close to 0 for large negative <span class="tex">a</span> (it is blocked), and in between near zero. ReLU is the same gate with a hard on/off switch at 0. The smooth version gives a usable gradient everywhere, which tends to make training better behaved.</div></details>
@@ -720,14 +723,15 @@ print("ReLU(a)   =", relu(a))
 </div>
 
 <h3>Residual connections</h3>
-<p>Instead of replacing a token’s vector, each sublayer <b>adds</b> its result to it:</p>
+<p><b>Why they are needed.</b> A stack of dozens of layers is hard to train. As a signal passes through layer after layer, it can fade away or blow up, and so can the gradient on its way back.</p>
+<p>The fix is simple. Instead of replacing a token’s vector, each sublayer <b>adds</b> its result to it:</p>
 <div class="tex d">x \leftarrow x + \mathrm{Sublayer}(x)</div>
 <p class="sym"><span class="tex">\mathrm{Sublayer}</span> stands for either attention or the MLP; the arrow means “the new value of <span class="tex">x</span> is”.</p>
 <p>Each token’s vector becomes a running total that every layer reads from and writes to. This running total is called the <b class="tr">residual stream</b>.</p>
 <details class="why"><summary>Why add?</summary><div class="whyb">Two reasons. Going forward, a layer only has to learn a <i>correction</i> to the vector; if it has nothing useful to say it can output something near zero and the information passes through untouched. Going backward, the slope of <span class="tex">x+\mathrm{Sublayer}(x)</span> with respect to <span class="tex">x</span> is “1 plus the sublayer’s slope”. That constant 1 gives the gradient a path to every earlier layer that is never multiplied by any weights, so it cannot shrink to nothing however deep the stack is.</div></details>
 
 <h3>Layer normalization</h3>
-<p>As vectors pass through many layers their scale can drift, growing huge or shrinking towards zero. LayerNorm resets it, one token’s vector at a time, in four steps:</p>
+<p><b>Why it is needed.</b> As vectors pass through many layers, their scale can drift: they grow huge or shrink towards zero. LayerNorm resets the scale, one token’s vector at a time, in four steps:</p>
 <ol>
   <li>Compute the mean of the vector’s numbers: <span class="tex">\mu=\frac{1}{d_{\text{model}}}\sum_i x_i</span>.</li>
   <li>Compute their variance: <span class="tex">\sigma^2=\frac{1}{d_{\text{model}}}\sum_i (x_i-\mu)^2</span>.</li>
@@ -735,7 +739,7 @@ print("ReLU(a)   =", relu(a))
   <li>Multiply by a learned scale <span class="tex">\gamma</span> and add a learned shift <span class="tex">\beta</span>.</li>
 </ol>
 <div class="tex d">\mathrm{LayerNorm}(x)=\gamma\odot\frac{x-\mu}{\sqrt{\sigma^{2}+\epsilon}}+\beta</div>
-<p class="sym"><span class="tex">x_i</span> is the <span class="tex">i</span>-th number of the vector; <span class="tex">\gamma</span> and <span class="tex">\beta</span> are learned vectors of length <span class="tex">d_{\text{model}}</span>; <span class="tex">\odot</span> multiplies element by element; <span class="tex">\epsilon</span> is a tiny constant that prevents division by zero.</p>
+<p class="sym"><span class="tex">x_i</span> is the <span class="tex">i</span>-th number of the vector. <span class="tex">\gamma</span> and <span class="tex">\beta</span> are learned vectors of length <span class="tex">d_{\text{model}}</span>. <span class="tex">\odot</span> multiplies element by element. <span class="tex">\epsilon</span> is a tiny constant that prevents division by zero.</p>
 <details class="why"><summary>Why step 4?</summary><div class="whyb">Forcing every vector to mean 0 and spread 1 might be too rigid for what a layer needs. <span class="tex">\gamma</span> and <span class="tex">\beta</span> start at 1 and 0 (no effect) and let training choose a different scale and offset per dimension. The scale is then under the model’s control instead of drifting.</div></details>
 <div class="worked">
   <h4>Worked example: LayerNorm</h4>
