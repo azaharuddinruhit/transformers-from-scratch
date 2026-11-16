@@ -17,18 +17,21 @@
   --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
   --mono:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;
+  --cd-bg:#fffbeb;--cd-fg:#1f1f1f;--cd-line:#cfcfde;--cd-c:#6c664b;--cd-k:#a3144d;--cd-s:#846e15;--cd-n:#a34d14;--cd-f:#14710a;--cd-b:#036a96;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   color-scheme:dark;--bg:#11141b;--surface:#191e29;--panel:#151a23;--ink:#e7eaf1;--muted:#9ba4b6;--line:#2b3343;
   --accent:#8ea5ff;--accent-soft:#232c4a;--on-accent:#0f1320;
   --q:#73a7ff;--k:#f2a34d;--v:#5fd09a;--res:#f07fc4;--warn:#f0a36c;--mark:#5b4a12;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.25);
+  --cd-bg:#282a36;--cd-fg:#f8f8f2;--cd-line:#44475a;--cd-c:#8a96c8;--cd-k:#ff79c6;--cd-s:#f1fa8c;--cd-n:#ffb86c;--cd-f:#50fa7b;--cd-b:#8be9fd;
 }}
 :root[data-theme="dark"]{
   color-scheme:dark;--bg:#11141b;--surface:#191e29;--panel:#151a23;--ink:#e7eaf1;--muted:#9ba4b6;--line:#2b3343;
   --accent:#8ea5ff;--accent-soft:#232c4a;--on-accent:#0f1320;
   --q:#73a7ff;--k:#f2a34d;--v:#5fd09a;--res:#f07fc4;--warn:#f0a36c;--mark:#5b4a12;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.25);
+  --cd-bg:#282a36;--cd-fg:#f8f8f2;--cd-line:#44475a;--cd-c:#8a96c8;--cd-k:#ff79c6;--cd-s:#f1fa8c;--cd-n:#ffb86c;--cd-f:#50fa7b;--cd-b:#8be9fd;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
@@ -94,11 +97,12 @@ details.callout summary{cursor:pointer;font:700 .76rem var(--sans);letter-spacin
 .callout.code{--c:var(--accent)}
 .cbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:10px 0 6px}
 .cbar small{font-size:.8rem}
-/* Dracula palette (draculatheme.com), the same in light and dark page themes; comments lightened from #6272a4 to #8a96c8 for 4.9:1 contrast */
-pre.py{margin:0;padding:12px 14px;background:#282a36;color:#f8f8f2;border:1px solid #44475a;border-radius:8px;overflow-x:auto;font:.8rem/1.6 var(--mono);tab-size:4;scrollbar-color:#6272a4 #282a36;color-scheme:dark}
-pre.py ::selection{background:#44475a}
+/* Dracula spec (draculatheme.com/spec): Alucard in the light theme, Dracula in the dark theme (--cd-* variables).
+   Dracula's comment colour is lightened from #6272a4 to #8a96c8 for 4.9:1 contrast; every Alucard colour passes 4.5:1 as published. */
+pre.py{margin:0;padding:12px 14px;background:var(--cd-bg);color:var(--cd-fg);border:1px solid var(--cd-line);border-radius:8px;overflow-x:auto;font:.8rem/1.6 var(--mono);tab-size:4;scrollbar-color:var(--cd-c) var(--cd-bg)}
+pre.py ::selection{background:var(--cd-line)}
 pre.py code{background:none;border:0;padding:0;font:inherit;white-space:pre}
-.py .k{color:#ff79c6}.py .s{color:#f1fa8c}.py .n{color:#bd93f9}.py .f,.py .d{color:#50fa7b}.py .b{color:#8be9fd}.py .c{color:#8a96c8}
+.py .k{color:var(--cd-k)}.py .s{color:var(--cd-s)}.py .n{color:var(--cd-n)}.py .f{color:var(--cd-f)}.py .b{color:var(--cd-b)}.py .c,.py .d{color:var(--cd-c);font-style:italic}
 .worked{background:var(--panel);border:1px dashed var(--line);border-radius:12px;padding:14px 18px;margin:18px 0}
 .wjh{border-top:1px solid var(--line);margin-top:16px;padding-top:12px;font-size:.96rem}
 .wjh>b{color:var(--accent)}
@@ -106,7 +110,8 @@ ul.pit{padding-left:1.1em}ul.pit li{margin:.45em 0}
 body.simple .x-only{display:none!important}body:not(.simple) .s-only{display:none!important}
 
 /* equations */
-.tex{font-family:var(--mono);font-size:.86em}
+.tex{font-family:var(--mono);font-size:.86em;text-transform:none;letter-spacing:normal}
+.sym{text-transform:none;letter-spacing:normal;white-space:nowrap}.sym sub{font-size:.75em;line-height:0}
 .tex[data-done]{font-family:inherit;font-size:1em}
 .tex.d{display:block;margin:14px 0;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto;text-align:center;white-space:pre-wrap}
 .tex.d[data-done]{white-space:normal}
@@ -537,7 +542,7 @@ select.dd-native{display:none}
     <tr><th scope="row"><span class="tex">x_t,\ X</span></th><td>one token’s vector (a row); all of them stacked</td><td><code>[d_model]; [T, d_model]</code></td></tr>
     <tr><th scope="row"><span class="tex">Q,\ K,\ V</span></th><td>queries, keys, values (one row per token)</td><td><code>[T, d_k]</code></td></tr>
     <tr><th scope="row"><span class="tex">W_Q,\ W_K,\ W_V,\ W_O</span></th><td>attention projection matrices</td><td><code>[d_model, d_k] or [d_model, d_model]</code></td></tr>
-    <tr><th scope="row"><span class="tex">d_k,\ h</span></th><td>dimensions per head; number of heads, with d_k = d_model / h</td><td>integers</td></tr>
+    <tr><th scope="row"><span class="tex">d_k,\ h</span></th><td>dimensions per head; number of heads, with <span class="tex">d_k = d_{\text{model}} / h</span></td><td>integers</td></tr>
     <tr><th scope="row"><span class="tex">\alpha_{ij}</span></th><td>attention weight: how much token i reads from token j</td><td>0 … 1</td></tr>
     <tr><th scope="row"><span class="tex">d_{\text{ff}}</span></th><td>hidden width of the feed-forward network</td><td>integer</td></tr>
     <tr><th scope="row"><span class="tex">L,\ \ell</span></th><td>number of blocks (layers); index of one block</td><td>integer</td></tr>
@@ -705,10 +710,10 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
 <p class="sym"><span class="tex">d_{\text{model}}</span> is the length of the vector the model keeps for each token; you will meet it properly in <a class="xref" data-ref="tokens"></a>. Self-attention compares all <span class="tex">T^2</span> pairs of tokens, each comparison costing about <span class="tex">d_{\text{model}}</span>. A recurrent layer takes <span class="tex">T</span> steps, each a <span class="tex">d_{\text{model}}\times d_{\text{model}}</span> matrix product.</p>
 <div class="widget" id="w-cx">
   <h4 class="wt">Interactive · self-attention versus recurrence</h4>
-  <p class="look"><b>The point:</b> Self-attention is cheaper per layer only while sequences are short relative to the width. <b>Do this:</b> Raise the sequence length until the two bars are equal. <b>Watch for:</b> They meet at T = d_model. Beyond that, the T² term dominates.</p>
+  <p class="look"><b>The point:</b> Self-attention is cheaper per layer only while sequences are short relative to the width. <b>Do this:</b> Raise the sequence length until the two bars are equal. <b>Watch for:</b> They meet at <span class="tex">T = d_{\text{model}}</span>. Beyond that, the T² term dominates.</p>
   <div class="controls">
     <label class="ctl"><span class="row">Sequence length T <output id="cx-n-o"></output></span><input type="range" id="cx-n" min="3" max="13" step="1" value="6"></label>
-    <label class="ctl"><span class="row">Width d_model <output id="cx-d-o"></output></span><input type="range" id="cx-d" min="6" max="11" step="1" value="9"></label>
+    <label class="ctl"><span class="row"><span>Width <span class="tex">d_{\text{model}}</span></span> <output id="cx-d-o"></output></span><input type="range" id="cx-d" min="6" max="11" step="1" value="9"></label>
   </div>
   <span class="lab">Work per layer (operations, up to a constant factor)</span>
   <div id="cx-bars"></div>
@@ -717,7 +722,7 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
   <small>These are the growth rates from Table 1 of the paper with the constants dropped, so compare the two rows with each other and do not read them as measured costs.</small>
   <div class="wjh"><b>What just happened?</b> Self-attention does less arithmetic per layer whenever the sequence is shorter than the model is wide, which was true for the sentences the paper translated. More important are the other two columns: all positions are computed at once, and any two words are one step apart. The price appears when <span class="tex">T</span> grows past <span class="tex">d_{\text{model}}</span>: the <span class="tex">T^2</span> term takes over. That is the long-context cost you will meet again in <a class="xref" data-ref="architecture"></a> and <a class="xref" data-ref="inference"></a>.</div>
 </div>
-<div class="callout try opt"><b>Try this</b><p>Raise the sequence length until the two bars are equal, and check that it happens at T = d_model. Then keep going: how many times more work does self-attention do at T = 8,192 with d_model = 512?</p></div>
+<div class="callout try opt"><b>Try this</b><p>Raise the sequence length until the two bars are equal, and check that it happens at <span class="tex">T = d_{\text{model}}</span>. Then keep going: how many times more work does self-attention do at <span class="tex">T = 8{,}192</span> with <span class="tex">d_{\text{model}} = 512</span>?</p></div>
 <h3>What the model is made of: the road ahead</h3>
 <p>Removing recurrence leaves gaps that other parts have to fill. Each gets its own section:</p>
 <ul>
@@ -739,7 +744,7 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
 <h3>Check yourself</h3>
 <div class="quiz">
 <fieldset><legend>1. Why can an RNN not be trained in parallel along the sequence?</legend><button type="button" class="qo">It has too many parameters</button><button type="button" class="qo" data-ok="1">Each step needs the result of the previous step</button><button type="button" class="qo">It uses attention</button><p class="qx" hidden aria-live="polite"><b></b> Step 50 takes the memory vector produced by step 49 as input, so the steps must run in order.</p></fieldset>
-<fieldset><legend>2. When does a self-attention layer do less arithmetic than a recurrent layer?</legend><button type="button" class="qo" data-ok="1">When the sequence is shorter than the model is wide (T < d_model)</button><button type="button" class="qo">Always</button><button type="button" class="qo">When the sequence is longer than the model is wide</button><p class="qx" hidden aria-live="polite"><b></b> The costs are T²·d_model against T·d_model². They are equal at T = d_model.</p></fieldset>
+<fieldset><legend>2. When does a self-attention layer do less arithmetic than a recurrent layer?</legend><button type="button" class="qo" data-ok="1">When the sequence is shorter than the model is wide (<span class="tex">T \lt d_{\text{model}}</span>)</button><button type="button" class="qo">Always</button><button type="button" class="qo">When the sequence is longer than the model is wide</button><p class="qx" hidden aria-live="polite"><b></b> The costs are <span class="tex">T^2 d_{\text{model}}</span> against <span class="tex">T\,d_{\text{model}}^2</span>. They are equal at <span class="tex">T = d_{\text{model}}</span>.</p></fieldset>
 <fieldset><legend>3. What was the 2017 paper’s model built for?</legend><button type="button" class="qo">Chatbots</button><button type="button" class="qo" data-ok="1">Machine translation</button><button type="button" class="qo">Image recognition</button><p class="qx" hidden aria-live="polite"><b></b> It was an encoder–decoder translation model. Decoder-only language models came afterwards.</p></fieldset>
 </div>
 <h3>Discuss with your team</h3>
@@ -886,7 +891,7 @@ print("both 'the' rows equal:", np.array_equal(X[0], X[4]))
 <h3>Check yourself</h3>
 <div class="quiz">
 <fieldset><legend>1. Why not feed the token ID (for example 4071) straight into the network?</legend><button type="button" class="qo">IDs are too large for floating point</button><button type="button" class="qo" data-ok="1">It would imply that tokens with nearby IDs are similar, which is arbitrary</button><button type="button" class="qo">IDs change during training</button><p class="qx" hidden aria-live="polite"><b></b> ID order is an accident of how the vocabulary was built. A learned vector per token carries no such false ordering.</p></fieldset>
-<fieldset><legend>2. The vocabulary has 50,000 entries and d_model is 768. How many numbers are in the embedding table?</legend><button type="button" class="qo">50,768</button><button type="button" class="qo" data-ok="1">38,400,000</button><button type="button" class="qo">768</button><p class="qx" hidden aria-live="polite"><b></b> One row of 768 numbers for each of 50,000 tokens: 50,000 × 768.</p></fieldset>
+<fieldset><legend>2. The vocabulary has 50,000 entries and <span class="tex">d_{\text{model}}</span> is 768. How many numbers are in the embedding table?</legend><button type="button" class="qo">50,768</button><button type="button" class="qo" data-ok="1">38,400,000</button><button type="button" class="qo">768</button><p class="qx" hidden aria-live="polite"><b></b> One row of 768 numbers for each of 50,000 tokens: 50,000 × 768.</p></fieldset>
 <fieldset><legend>3. What happens to a word that is not in the vocabulary?</legend><button type="button" class="qo">It is dropped</button><button type="button" class="qo" data-ok="1">It is split into smaller pieces that are in the vocabulary</button><button type="button" class="qo">The model stops</button><p class="qx" hidden aria-live="polite"><b></b> Subword tokenizers fall back to smaller pieces, down to single characters or bytes.</p></fieldset>
 </div>
 <h3>Discuss with your team</h3>
@@ -974,7 +979,7 @@ print("shape is unchanged:", X.shape)
   <p class="look"><b>The point:</b> Every position gets a unique pattern, built from waves of different speeds. <b>Do this:</b> Read the heatmap row by row (one row = one position), then hover or use the arrow keys on a cell. <b>Watch for:</b> The left columns flicker quickly from row to row; the right columns change slowly.</p>
   <div class="controls">
     <label class="ctl"><span class="row">Sequence length <output id="pe-T-o"></output></span><input type="range" id="pe-T" min="4" max="64" step="1" value="24"></label>
-    <label class="ctl"><span class="row">Embedding dimension d_model <output id="pe-d-o"></output></span><input type="range" id="pe-d" min="4" max="64" step="2" value="32"></label>
+    <label class="ctl"><span class="row"><span>Embedding dimension <span class="tex">d_{\text{model}}</span></span> <output id="pe-d-o"></output></span><input type="range" id="pe-d" min="4" max="64" step="2" value="32"></label>
   </div>
   <canvas id="pe-cv" tabindex="0" role="img" aria-label="Heatmap of positional encodings. Rows are positions, columns are dimensions. Use arrow keys to move the cursor."></canvas>
   <div class="lg"><span>Rows: position, 0 at the top</span><span>Columns: dimension, 0 at the left</span><span><i class="sw" style="--c:#2166ac"></i>−1</span><span><i class="sw" style="--c:#f4f1ea;border:1px solid var(--line)"></i>0</span><span><i class="sw" style="--c:#e66101"></i>+1</span></div>
@@ -1003,7 +1008,7 @@ print("shape is unchanged:", X.shape)
 <div class="quiz">
 <fieldset><legend>1. Without position information, how would the model see “dog bites man” and “man bites dog”?</legend><button type="button" class="qo" data-ok="1">As the same set of three vectors</button><button type="button" class="qo">As two different sentences</button><button type="button" class="qo">As an error</button><p class="qx" hidden aria-live="polite"><b></b> The same three token vectors appear in both; only their order differs, and order is invisible without positions.</p></fieldset>
 <fieldset><legend>2. In the sinusoidal encoding, which dimensions change fastest from one position to the next?</legend><button type="button" class="qo">The last ones</button><button type="button" class="qo" data-ok="1">The first ones</button><button type="button" class="qo">All change equally</button><p class="qx" hidden aria-live="polite"><b></b> The divisor grows with the pair index, so the first pairs have the shortest wavelengths.</p></fieldset>
-<fieldset><legend>3. Why add the position vector and not append it?</legend><button type="button" class="qo" data-ok="1">Adding keeps the width at d_model, so nothing downstream changes</button><button type="button" class="qo">Appending is impossible</button><button type="button" class="qo">Adding is more accurate</button><p class="qx" hidden aria-live="polite"><b></b> Both would work in principle. Adding keeps every later matrix the same size, and the model learns to separate the two signals.</p></fieldset>
+<fieldset><legend>3. Why add the position vector and not append it?</legend><button type="button" class="qo" data-ok="1">Adding keeps the width at <span class="tex">d_{\text{model}}</span>, so nothing downstream changes</button><button type="button" class="qo">Appending is impossible</button><button type="button" class="qo">Adding is more accurate</button><p class="qx" hidden aria-live="polite"><b></b> Both would work in principle. Adding keeps every later matrix the same size, and the model learns to separate the two signals.</p></fieldset>
 </div>
 <h3>Discuss with your team</h3>
 <ul class="talk"><li>A learned position table has no row beyond the trained maximum. What does that mean for inputs longer than anything seen in training?</li><li>How would you explain “fast and slow clock hands” to someone on the team without using the formula?</li></ul>
@@ -1017,7 +1022,7 @@ print("shape is unchanged:", X.shape)
 <h2>Self-attention from scratch</h2>
 <div class="start">
   <div><b>Before this section</b><p>The input matrix <span class="tex">X</span> from <a class="xref" data-ref="position"></a>; dot products; softmax from <a class="xref" data-ref="intro"></a>.</p></div>
-  <div><b>After it, you can</b><ul><li>Explain what queries, keys and values are for.</li><li>Compute attention weights and a context vector by hand for one query.</li><li>Justify each part of the formula: the dot product, the division by √d_k, the softmax.</li><li>Explain what the causal mask does and why GPT-style models need it.</li></ul></div>
+  <div><b>After it, you can</b><ul><li>Explain what queries, keys and values are for.</li><li>Compute attention weights and a context vector by hand for one query.</li><li>Justify each part of the formula: the dot product, the division by <span class="tex">\sqrt{d_k}</span>, the softmax.</li><li>Explain what the causal mask does and why GPT-style models need it.</li></ul></div>
   <div class="ex"><b>The running example</b><p>The token “sat” builds a query. It matches the key of “cat” best, so about 46% of its attention goes there, and its new vector is mostly made of “cat”’s value. (The simulator uses the five words “the cat sat on mat” so that the tables stay small.)</p></div>
 </div>
 <p>So far each token’s vector knows only about itself. To predict what follows “The cat sat on the”, the vector for “the” needs information from “cat” and “sat”. <b>Self-attention</b> is the step where every token gathers information from the other tokens, deciding for itself which ones matter.</p>
@@ -1203,10 +1208,10 @@ print("X", X.shape, "-&gt; weights", A.shape, "-&gt; output", out.shape)
 <ul class="take"><li>Attention = for each token, a weighted average of all tokens’ value vectors.</li><li>Weights come from query·key dot products, scaled by <span class="tex">\sqrt{d_k}</span>, then softmax.</li><li>In matrix form: <span class="tex">\mathrm{softmax}(QK^{\top}/\sqrt{d_k})\,V</span>.</li><li>The causal mask sets scores for later tokens to −∞ so that a position cannot see the future.</li><li>Attention weights show where information was read from; they are not an explanation of the model’s reasoning.</li></ul>
 <h3>Check yourself</h3>
 <div class="quiz">
-<fieldset><legend>1. What do the attention weights of one query token add up to?</legend><button type="button" class="qo">d_k</button><button type="button" class="qo" data-ok="1">1</button><button type="button" class="qo">The number of tokens</button><p class="qx" hidden aria-live="polite"><b></b> They come out of a softmax over that query’s row of scores.</p></fieldset>
-<fieldset><legend>2. Why divide the scores by √d_k?</legend><button type="button" class="qo">To make them sum to 1</button><button type="button" class="qo" data-ok="1">To keep their typical size independent of the vector length, so softmax does not saturate</button><button type="button" class="qo">To save memory</button><p class="qx" hidden aria-live="polite"><b></b> A dot product of d_k terms has a spread of about √d_k. Dividing restores a spread of about 1.</p></fieldset>
+<fieldset><legend>1. What do the attention weights of one query token add up to?</legend><button type="button" class="qo"><span class="tex">d_k</span></button><button type="button" class="qo" data-ok="1">1</button><button type="button" class="qo">The number of tokens</button><p class="qx" hidden aria-live="polite"><b></b> They come out of a softmax over that query’s row of scores.</p></fieldset>
+<fieldset><legend>2. Why divide the scores by <span class="tex">\sqrt{d_k}</span>?</legend><button type="button" class="qo">To make them sum to 1</button><button type="button" class="qo" data-ok="1">To keep their typical size independent of the vector length, so softmax does not saturate</button><button type="button" class="qo">To save memory</button><p class="qx" hidden aria-live="polite"><b></b> A dot product of <span class="tex">d_k</span> terms has a spread of about <span class="tex">\sqrt{d_k}</span>. Dividing restores a spread of about 1.</p></fieldset>
 <fieldset><legend>3. With a causal mask, which tokens can position 3 attend to?</legend><button type="button" class="qo" data-ok="1">Positions 1 to 3</button><button type="button" class="qo">All positions</button><button type="button" class="qo">Only position 3</button><p class="qx" hidden aria-live="polite"><b></b> A position sees itself and everything before it, never anything after it.</p></fieldset>
-<fieldset><legend>4. For T tokens, what is the shape of the attention weight table?</legend><button type="button" class="qo">[T, d_k]</button><button type="button" class="qo" data-ok="1">[T, T]</button><button type="button" class="qo">[d_k, d_k]</button><p class="qx" hidden aria-live="polite"><b></b> One row per query and one column per key.</p></fieldset>
+<fieldset><legend>4. For T tokens, what is the shape of the attention weight table?</legend><button type="button" class="qo"><code>[T, d_k]</code></button><button type="button" class="qo" data-ok="1"><code>[T, T]</code></button><button type="button" class="qo"><code>[d_k, d_k]</code></button><p class="qx" hidden aria-live="polite"><b></b> One row per query and one column per key.</p></fieldset>
 </div>
 <h3>Discuss with your team</h3>
 <ul class="talk"><li>The scores are computed for every pair of tokens. What does that imply for a prompt that is ten times longer?</li><li>When is it reasonable to read an attention heatmap as “what the model looked at”, and when is that misleading?</li></ul>
@@ -1220,16 +1225,16 @@ print("X", X.shape, "-&gt; weights", A.shape, "-&gt; output", out.shape)
 <h2>Multi-head attention</h2>
 <div class="start">
   <div><b>Before this section</b><p>The single-head formula from <a class="xref" data-ref="attention"></a>.</p></div>
-  <div><b>After it, you can</b><ul><li>Explain why one attention pattern per token is not enough.</li><li>Describe how d_model is split between heads and put back together.</li><li>Follow the tensor shapes through a multi-head layer.</li></ul></div>
+  <div><b>After it, you can</b><ul><li>Explain why one attention pattern per token is not enough.</li><li>Describe how <span class="tex">d_{\text{model}}</span> is split between heads and put back together.</li><li>Follow the tensor shapes through a multi-head layer.</li></ul></div>
   <div class="ex"><b>The running example</b><p>One head could link “sat” to its subject “cat” while another links each word to the word before it. (The demonstration uses “the cat sat because it purred” so that there is a pronoun to resolve.)</p></div>
 </div>
 <p>A single attention computation gives each token one set of weights, so it can ask only one kind of question at a time. But a token often needs several things at once: the previous word, the subject of the sentence, what “it” refers to. <b>Multi-head attention</b> runs several smaller attention computations in parallel, each with its own learned projections, and joins the results.</p>
 <div class="flow" role="img" aria-label="Diagram: the input is projected separately for each head, each head runs attention, the outputs are concatenated and passed through a final linear layer">
-  <div><b>X</b><small>[B, T, d_model]</small></div><i>→</i>
-  <div class="fq"><b>head 1 … head h</b><small>each: own W_Q, W_K, W_V of width d_model / h</small></div><i>→</i>
-  <div><b>h outputs</b><small>each [B, T, d_model / h]</small></div><i>→</i>
-  <div><b>Concat</b><small>[B, T, d_model]</small></div><i>→</i>
-  <div class="fa"><b>W_O</b><small>mix the heads</small></div>
+  <div><b>X</b><small><code>[B, T, d_model]</code></small></div><i>→</i>
+  <div class="fq"><b>head 1 … head h</b><small>each: own <span class="tex">W_Q, W_K, W_V</span> of width <span class="tex">d_{\text{model}} / h</span></small></div><i>→</i>
+  <div><b>h outputs</b><small>each <code>[B, T, d_model / h]</code></small></div><i>→</i>
+  <div><b>Concat</b><small><code>[B, T, d_model]</code></small></div><i>→</i>
+  <div class="fa"><b><span class="tex">W_O</span></b><small>mix the heads</small></div>
 </div>
 <h3>The equations, and the reasoning behind them</h3>
 <p><b>The limitation:</b> in <a class="xref" data-ref="attention"></a>, each token gets one row of weights, one softmax, one “question”. <b>The fix:</b> run <span class="tex">h</span> separate attention computations, called heads. To keep the cost unchanged, each head works in a smaller space of <span class="tex">d_k=d_{\text{model}}/h</span> dimensions, with its own projection matrices of shape <code>[d_model, d_k]</code>:</p>
@@ -1242,10 +1247,10 @@ print("X", X.shape, "-&gt; weights", A.shape, "-&gt; output", out.shape)
   <thead><tr><th>Tensor</th><th>Shape</th><th>Meaning</th></tr></thead>
   <tbody>
     <tr><th scope="row">Input X</th><td><code>[B, T, d_model]</code></td><td>one vector per token, for each of B sequences</td></tr>
-    <tr><th scope="row">Q, K, V after projecting and splitting</th><td><code>[B, h, T, d_k]</code></td><td>one set per head, with d_k = d_model / h</td></tr>
+    <tr><th scope="row">Q, K, V after projecting and splitting</th><td><code>[B, h, T, d_k]</code></td><td>one set per head, with <span class="tex">d_k = d_{\text{model}} / h</span></td></tr>
     <tr><th scope="row">Scores, and weights after softmax</th><td><code>[B, h, T, T]</code></td><td>one T × T table per head</td></tr>
     <tr><th scope="row">Each head’s output</th><td><code>[B, h, T, d_k]</code></td><td>weights times values</td></tr>
-    <tr><th scope="row">After concatenation, and after W_O</th><td><code>[B, T, d_model]</code></td><td>same shape as the input</td></tr>
+    <tr><th scope="row">After concatenation, and after <span class="tex">W_O</span></th><td><code>[B, T, d_model]</code></td><td>same shape as the input</td></tr>
   </tbody>
 </table></div>
 <div class="worked">
@@ -1316,7 +1321,7 @@ print("2 heads:", h * 3 * d_model * d_k, "weights in W_Q, W_K, W_V")
   <div class="controls">
     <div class="ctl"><span>Number of heads</span><div class="chips" id="mh-h" role="group" aria-label="Number of attention heads"></div></div>
   </div>
-  <span class="lab">How d_model = 8 is divided</span>
+  <span class="lab">How <span class="tex">d_{\text{model}} = 8</span> is divided</span>
   <div class="split" id="mh-split"></div>
   <span class="lab">Each head’s attention pattern (numbers are percentages; causal mask on)</span>
   <div class="mhgrid" id="mh-grid"></div>
@@ -1337,9 +1342,9 @@ print("2 heads:", h * 3 * d_model * d_k, "weights in W_Q, W_K, W_V")
 <ul class="take"><li>A head is one complete attention computation with its own <span class="tex">W_Q, W_K, W_V</span>.</li><li><span class="tex">h</span> heads each work in <span class="tex">d_k=d_{\text{model}}/h</span> dimensions, so the total cost is the same as one wide head.</li><li>Outputs are concatenated back to <span class="tex">d_{\text{model}}</span> and mixed by <span class="tex">W_O</span>.</li><li>Input and output shapes are identical: <code>[B, T, d_model]</code>.</li></ul>
 <h3>Check yourself</h3>
 <div class="quiz">
-<fieldset><legend>1. d_model = 768 and h = 12. What is d_k?</legend><button type="button" class="qo" data-ok="1">64</button><button type="button" class="qo">768</button><button type="button" class="qo">9,216</button><p class="qx" hidden aria-live="polite"><b></b> 768 / 12 = 64 dimensions per head.</p></fieldset>
-<fieldset><legend>2. You double the number of heads and keep d_model fixed. What happens to the parameter count?</legend><button type="button" class="qo">It doubles</button><button type="button" class="qo" data-ok="1">It stays the same</button><button type="button" class="qo">It halves</button><p class="qx" hidden aria-live="polite"><b></b> Heads slice the same projection matrices, so the count does not depend on h.</p></fieldset>
-<fieldset><legend>3. What is the job of W_O?</legend><button type="button" class="qo">Normalising the output</button><button type="button" class="qo" data-ok="1">Mixing the heads’ outputs back into one vector</button><button type="button" class="qo">Masking future tokens</button><p class="qx" hidden aria-live="polite"><b></b> Without it each head would be confined to its own slice of the output vector.</p></fieldset>
+<fieldset><legend>1. <span class="tex">d_{\text{model}} = 768</span> and <span class="tex">h = 12</span>. What is <span class="tex">d_k</span>?</legend><button type="button" class="qo" data-ok="1">64</button><button type="button" class="qo">768</button><button type="button" class="qo">9,216</button><p class="qx" hidden aria-live="polite"><b></b> 768 / 12 = 64 dimensions per head.</p></fieldset>
+<fieldset><legend>2. You double the number of heads and keep <span class="tex">d_{\text{model}}</span> fixed. What happens to the parameter count?</legend><button type="button" class="qo">It doubles</button><button type="button" class="qo" data-ok="1">It stays the same</button><button type="button" class="qo">It halves</button><p class="qx" hidden aria-live="polite"><b></b> Heads slice the same projection matrices, so the count does not depend on h.</p></fieldset>
+<fieldset><legend>3. What is the job of <span class="tex">W_O</span>?</legend><button type="button" class="qo">Normalising the output</button><button type="button" class="qo" data-ok="1">Mixing the heads’ outputs back into one vector</button><button type="button" class="qo">Masking future tokens</button><p class="qx" hidden aria-live="polite"><b></b> Without it each head would be confined to its own slice of the output vector.</p></fieldset>
 </div>
 <h3>Discuss with your team</h3>
 <ul class="talk"><li>Heads are not assigned jobs; they emerge in training. How would you find out what a head in a trained model does?</li><li>More heads means fewer dimensions per head. What might be lost if h is pushed very high?</li></ul>
@@ -1798,14 +1803,14 @@ for d in (768, 1536):
 
 <div class="widget opt" id="w-params">
   <h4 class="wt">Interactive · parameter-count calculator</h4>
-  <p class="look"><b>The point:</b> Where a model’s parameters are. <b>Do this:</b> Load a preset, then double d_model. <b>Watch for:</b> The share taken by the blocks, and that the number of heads changes nothing.</p>
+  <p class="look"><b>The point:</b> Where a model’s parameters are. <b>Do this:</b> Load a preset, then double <span class="tex">d_{\text{model}}</span>. <b>Watch for:</b> The share taken by the blocks, and that the number of heads changes nothing.</p>
   <div class="controls" id="pc-presets" role="group" aria-label="Presets"></div>
   <div class="numgrid">
-    <label>Vocabulary size n_vocab<input type="number" id="pc-V" min="2" max="1000000" value="50257"></label>
-    <label>d_model<input type="number" id="pc-d" min="2" max="20000" value="768"></label>
+    <label><span>Vocabulary size <span class="tex">n_{\text{vocab}}</span></span><input type="number" id="pc-V" min="2" max="1000000" value="50257"></label>
+    <label><span class="tex">d_{\text{model}}</span><input type="number" id="pc-d" min="2" max="20000" value="768"></label>
     <label>Layers L<input type="number" id="pc-L" min="1" max="400" value="12"></label>
     <label>Attention heads h<input type="number" id="pc-h" min="1" max="256" value="12"></label>
-    <label>FFN hidden dim d_ff<input type="number" id="pc-ff" min="1" max="100000" value="3072"></label>
+    <label><span>FFN hidden dim <span class="tex">d_{\text{ff}}</span></span><input type="number" id="pc-ff" min="1" max="100000" value="3072"></label>
     <label>Context length T<input type="number" id="pc-T" min="1" max="2000000" value="1024"></label>
   </div>
   <label class="chk"><input type="checkbox" id="pc-tie" checked> Share the output projection with the token embeddings (weight tying)</label>
@@ -1831,8 +1836,8 @@ for d in (768, 1536):
 <ul class="take"><li>Model = embeddings + positions → <span class="tex">L</span> blocks → final LayerNorm → <span class="tex">W_U</span> → softmax.</li><li>The stream keeps the shape <code>[B, T, d_model]</code> until the output projection makes it <code>[B, T, n_vocab]</code>.</li><li>Every position produces a prediction for its own next token, all in one pass.</li><li>Parameters: embeddings grow with <span class="tex">n_{\text{vocab}}\cdot d_{\text{model}}</span>; blocks grow with <span class="tex">L\cdot d_{\text{model}}^{2}</span>.</li></ul>
 <h3>Check yourself</h3>
 <div class="quiz">
-<fieldset><legend>1. What is the shape of the logits for a batch of B sequences of T tokens?</legend><button type="button" class="qo">[B, T, d_model]</button><button type="button" class="qo" data-ok="1">[B, T, n_vocab]</button><button type="button" class="qo">[B, n_vocab]</button><p class="qx" hidden aria-live="polite"><b></b> There is one score per vocabulary entry at every position.</p></fieldset>
-<fieldset><legend>2. You double d_model (and d_ff with it). Roughly what happens to the parameters in the blocks?</legend><button type="button" class="qo">They double</button><button type="button" class="qo" data-ok="1">They quadruple</button><button type="button" class="qo">They stay the same</button><p class="qx" hidden aria-live="polite"><b></b> The block matrices are d_model × d_model or d_model × d_ff, so their size grows with the square.</p></fieldset>
+<fieldset><legend>1. What is the shape of the logits for a batch of B sequences of T tokens?</legend><button type="button" class="qo"><code>[B, T, d_model]</code></button><button type="button" class="qo" data-ok="1"><code>[B, T, n_vocab]</code></button><button type="button" class="qo"><code>[B, n_vocab]</code></button><p class="qx" hidden aria-live="polite"><b></b> There is one score per vocabulary entry at every position.</p></fieldset>
+<fieldset><legend>2. You double <span class="tex">d_{\text{model}}</span> (and <span class="tex">d_{\text{ff}}</span> with it). Roughly what happens to the parameters in the blocks?</legend><button type="button" class="qo">They double</button><button type="button" class="qo" data-ok="1">They quadruple</button><button type="button" class="qo">They stay the same</button><p class="qx" hidden aria-live="polite"><b></b> The block matrices are <span class="tex">d_{\text{model}} \times d_{\text{model}}</span> or <span class="tex">d_{\text{model}} \times d_{\text{ff}}</span>, so their size grows with the square.</p></fieldset>
 <fieldset><legend>3. What does “weight tying” mean?</legend><button type="button" class="qo">All layers share weights</button><button type="button" class="qo" data-ok="1">The output projection reuses the token embedding table</button><button type="button" class="qo">Heads share projections</button><p class="qx" hidden aria-live="polite"><b></b> Mapping vectors back to tokens is the reverse of the embedding lookup, so the same matrix can serve both.</p></fieldset>
 </div>
 <h3>Discuss with your team</h3>
@@ -2041,7 +2046,7 @@ print("sample:", "".join(chars[i] for i in idx[0]))
   </div>
   <span class="lab">Text generated by the model right now (prompt: “the ”)</span>
   <div class="sample" id="tr-sample"></div>
-  <small>Exactly what is simplified compared with a production GPT: character-level vocabulary of 21 symbols; 2 layers; 1 attention head per layer; d_model = 24; ReLU MLP with hidden width 48; context window of 16 characters; no LayerNorm, dropout or weight tying; batch of 8 sequences; Adam with gradient clipping; linear warm-up then cosine decay of the learning rate. “Epoch” is the number of characters processed divided by the size of the training text.</small>
+  <small>Exactly what is simplified compared with a production GPT: character-level vocabulary of 21 symbols; 2 layers; 1 attention head per layer; <span class="tex">d_{\text{model}} = 24</span>; ReLU MLP with hidden width 48; context window of 16 characters; no LayerNorm, dropout or weight tying; batch of 8 sequences; Adam with gradient clipping; linear warm-up then cosine decay of the learning rate. “Epoch” is the number of characters processed divided by the size of the training text.</small>
   <div class="wjh"><b>What just happened?</b> The loss starts near the dotted line, because random weights guess almost uniformly. It then falls in stages as the model learns which letters are common, then how words are spelled, then which word can follow which. After “the dog sa” a well-trained model splits its probability between <code>t</code> and <code>w</code>, because both “sat” and “saw” are correct continuations. That remaining uncertainty is real, and it is why the loss cannot reach zero.</div>
 </div>
 <div class="callout try opt"><b>Try this</b><p>1. Reset, set the learning rate to its maximum, and train: the loss falls slowly or jumps around. 2. Reset, choose the 8-sentence training set, and train for 1,500 steps: the training loss keeps falling while the validation loss turns upward.</p></div>
@@ -2417,7 +2422,7 @@ for B in (1, 16, 256):
   <span class="lab">Batch size: total throughput versus speed per request (log scale)</span>
   <svg id="ie-chart" role="img" aria-label="Line chart of total throughput and per-request speed as batch size grows"></svg>
   <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> total throughput (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> speed per request (dashed)</span><span>● current batch size</span></div>
-  <small>What is simplified: the KV cache is assumed to be stored at 16 bits with keys and values of full width d_model; attention’s own cost, which grows with context length, is ignored; so are software overhead, activations and the fact that real hardware rarely reaches its nominal figures. Model shapes are typical for each size class, not a particular released model.</small>
+  <small>What is simplified: the KV cache is assumed to be stored at 16 bits with keys and values of full width <span class="tex">d_{\text{model}}</span>; attention’s own cost, which grows with context length, is ignored; so are software overhead, activations and the fact that real hardware rarely reaches its nominal figures. Model shapes are typical for each size class, not a particular released model.</small>
   <div class="wjh"><b>What just happened?</b> At batch size 1 the limit is usually how fast the weights can be read from memory, which is why halving the bits per weight roughly doubles the speed. Raising the batch size lets one read of the weights serve many requests, so total throughput climbs while each request keeps its speed. Once the compute limit is reached, the solid line goes flat and the dashed line starts to fall: more users are now sharing a fixed amount of work. Meanwhile every extra request adds its own KV cache to the memory bar.</div>
 </div>
 <div class="callout try opt"><b>Try this</b><p>1. Switch the precision from 16-bit to 4-bit and watch both the memory bar and the tokens per second. 2. Push the prompt to 100,000 tokens and the batch to 16: the cache overtakes the weights. 3. Lower the compute slider until the bottleneck changes from memory bandwidth to compute.</p></div>
@@ -2574,21 +2579,21 @@ print(f"floor with D=2e10 however large N is: {loss(float('inf'), 2e10):.3f}")
   <div class="col">
     <b>Encoder</b>
     <div class="bx">Source tokens<small>le · chat · noir · dort</small></div>
-    <div class="bx">Embeddings + positions<small>[B, T_src, d_model]</small></div>
+    <div class="bx">Embeddings + positions<small><code>[B, T_src, d_model]</code></small></div>
     <div class="rep"><span>L ×</span>
       <div class="bx">Self-attention<small>no mask: sees left and right</small></div>
       <div class="bx">Feed-forward</div>
     </div>
-    <div class="bx kv">Encoder output X_enc<small>[B, T_src, d_model] · computed once</small></div>
+    <div class="bx kv">Encoder output <span class="tex">X_{\text{enc}}</span><small><code>[B, T_src, d_model]</code> · computed once</small></div>
   </div>
   <div class="mid"><b class="tk">K</b>, <b class="tv">V</b><span class="arrow" aria-hidden="true"></span><small>to every decoder layer</small></div>
   <div class="col">
     <b>Decoder</b>
     <div class="bx">Target so far<small>&lt;s&gt; · the · black</small></div>
-    <div class="bx">Embeddings + positions<small>[B, T_tgt, d_model]</small></div>
+    <div class="bx">Embeddings + positions<small><code>[B, T_tgt, d_model]</code></small></div>
     <div class="rep"><span>L ×</span>
       <div class="bx">Masked self-attention<small>causal: sees earlier output only</small></div>
-      <div class="bx x">Cross-attention<small><b class="tq">Q</b> from decoder · <b class="tk">K</b>, <b class="tv">V</b> from X_enc</small></div>
+      <div class="bx x">Cross-attention<small><b class="tq">Q</b> from decoder · <b class="tk">K</b>, <b class="tv">V</b> from <span class="tex">X_{\text{enc}}</span></small></div>
       <div class="bx">Feed-forward</div>
     </div>
     <div class="bx">Linear + softmax<small>next target token: “cat”</small></div>
@@ -2689,10 +2694,10 @@ for word, row in zip(written, weights):
   <tbody>
     <tr><th scope="row">Stacks</th><td>Two, with separate weights</td><td>One</td></tr>
     <tr><th scope="row">Attention per block</th><td>Encoder: self. Decoder: masked self + cross</td><td>Masked self only</td></tr>
-    <tr><th scope="row">How the input conditions the output</th><td>Through cross-attention to X_enc</td><td>The input is the start of the same sequence</td></tr>
+    <tr><th scope="row">How the input conditions the output</th><td>Through cross-attention to <span class="tex">X_{\text{enc}}</span></td><td>The input is the start of the same sequence</td></tr>
     <tr><th scope="row">View of the input</th><td>Bidirectional</td><td>Left to right only</td></tr>
     <tr><th scope="row">Reading the input during generation</th><td>Encoded once, then reused at every step</td><td>Processed once, kept in the KV cache</td></tr>
-    <tr><th scope="row">Parameters per block (<a class="xref" data-ref="architecture"></a> formulas)</th><td>Decoder block has an extra 4(d_model² + d_model) + 2·d_model</td><td>4(d_model² + d_model) + MLP + 4·d_model</td></tr>
+    <tr><th scope="row">Parameters per block (<a class="xref" data-ref="architecture"></a> formulas)</th><td>Decoder block has an extra <span class="tex">4(d_{\text{model}}^2 + d_{\text{model}}) + 2\,d_{\text{model}}</span></td><td><span class="tex">4(d_{\text{model}}^2 + d_{\text{model}}) + \text{MLP} + 4\,d_{\text{model}}</span></td></tr>
     <tr><th scope="row">Training signal</th><td>Predict each target token given source and earlier target</td><td>Predict every next token of the whole sequence</td></tr>
     <tr><th scope="row">Well-known examples</th><td>Original Transformer, T5, BART, Whisper</td><td>The GPT family and most current chat LLMs</td></tr>
   </tbody>
@@ -2736,9 +2741,9 @@ for word, row in zip(written, weights):
   <thead><tr><th></th><th>Base model</th><th>Big model</th></tr></thead>
   <tbody>
     <tr><th scope="row">Layers (encoder + decoder)</th><td>6 + 6</td><td>6 + 6</td></tr>
-    <tr><th scope="row">d_model</th><td>512</td><td>1024</td></tr>
-    <tr><th scope="row">Attention heads h (d_k per head)</th><td>8 (64)</td><td>16 (64)</td></tr>
-    <tr><th scope="row">FFN hidden width d_ff</th><td>2048</td><td>4096</td></tr>
+    <tr><th scope="row"><span class="tex">d_{\text{model}}</span></th><td>512</td><td>1024</td></tr>
+    <tr><th scope="row">Attention heads <span class="tex">h</span> (<span class="tex">d_k</span> per head)</th><td>8 (64)</td><td>16 (64)</td></tr>
+    <tr><th scope="row">FFN hidden width <span class="tex">d_{\text{ff}}</span></th><td>2048</td><td>4096</td></tr>
     <tr><th scope="row">Dropout</th><td>0.1</td><td>0.3</td></tr>
     <tr><th scope="row">Parameters</th><td>about 65 million</td><td>about 213 million</td></tr>
     <tr><th scope="row">Training</th><td>100,000 steps, about 12 hours on 8 GPUs</td><td>300,000 steps, about 3.5 days on 8 GPUs</td></tr>
@@ -2817,7 +2822,7 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
   <h4 class="wt">Interactive · the paper’s learning-rate schedule</h4>
   <p class="look"><b>The point:</b> The schedule is a straight rise followed by a slow fall. <b>Do this:</b> Move the warm-up slider, then the inspect-step slider. <b>Watch for:</b> The peak sits exactly at the warm-up step and gets lower as warm-up gets longer.</p>
   <div class="controls">
-    <label class="ctl"><span class="row">d_model <output id="lr-d-o"></output></span><input type="range" id="lr-d" min="7" max="11" step="1" value="9"></label>
+    <label class="ctl"><span class="row"><span class="tex">d_{\text{model}}</span> <output id="lr-d-o"></output></span><input type="range" id="lr-d" min="7" max="11" step="1" value="9"></label>
     <label class="ctl"><span class="row">Warm-up steps <output id="lr-w-o"></output></span><input type="range" id="lr-w" min="500" max="16000" step="500" value="4000"></label>
     <label class="ctl"><span class="row">Inspect step <output id="lr-s-o"></output></span><input type="range" id="lr-s" min="0" max="100" step="1" value="4"></label>
   </div>
@@ -2825,7 +2830,7 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
   <p class="readout" id="lr-read" aria-live="polite"></p>
   <div class="wjh"><b>What just happened?</b> The curve is the formula above, evaluated for 100,000 steps. Its peak sits exactly at the warm-up step, where the two terms of the minimum meet, and its height is <span class="tex">(d_{\text{model}}\cdot\text{warmup})^{-0.5}</span>. A wider model or a longer warm-up both lower the peak. The toy model in <a class="xref" data-ref="training"></a> uses the same idea, warm-up followed by decay, with a cosine curve in place of the inverse square root.</div>
 </div>
-<div class="callout try opt"><b>Try this</b><p>Set the warm-up to 500 steps and note how high the peak becomes; very short warm-ups were found to make training unstable. Then set d_model to 2048 and watch the whole curve drop.</p></div>
+<div class="callout try opt"><b>Try this</b><p>Set the warm-up to 500 steps and note how high the peak becomes; very short warm-ups were found to make training unstable. Then set <span class="tex">d_{\text{model}}</span> to 2048 and watch the whole curve drop.</p></div>
 <h3>From the 2017 paper to today’s LLMs</h3>
 <div class="scroll"><table class="numt cmp">
   <thead><tr><th></th><th>2017 Transformer</th><th>Typical GPT-style LLM</th></tr></thead>
@@ -2876,7 +2881,7 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
 <div class="callout try"><b>How to drill with this part</b><p>Cover the bullets, answer out loud, then compare. Mark the questions you could not answer and come back to them the next day. The “Review” links take you to the section that explains the idea in depth.</p></div>
 <h3>Architecture</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q1</span>Walk me through what happens when a prompt goes into a decoder-only LLM.</h4><ul><li><b>Tokenize</b>: text becomes <span class="tex">T</span> integer IDs.</li><li><b>Embed</b>: each ID selects a row of <span class="tex">E</span>; add position information. Shape <code>[T, d_model]</code>.</li><li><b><span class="tex">L</span> blocks</b>, each: masked multi-head attention, then an MLP, each wrapped in LayerNorm and a residual add. Shape never changes.</li><li><b>Output</b>: final LayerNorm, then <span class="tex">W_U</span> gives logits <code>[T, n_vocab]</code>; softmax at the last position gives the next-token distribution.</li><li><b>Decode</b>: choose a token (greedy or sampling), append it, repeat. The KV cache avoids recomputing earlier positions.</li></ul><p class="fu"><b>Likely follow-up:</b> “Where are most of the parameters?” In the MLPs: with <span class="tex">d_{\text{ff}}=4d_{\text{model}}</span> an MLP has about <span class="tex">8d_{\text{model}}^2</span> weights, attention about <span class="tex">4d_{\text{model}}^2</span>. <b>Review:</b> <a class="xref" data-ref="architecture"></a></p></div>
-<div class="qa"><h4 class="q"><span class="qn">Q2</span>Explain self-attention. Why divide by √d_k?</h4><ul><li>Each token is projected to a query, a key and a value.</li><li>Score of token <span class="tex">j</span> for token <span class="tex">i</span> is <span class="tex">q_i\cdot k_j</span>; softmax over <span class="tex">j</span> gives weights that sum to 1; the output is the weighted sum of values.</li><li>Matrix form: <span class="tex">\mathrm{softmax}(QK^{\top}/\sqrt{d_k})\,V</span>.</li><li>A dot product of <span class="tex">d_k</span> terms has a spread of about <span class="tex">\sqrt{d_k}</span>. Unscaled, large scores saturate softmax into near one-hot outputs with vanishing gradients. Dividing keeps the spread near 1.</li></ul><p class="fu"><b>Trap:</b> “attention weights explain the model’s decision.” They show where information was read from, not why the output was produced. <b>Review:</b> <a class="xref" data-ref="attention"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q2</span><span>Explain self-attention. Why divide by <span class="tex">\sqrt{d_k}</span>?</span></h4><ul><li>Each token is projected to a query, a key and a value.</li><li>Score of token <span class="tex">j</span> for token <span class="tex">i</span> is <span class="tex">q_i\cdot k_j</span>; softmax over <span class="tex">j</span> gives weights that sum to 1; the output is the weighted sum of values.</li><li>Matrix form: <span class="tex">\mathrm{softmax}(QK^{\top}/\sqrt{d_k})\,V</span>.</li><li>A dot product of <span class="tex">d_k</span> terms has a spread of about <span class="tex">\sqrt{d_k}</span>. Unscaled, large scores saturate softmax into near one-hot outputs with vanishing gradients. Dividing keeps the spread near 1.</li></ul><p class="fu"><b>Trap:</b> “attention weights explain the model’s decision.” They show where information was read from, not why the output was produced. <b>Review:</b> <a class="xref" data-ref="attention"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q3</span>Why multi-head attention? What are MQA and GQA?</h4><ul><li>One head gives each token one softmax, so one pattern of focus. Several heads capture several relationships at once (syntax, coreference, nearby tokens).</li><li>Each head works in <span class="tex">d_k=d_{\text{model}}/h</span> dimensions, so the cost and parameter count match one wide head.</li><li>Head outputs are concatenated and mixed by <span class="tex">W_O</span>.</li><li><b>MQA</b> (multi-query): all heads share one key and value head. <b>GQA</b> (grouped-query): groups of query heads share a key and value head.</li><li>Why: the KV cache shrinks by the sharing factor, which cuts inference memory and speeds up decoding, with little quality loss.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="multihead"></a>, <a class="xref" data-ref="inference"></a></p><details class="callout code opt" open><summary>In Python: grouped-query attention and its KV cache</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
 <pre class="py"><code>import numpy as np
@@ -3057,7 +3062,7 @@ print(f"uniform: loss {math.log(n_vocab):.4f}  -&gt;  perplexity "
 <div class="qa"><h4 class="q"><span class="qn">Q18</span>Explain temperature, top-k and top-p. Is temperature 0 deterministic?</h4><ul><li><b>Temperature</b> divides logits: below 1 sharpens, above 1 flattens; the ranking never changes.</li><li><b>Top-k</b> keeps the <span class="tex">k</span> most likely tokens; <b>top-p</b> keeps the smallest set whose probabilities reach <span class="tex">p</span>. Both cut the unreliable tail.</li><li>Low temperature for extraction, classification and code; higher for brainstorming.</li><li>Temperature 0 means greedy, but outputs can still vary run to run in practice, because batching and floating-point arithmetic order are not fully deterministic.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="generation"></a></p></div>
 <h3>Rapid-fire definitions</h3>
 <p>Interviewers often check vocabulary with quick questions. One line each:</p>
-<div class="scroll"><table class="numt cmp"><thead><tr><th>Term</th><th>One-line answer</th></tr></thead><tbody><tr><th scope="row">Token</th><td>≈ ¾ of an English word on average; non-English text and code often use more tokens.</td></tr><tr><th scope="row">Logits</th><td>Raw scores, one per vocabulary entry; softmax turns them into probabilities.</td></tr><tr><th scope="row">d_model, d_k, d_ff</th><td>Model width; per-head width (d_model / h); MLP hidden width (often about 4 × d_model).</td></tr><tr><th scope="row">Residual stream</th><td>The per-token vector every layer reads from and adds to.</td></tr><tr><th scope="row">RMSNorm</th><td>LayerNorm without mean subtraction or bias.</td></tr><tr><th scope="row">SwiGLU</th><td>A gated MLP activation used in many recent models in place of GELU.</td></tr><tr><th scope="row">RoPE</th><td>Rotary position encoding: relative position enters through rotations of q and k.</td></tr><tr><th scope="row">GQA</th><td>Groups of query heads share key/value heads to shrink the KV cache.</td></tr><tr><th scope="row">FlashAttention</th><td>Exact attention computed tile by tile to avoid storing the T × T matrix.</td></tr><tr><th scope="row">MoE</th><td>Router sends each token to a few expert MLPs: more parameters, similar compute.</td></tr><tr><th scope="row">Perplexity</th><td>e to the power of the loss.</td></tr><tr><th scope="row">Weight tying</th><td>Output projection reuses the embedding table.</td></tr></tbody></table></div>
+<div class="scroll"><table class="numt cmp"><thead><tr><th>Term</th><th>One-line answer</th></tr></thead><tbody><tr><th scope="row">Token</th><td>≈ ¾ of an English word on average; non-English text and code often use more tokens.</td></tr><tr><th scope="row">Logits</th><td>Raw scores, one per vocabulary entry; softmax turns them into probabilities.</td></tr><tr><th scope="row"><span class="tex">d_{\text{model}}, d_k, d_{\text{ff}}</span></th><td>Model width; per-head width (<span class="tex">d_{\text{model}} / h</span>); MLP hidden width (often about <span class="tex">4 \times d_{\text{model}}</span>).</td></tr><tr><th scope="row">Residual stream</th><td>The per-token vector every layer reads from and adds to.</td></tr><tr><th scope="row">RMSNorm</th><td>LayerNorm without mean subtraction or bias.</td></tr><tr><th scope="row">SwiGLU</th><td>A gated MLP activation used in many recent models in place of GELU.</td></tr><tr><th scope="row">RoPE</th><td>Rotary position encoding: relative position enters through rotations of q and k.</td></tr><tr><th scope="row">GQA</th><td>Groups of query heads share key/value heads to shrink the KV cache.</td></tr><tr><th scope="row">FlashAttention</th><td>Exact attention computed tile by tile to avoid storing the T × T matrix.</td></tr><tr><th scope="row">MoE</th><td>Router sends each token to a few expert MLPs: more parameters, similar compute.</td></tr><tr><th scope="row">Perplexity</th><td>e to the power of the loss.</td></tr><tr><th scope="row">Weight tying</th><td>Output projection reuses the embedding table.</td></tr></tbody></table></div>
 <div class="wrapup"><p class="bridge"><b>Next:</b> The rest of Part E covers applied topics. <a class="xref" data-ref="iv-rag"></a> starts with the most common one: giving a model knowledge it was not trained on.</p></div>
 </section>
 
@@ -3895,6 +3900,8 @@ const showSp=c=>c===' '?'␣':c;
 function slider(id,f,cb){const e=$('#'+id),o=$('#'+id+'-o'),u=()=>{const t=String(f(+e.value));if(o)o.textContent=t;e.setAttribute('aria-valuetext',t);};e.addEventListener('input',()=>{u();cb(+e.value);});u();return e;}
 
 /* ---------- maths rendering (KaTeX with plain-text fallback) ---------- */
+/* d_model -> d<sub>model</sub> for text that widgets rewrite (KaTeX is used for static text) */
+const sym=t=>t.replace(/\b([dnTXEW])_(model|ff|vocab|src|tgt|enc|dec|pos|[kQKVOU])\b/g,(m,a,b)=>'<span class="sym"><i>'+a+'</i><sub>'+(b.length===1?'<i>'+b+'</i>':b)+'</sub></span>');
 function renderTex(root){if(!window.katex)return;$$('.tex',root).forEach(e=>{if(e.dataset.done)return;const src=e.dataset.src||e.textContent;e.dataset.src=src;try{window.katex.render(src,e,{displayMode:e.classList.contains('d'),throwOnError:false});e.dataset.done='1';}catch(err){e.textContent=src;}});}
 window.renderAllTex=function(){renderTex(document);};
 window.texFailed=function(){$('#texwarn').hidden=false;};
@@ -3970,7 +3977,7 @@ function renderTok(){
   const t=toks[s2.sel],V=TOK.vocab.length;
   $('#tk-detail').innerHTML='<span class="lab">Token → ID</span><code>'+esc(t.t)+'</code> is entry <b>'+t.id+'</b> of '+V+' in the vocabulary.'+
     '<span class="lab">One-hot vector (length '+V+')</span><div class="onehot" role="img" aria-label="One-hot vector with a single 1 at index '+t.id+'">'+TOK.vocab.map((_,i)=>'<i'+(i===t.id?' class="on"':'')+'></i>').join('')+'</div><small>'+V+' numbers: a single 1 at index '+t.id+', and 0 everywhere else.</small>'+
-    '<span class="lab">Embedding vector x = E['+t.id+'] (d_model = 4)</span>'+vec(TOK.E[t.id],'',2,1.5)+(state.exact?'':' <small>four numbers that training would tune</small>');
+    '<span class="lab">Embedding vector x = E['+t.id+'] ('+sym('d_model')+' = 4)</span>'+vec(TOK.E[t.id],'',2,1.5)+(state.exact?'':' <small>four numbers that training would tune</small>');
   renderScatter();
 }
 const SHAPES={
@@ -4151,9 +4158,9 @@ const ARCH=[
 ];
 const s7={sel:4,timer:null};
 function renderArch(){
-  $('#ar-list').innerHTML=ARCH.map((a,i)=>'<li><button data-i="'+i+'" class="'+(a.cls||'')+(i===s7.sel?' on':'')+(i===s7.pulse?' pulse':'')+'" aria-pressed="'+(i===s7.sel)+'">'+a.name+'<small>'+a.sub+'</small></button></li>').join('');
+  $('#ar-list').innerHTML=ARCH.map((a,i)=>'<li><button data-i="'+i+'" class="'+(a.cls||'')+(i===s7.sel?' on':'')+(i===s7.pulse?' pulse':'')+'" aria-pressed="'+(i===s7.sel)+'">'+a.name+'<small><code>'+a.sub+'</code></small></button></li>').join('');
   const a=ARCH[s7.sel];
-  $('#ar-detail').innerHTML='<h3 style="margin-top:0">'+a.name+'</h3><p>'+a.what+'</p><dl><dt>In / out</dt><dd>'+a.io+'</dd><dt>Parameters</dt><dd>'+a.par+'</dd><dt>Shapes</dt><dd><code>'+a.sub+'</code></dd>'+(a.tex?'<dt>Equation</dt><dd class="scroll"><span class="tex">'+esc(a.tex)+'</span></dd>':'')+'</dl><span class="lab">Mini visualisation</span>'+a.mini();
+  $('#ar-detail').innerHTML='<h3 style="margin-top:0">'+a.name+'</h3><p>'+a.what+'</p><dl><dt>In / out</dt><dd>'+sym(a.io)+'</dd><dt>Parameters</dt><dd>'+sym(a.par)+'</dd><dt>Shapes</dt><dd><code>'+a.sub+'</code></dd>'+(a.tex?'<dt>Equation</dt><dd class="scroll"><span class="tex">'+esc(a.tex)+'</span></dd>':'')+'</dl><span class="lab">Mini visualisation</span>'+a.mini();
   renderTex($('#ar-detail'));
   $('#ar-play').textContent=s7.timer?'⏸ Pause':'▶ Play data flow';
 }
@@ -4162,11 +4169,11 @@ function renderParams(){
   const num=(id,lo)=>{const v=Math.floor(+$('#pc-'+id).value);return isFinite(v)&&v>=lo?v:lo;};
   const c={V:num('V',2),d:num('d',2),L:num('L',1),h:num('h',1),ff:num('ff',1),T:num('T',1),tie:$('#pc-tie').checked},p=paramCounts(c);
   const rows=[['Token embeddings','n_vocab·d_model',p.tok],['Position embeddings','T·d_model',p.pos],['Attention (all layers)','L·4(d_model²+d_model)',p.attn],['MLP (all layers)','L·(2·d_model·d_ff+d_ff+d_model)',p.mlp],['LayerNorm (all)','L·4·d_model+2·d_model',p.ln],['Output projection',c.tie?'shared with embeddings':'n_vocab·d_model',p.out]];
-  $('#pc-warn').innerHTML=c.d%c.h?'<span class="badge bad">check</span> d_model must be divisible by the number of heads: '+c.d+' / '+c.h+' is not a whole number.':'Each head works with d_model / h = '+(c.d/c.h)+' dimensions. The number of heads does not appear in any formula below.';
+  $('#pc-warn').innerHTML=sym(c.d%c.h?'<span class="badge bad">check</span> d_model must be divisible by the number of heads: '+c.d+' / '+c.h+' is not a whole number.':'Each head works with d_model / h = '+(c.d/c.h)+' dimensions. The number of heads does not appear in any formula below.');
   $('#pc-bar').innerHTML=rows.map((r,i)=>{const w=100*r[2]/p.total;return w>0?'<span class="p'+i+'" style="width:'+w+'%" data-tip="'+esc(r[0]+': '+r[2].toLocaleString('en-US')+' ('+w.toFixed(1)+'%)')+'" tabindex="0">'+(w>9?w.toFixed(0)+'%':'')+'</span>':'';}).join('');
-  $('#pc-table').innerHTML='<thead><tr><th>Component</th><th>Formula</th><th>Parameters</th><th>Share</th></tr></thead><tbody>'+rows.map((r,i)=>'<tr><th scope="row"><i class="psw p'+i+'"></i>'+r[0]+'</th><td>'+r[1]+'</td><td>'+r[2].toLocaleString('en-US')+'</td><td>'+(100*r[2]/p.total).toFixed(1)+'%</td></tr>').join('')+'<tr><th scope="row">Total</th><td></td><td><b>'+p.total.toLocaleString('en-US')+'</b></td><td>≈ '+big(p.total)+'</td></tr></tbody>';
+  $('#pc-table').innerHTML='<thead><tr><th>Component</th><th>Formula</th><th>Parameters</th><th>Share</th></tr></thead><tbody>'+rows.map((r,i)=>'<tr><th scope="row"><i class="psw p'+i+'"></i>'+r[0]+'</th><td>'+sym(r[1])+'</td><td>'+r[2].toLocaleString('en-US')+'</td><td>'+(100*r[2]/p.total).toFixed(1)+'%</td></tr>').join('')+'<tr><th scope="row">Total</th><td></td><td><b>'+p.total.toLocaleString('en-US')+'</b></td><td>≈ '+big(p.total)+'</td></tr></tbody>';
   $('#pc-mem').innerHTML=[['32-bit floats',4],['16-bit floats',2],['8-bit quantized',1],['4-bit quantized',0.5]].map(m=>'<div><span>'+m[0]+'</span><b>'+bytes(p.total*m[1])+'</b></div>').join('');
-  $('#pc-scale').innerHTML='<thead><tr><th>d_model (d_ff scaled with it)</th><th>Total parameters</th><th>Relative</th></tr></thead><tbody>'+[0.5,1,2,4].map(k=>{const q=paramCounts(Object.assign({},c,{d:Math.round(c.d*k),ff:Math.round(c.ff*k)})).total;return '<tr><th scope="row">'+Math.round(c.d*k)+(k===1?' (current)':'')+'</th><td>'+big(q)+'</td><td>× '+(q/p.total).toFixed(2)+'</td></tr>';}).join('')+'</tbody>';
+  $('#pc-scale').innerHTML='<thead><tr><th>'+sym('d_model (d_ff scaled with it)')+'</th><th>Total parameters</th><th>Relative</th></tr></thead><tbody>'+[0.5,1,2,4].map(k=>{const q=paramCounts(Object.assign({},c,{d:Math.round(c.d*k),ff:Math.round(c.ff*k)})).total;return '<tr><th scope="row">'+Math.round(c.d*k)+(k===1?' (current)':'')+'</th><td>'+big(q)+'</td><td>× '+(q/p.total).toFixed(2)+'</td></tr>';}).join('')+'</tbody>';
 }
 function initArch(){
   $('#ar-list').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(s7.timer){clearInterval(s7.timer);s7.timer=null;}s7.pulse=-1;s7.sel=+b.dataset.i;renderArch();$('#ar-list button[data-i="'+s7.sel+'"]').focus();});
@@ -4450,7 +4457,7 @@ function renderKC(){
   $('#kc-bars').innerHTML=bars([{label:'without cache',p:no,right:no+' positions',cls:sk.cache?'':'hit',tip:'n·P + n(n−1)/2 = '+n+'·'+P+' + '+n+'·'+(n-1)+'/2 = '+no},{label:'with cache',p:yes,right:yes+' positions',cls:sk.cache?'hit':'',tip:'P + (n−1) = '+P+' + '+(n-1)+' = '+yes}],no);
   $('#kc-play').textContent=sk.timer?'⏸ Pause':'▶ Play';
 }
-const IE_MODELS=[['GPT-2 small size · 124M · 12 layers, d_model 768',124.4e6,12,768],['1B class · 24 layers, d_model 2048',1.2e9,24,2048],['7B class · 32 layers, d_model 4096',7e9,32,4096],['70B class · 80 layers, d_model 8192',7e10,80,8192]];
+const IE_MODELS=[['GPT-2 small size · 124M · 12 layers, width 768',124.4e6,12,768],['1B class · 24 layers, width 2048',1.2e9,24,2048],['7B class · 32 layers, width 4096',7e9,32,4096],['70B class · 80 layers, width 8192',7e10,80,8192]];
 const si={m:2,prec:2,P:1000,n:316,B:1,bw:500e9,fl:1e14,mem:22.6e9};
 function ieRate(B,Wb,N){const comp=si.fl/(2*N),band=B*si.bw/Wb,tot=Math.min(comp,band);return {tot:tot,per:tot/B,bound:comp<band?'compute':'memory bandwidth'};}
 function renderIE(){
@@ -4499,9 +4506,9 @@ function renderLR(){
 }
 function renderCX(){
   const n=sp.n,d=sp.cd,sa=n*n*d,rn=n*d*d;
-  $('#cx-bars').innerHTML=bars([{label:'self-attention',p:sa,right:sci(sa),tip:'T² · d_model = '+n+'² × '+d+' = '+sa.toLocaleString('en-US')},{label:'recurrent',p:rn,right:sci(rn),tip:'T · d_model² = '+n+' × '+d+'² = '+rn.toLocaleString('en-US')}],Math.max(sa,rn));
-  $('#cx-table').innerHTML='<thead><tr><th>Layer type</th><th>Work per layer</th><th>Sequential steps</th><th>Longest path</th></tr></thead><tbody><tr><th scope="row">Self-attention</th><td>T²·d_model = '+sa.toLocaleString('en-US')+'</td><td>1</td><td>1</td></tr><tr><th scope="row">Recurrent</th><td>T·d_model² = '+rn.toLocaleString('en-US')+'</td><td>'+n.toLocaleString('en-US')+'</td><td>'+n.toLocaleString('en-US')+'</td></tr></tbody>';
-  $('#cx-read').innerHTML=(n<d?'<span class="badge ok">T &lt; d_model</span> The sequence is shorter than the width, so self-attention does '+(rn/sa).toFixed(1)+'× less work per layer':n===d?'<span class="badge ok">T = d_model</span> The two layer types do the same amount of work per layer':'<span class="badge bad">T &gt; d_model</span> The sequence is longer than the width, so self-attention does '+(sa/rn).toFixed(1)+'× more work per layer')+', and the recurrent layer needs '+n.toLocaleString('en-US')+' steps one after another where self-attention needs 1.';
+  $('#cx-bars').innerHTML=bars([{label:'self-attention',p:sa,right:sci(sa),tip:sym('T² · d_model = ')+n+'² × '+d+' = '+sa.toLocaleString('en-US')},{label:'recurrent',p:rn,right:sci(rn),tip:sym('T · d_model² = ')+n+' × '+d+'² = '+rn.toLocaleString('en-US')}],Math.max(sa,rn));
+  $('#cx-table').innerHTML='<thead><tr><th>Layer type</th><th>Work per layer</th><th>Sequential steps</th><th>Longest path</th></tr></thead><tbody><tr><th scope="row">Self-attention</th><td>'+sym('T²·d_model')+' = '+sa.toLocaleString('en-US')+'</td><td>1</td><td>1</td></tr><tr><th scope="row">Recurrent</th><td>'+sym('T·d_model²')+' = '+rn.toLocaleString('en-US')+'</td><td>'+n.toLocaleString('en-US')+'</td><td>'+n.toLocaleString('en-US')+'</td></tr></tbody>';
+  $('#cx-read').innerHTML=(n<d?'<span class="badge ok">T &lt; '+sym('d_model')+'</span> The sequence is shorter than the width, so self-attention does '+(rn/sa).toFixed(1)+'× less work per layer':n===d?'<span class="badge ok">T = '+sym('d_model')+'</span> The two layer types do the same amount of work per layer':'<span class="badge bad">T &gt; '+sym('d_model')+'</span> The sequence is longer than the width, so self-attention does '+(sa/rn).toFixed(1)+'× more work per layer')+', and the recurrent layer needs '+n.toLocaleString('en-US')+' steps one after another where self-attention needs 1.';
 }
 function initPaper(){
   slider('lr-d',v=>Math.pow(2,v),v=>{sp.d=Math.pow(2,v);renderLR();});
