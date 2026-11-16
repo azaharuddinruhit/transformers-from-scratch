@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part A: The big picture · Transformers and LLMs from Scratch</title>
+<meta name="description" content="An interactive, visual, from-scratch guide to decoder-only Transformers and large language models.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c2230'/%3E%3Crect x='5' y='5' width='10' height='10' rx='2' fill='%23fde725'/%3E%3Crect x='17' y='5' width='10' height='10' rx='2' fill='%2321918c'/%3E%3Crect x='5' y='17' width='10' height='10' rx='2' fill='%233b528b'/%3E%3Crect x='17' y='17' width='10' height='10' rx='2' fill='%235ec962'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/content.css">
+<link rel="stylesheet" href="assets/css/widgets.css">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body data-page="part-a">
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="Transformers and LLMs from Scratch, home"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c2230"/><rect x="5" y="5" width="10" height="10" rx="2" fill="#fde725"/><rect x="17" y="5" width="10" height="10" rx="2" fill="#21918c"/><rect x="5" y="17" width="10" height="10" rx="2" fill="#3b528b"/><rect x="17" y="17" width="10" height="10" rx="2" fill="#5ec962"/></svg><span class="lgt">Transformers &amp; LLMs from Scratch</span><span class="sm">Transformers &amp; LLMs</span></a>
+  <span class="crumb" id="crumb"></span>
+  <div class="setwrap">
+    <button type="button" class="btn icon" id="setBtn" aria-haspopup="true" aria-expanded="false" aria-controls="setMenu" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="lgt">Settings</span></button>
+    <div id="setMenu" class="setmenu" role="dialog" aria-label="Settings" hidden>
+      <div class="sgrp"><span class="slab" id="lab-path">Path</span>
+        <div class="seg full" role="group" aria-labelledby="lab-path">
+          <button type="button" class="pathBtn" data-p="quick" aria-pressed="false">Quick tour</button>
+          <button type="button" class="pathBtn" data-p="full" aria-pressed="true">Full depth</button>
+        </div>
+        <small class="shint">Quick tour simplifies the worked examples and hides optional material.</small></div>
+      <div class="sgrp"><span class="slab" id="lab-theme">Theme</span>
+        <div class="seg full" role="group" aria-labelledby="lab-theme">
+          <button type="button" class="thBtn" data-t="light" aria-pressed="false">Light</button>
+          <button type="button" class="thBtn" data-t="dark" aria-pressed="false">Dark</button>
+          <button type="button" class="thBtn" data-t="auto" aria-pressed="true">Auto</button>
+        </div></div>
+      <div class="sgrp"><span class="slab" id="lab-code">Python code</span>
+        <div class="seg full" role="group" aria-labelledby="lab-code">
+          <button type="button" class="codeBtn" data-c="closed" aria-pressed="true">Collapsed</button>
+          <button type="button" class="codeBtn" data-c="open" aria-pressed="false">Expanded</button>
+        </div></div>
+      <div class="sgrp"><span class="slab">Progress</span>
+        <button type="button" class="btn full" id="pgReset">Reset progress</button></div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"><div id="progBar"></div></div>
+</header>
+<div id="texwarn" hidden>The maths renderer (KaTeX) could not be loaded, so equations are shown as LaTeX source. Everything else works offline.</div>
+<div class="layout">
+<div id="scrim" hidden></div>
+<nav id="mbar" aria-label="Section navigation">
+  <span class="mpb" aria-hidden="true"><i id="mFill"></i></span>
+  <button type="button" id="mPrev" aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button type="button" id="mMid" aria-haspopup="true" aria-expanded="false" aria-controls="toc"><span id="mNum"></span><span id="mTxt">Contents</span><svg class="mico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>
+  <button type="button" id="mNext" aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+</nav>
+<nav id="toc" aria-label="Contents"></nav>
+<main id="main">
+<section class="view opener" id="start" data-title="Part A: The big picture">
+<p class="kicker">Part A</p>
+<h1>The big picture</h1>
+<p class="lede" id="partGoal"></p>
+<ol class="partlist" id="partList"></ol>
+<p id="partGo"></p>
+</section>
+<section class="ch" id="intro" data-title="What is an LLM?">
+<h2>Introduction: what is an LLM?</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Say in one sentence what an LLM computes.</li><li>Turn a list of scores (logits) into probabilities with softmax, by hand.</li><li>Explain why predicting one token at a time is enough to model whole texts.</li></ul></div></div>
+<div class="story"><p>The guide follows one prompt, <b>“the cat sat on the ▢”</b>, through the whole model. Here you only see the two ends: the text goes in, and “mat” comes out as the most probable next token.</p></div>
+<p>A large language model is a function with one job: <b>given some text, say how likely each possible next piece of text is</b>. Everything else, from answering questions to writing code, comes from running that one function again and again.</p>
+<ul>
+  <li><b>Token</b>: the unit of text the model reads and writes. Usually a word or a piece of a word.</li>
+  <li><b>Vocabulary</b>: the fixed list of all tokens the model knows, typically 30,000 to 200,000 entries.</li>
+  <li><b>Next-token prediction</b>: the model outputs one probability per vocabulary entry.</li>
+  <li><b>Autoregressive generation</b>: pick a token, append it to the input, predict again.</li>
+  <li><b>Parameters</b>: the numbers inside the function (millions to trillions) that training adjusts.</li>
+  <li><b>Training</b> changes the parameters so good predictions become likelier. <b>Inference</b> uses the finished parameters without changing them.</li>
+</ul>
+<div class="flow" role="img" aria-label="Diagram: text goes into the model, a probability distribution comes out, one token is chosen and appended, and the loop repeats">
+  <div><b>“The cat sat on the”</b><small>input tokens</small></div><i>→</i>
+  <div class="fa"><b>LLM</b><small>fixed parameters θ</small></div><i>→</i>
+  <div><b>mat 0.44 · sofa 0.24 · …</b><small>probability for every token</small></div><i>→</i>
+  <div><b>pick “mat”</b><small>sampling</small></div><i>↺</i>
+  <div class="fr"><b>append and repeat</b><small>autoregression</small></div>
+</div>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>Step 1: scores.</b> For the next position the network outputs one real number per vocabulary entry, called a <b>logit</b> and written <span class="tex">z_v</span> for entry <span class="tex">v</span>. A higher logit means “more plausible here”. But logits can be negative and do not add up to anything in particular, so they are not probabilities yet.</p>
+<p><b>Step 2: turn scores into probabilities.</b> We need numbers that are positive and sum to 1. Softmax gets there in two moves: exponentiate every logit, which makes it positive and keeps the ranking, then divide by the total, which makes the sum 1.</p>
+<div class="tex d">p(w_{t+1}=v \mid w_1,\dots,w_t)=\mathrm{softmax}(z)_v=\frac{e^{z_v}}{\sum_{v'=1}^{n_{\text{vocab}}} e^{z_{v'}}}</div>
+<p class="sym"><span class="tex">w_t</span> is the token at position <span class="tex">t</span>; <span class="tex">v</span> and <span class="tex">v'</span> run over the <span class="tex">n_{\text{vocab}}</span> vocabulary entries; the bar “|” reads “given”.</p>
+<details class="why"><summary>Why the exponential?</summary><div class="whyb">Dividing each logit by the plain sum would fail: logits can be negative, and the sum can be zero. The exponential is always positive. It also gives logits a precise meaning: a gap of 1 between two logits always means a probability ratio of <span class="tex">e\approx2.72</span>, wherever the two logits sit. That is why adding the same number to every logit changes nothing; only the gaps matter.</div></details>
+<p><b>Step 3: from one token to a whole text.</b> The probability of a sequence is the probability of its first token, times the probability of the second given the first, and so on. This is the chain rule of probability. It is exact, and it is the reason a next-token predictor is a model of entire texts.</p>
+<div class="tex d">p(w_1,\dots,w_T)=\prod_{t=1}^{T}p(w_t\mid w_{\lt t})</div>
+<p class="sym"><span class="tex">T</span> is the number of tokens and <span class="tex">w_{\lt t}</span> means “all tokens before position <span class="tex">t</span>”.</p>
+<div class="worked">
+  <h4>Worked example</h4>
+  <div class="x-only"><p>Three tokens with logits <span class="tex">z=[2.0,\;1.0,\;0.1]</span>.</p>
+  <p>Exponentiate: <span class="tex">e^{2.0}=7.3891,\; e^{1.0}=2.7183,\; e^{0.1}=1.1052</span>, which sum to <span class="tex">11.2125</span>.</p>
+  <p>Divide each by the sum: <span class="tex">p=[0.6590,\;0.2424,\;0.0986]</span>. They add up to 1.</p>
+  <p>Check the “gap” rule: the first two logits differ by 1, and <span class="tex">0.6590/0.2424=2.72</span>.</p></div>
+  <p class="s-only">Three candidate tokens get scores 2.0, 1.0 and 0.1. Softmax turns those into roughly 66%, 24% and 10%. The gaps between scores matter, not the scores themselves: adding 5 to every score changes nothing.</p>
+</div>
+<details class="callout code opt"><summary>In Python: softmax, then sampling</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s01_softmax.py"><code>import numpy as np
+
+
+def softmax(z):
+    z = np.asarray(z, dtype=float)
+    e = np.exp(z - z.max())  # subtracting the max changes nothing but avoids overflow
+    return e / e.sum()
+
+
+z = np.array([2.0, 1.0, 0.1])
+p = softmax(z)
+print("p              =", p.round(4))
+print("sum            =", round(p.sum(), 6))
+print("p[0] / p[1]    =", round(p[0] / p[1], 4))  # a gap of 1 gives a ratio of e
+print("softmax(z + 5) =", softmax(z + 5).round(4))  # only the gaps matter
+
+# Why subtract the max: exp(1000) overflows to infinity
+big = np.array([1000.0, 999.0])
+with np.errstate(over="ignore", invalid="ignore"):
+    naive = np.exp(big) / np.exp(big).sum()
+print("naive          =", naive)
+print("stable         =", softmax(big).round(4))
+
+# Sampling: draw tokens in proportion to their probabilities
+rng = np.random.default_rng(0)
+tokens = np.array(["mat", "sofa", "floor"])
+draws = rng.choice(tokens, size=1000, p=p)
+print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
+
+# Output:
+# p              = [0.659  0.2424 0.0986]
+# sum            = 1.0
+# p[0] / p[1]    = 2.7183
+# softmax(z + 5) = [0.659  0.2424 0.0986]
+# naive          = [nan nan]
+# stable         = [0.7311 0.2689]
+# 1000 draws     = {'mat': 637, 'sofa': 268, 'floor': 95}</code></pre></details>
+
+<div class="widget" id="w-next">
+  <h4 class="wt">Interactive · next-token probabilities</h4>
+  <p class="look"><b>The point:</b> The model’s output is a full distribution, and sampling from it gives different tokens on different tries. <b>Do this:</b> Pick a prompt, press “Sample a token” several times, then move the temperature slider. <b>Watch for:</b> How often each token is chosen matches the height of its bar, and the ranking of the bars never changes with temperature.</p>
+  <div class="controls">
+    <label class="ctl">Prompt<select id="nx-prompt"></select></label>
+    <label class="ctl"><span class="row">Temperature τ <output id="nx-temp-o"></output></span><input type="range" id="nx-temp" min="0.2" max="2.5" step="0.1" value="1"></label>
+    <button class="pri" id="nx-sample">Sample a token</button><button id="nx-reset">Reset tally</button>
+  </div>
+  <p class="cap" id="nx-out" aria-live="polite"></p>
+  <div id="nx-chart"></div>
+  <small>The logits behind this chart are hand-written for illustration; no model is running here. A real model you train yourself appears in <a class="xref" data-ref="training"></a>.</small>
+  <div class="wjh"><b>What just happened?</b> Each bar is one vocabulary entry’s probability after softmax. “Sample” draws one token at random in proportion to the bars, so the tallest bar wins most often but not always. Press it twenty times and the tally starts to mirror the bar heights.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>Drag the temperature down to 0.2, then up to 2.5. Low values pile the probability onto the top token; high values flatten the chart. <a class="xref" data-ref="generation"></a> explains why.</p></div>
+<div class="callout note"><b>Beginner note</b><p>The model never outputs a word directly. It outputs a list of numbers as long as the vocabulary, and a separate, simple piece of code chooses a token from that list.</p></div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“It looks answers up in a database.”</b> There is no stored text. There are only parameters, and the text is recomputed from them one token at a time.</li>
+  <li><b>“It predicts the next word.”</b> It predicts a probability distribution over tokens, and tokens are often pieces of words.</li>
+  <li><b>“It learns while I chat with it.”</b> During inference the parameters are frozen. It only appears to remember because the whole conversation is fed back in as input each time.</li>
+  <li><b>“Next-token prediction is too simple to be useful.”</b> Predicting the next token of a proof, a program or a dialogue well requires modelling a great deal about what the text is describing.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>An LLM is a function from “text so far” to one probability per vocabulary entry.</li><li>Softmax = exponentiate, then divide by the sum. Only the gaps between logits matter.</li><li>The chain rule turns next-token probabilities into the probability of a whole text.</li><li>Generation is a loop: predict, pick, append, repeat.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. You add 10 to every logit before softmax. What happens to the probabilities?</legend><button type="button" class="qo">They all move closer to 1</button><button type="button" class="qo" data-ok="1">Nothing changes</button><button type="button" class="qo">The largest one gets larger</button><p class="qx" hidden aria-live="polite"><b></b> Softmax depends only on the differences between logits, and adding a constant leaves every difference unchanged.</p></fieldset>
+<fieldset><legend>2. What does the model output for one position?</legend><button type="button" class="qo">The single most likely next token</button><button type="button" class="qo" data-ok="1">One probability for every entry in the vocabulary</button><button type="button" class="qo">A sentence</button><p class="qx" hidden aria-live="polite"><b></b> The output is a full distribution. Choosing one token from it is a separate step (decoding).</p></fieldset>
+<fieldset><legend>3. Two logits differ by 1. How do their probabilities compare?</legend><button type="button" class="qo" data-ok="1">One is e ≈ 2.72 times the other</button><button type="button" class="qo">One is 1 percentage point higher</button><button type="button" class="qo">It depends on the other logits</button><p class="qx" hidden aria-live="polite"><b></b> A gap of 1 in logits is always a ratio of e in probability, whatever the other logits are.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>If the model only ever predicts the next token, where does the appearance of “planning” in a long answer come from?</li><li>Which parts of our own product would be affected by the fact that the output is a probability distribution and not a single answer?</li></ul></details>
+<p class="bridge">You have seen the function from the outside. Before opening it up, <a class="xref" data-ref="why"></a> explains why it is built from attention at all.</p>
+</div>
+</section>
+<section class="ch" id="why" data-title="Why Transformers?">
+<h2>Why Transformers? The idea behind the 2017 paper</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain the two limits of recurrent networks that the Transformer removed.</li><li>Compare the cost of self-attention and recurrence as sequence length grows.</li><li>Name the parts of a Transformer and where this guide covers each.</li></ul></div><p class="needs"><b>Builds on</b> The idea of next-token prediction from <a class="xref" data-ref="intro"></a>. It helps to have heard of recurrent networks (RNNs), but it is not required.</p></div>
+<div class="story"><p>In an RNN, information from “cat” must survive three updates to influence the prediction after “the cat sat on the”. In a Transformer the last position can look at “cat” directly.</p></div>
+<p>Everything in this guide descends from one eleven-page paper by Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser and Polosukhin, presented at the NIPS conference in 2017. It was not about chatbots. It was about machine translation, and its claim was narrow and bold: you can drop recurrence and convolution entirely and build a translation model from attention alone, and it will be both better and much faster to train.</p>
+<p>You do not need to understand the paper yet. This section explains the problem it solved, so that the components in the following sections have a purpose. The paper itself is read in detail in <a class="xref" data-ref="paper"></a>, once you know all the parts.</p>
+<h3>The problem it solved</h3>
+<p>Before 2017 the standard tool for sequences was the recurrent neural network (RNN, usually an LSTM). An RNN reads one token at a time and carries a single “memory” vector forward. That has two costs. Training cannot be parallelised along the sequence, because step 50 needs the result of step 49. And information from an early word has to survive dozens of updates to reach a late one. Attention had already been added to RNNs as a helper (Bahdanau et al., 2014). The 2017 paper kept the helper and removed the RNN.</p>
+<div class="flow" role="img" aria-label="Diagram: in a recurrent network, information from word 1 reaches word n through n minus 1 sequential steps. In a Transformer, every word reaches every other word in one attention step, and all positions are computed in parallel.">
+  <div><b>RNN</b><small>word 1 → 2 → 3 → … → n</small></div><i>:</i>
+  <div><b>n − 1 steps</b><small>between the first and last word; computed one after another</small></div>
+</div>
+<div class="flow" role="img" aria-hidden="true">
+  <div class="fa"><b>Transformer</b><small>every word ↔ every word</small></div><i>:</i>
+  <div class="fa"><b>1 step</b><small>between any two words; all positions computed in parallel</small></div>
+</div>
+<h3>What it costs</h3>
+<p>The paper compared the two kinds of layer directly. For a sequence of <span class="tex">T</span> tokens and width <span class="tex">d_{\text{model}}</span> (the paper writes <span class="tex">n</span> and <span class="tex">d</span>):</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th>Layer type</th><th>Work per layer</th><th>Sequential steps</th><th>Longest path between two positions</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Self-attention</th><td><span class="tex">O(T^{2}\cdot d_{\text{model}})</span></td><td><span class="tex">O(1)</span></td><td><span class="tex">O(1)</span></td></tr>
+    <tr><th scope="row">Recurrent</th><td><span class="tex">O(T\cdot d_{\text{model}}^{2})</span></td><td><span class="tex">O(T)</span></td><td><span class="tex">O(T)</span></td></tr>
+  </tbody>
+</table></div>
+<p class="sym"><span class="tex">d_{\text{model}}</span> is the length of the vector the model keeps for each token; you will meet it properly in <a class="xref" data-ref="tokens"></a>. Self-attention compares all <span class="tex">T^2</span> pairs of tokens, each comparison costing about <span class="tex">d_{\text{model}}</span>. A recurrent layer takes <span class="tex">T</span> steps, each a <span class="tex">d_{\text{model}}\times d_{\text{model}}</span> matrix product.</p>
+<div class="widget" id="w-cx">
+  <h4 class="wt">Interactive · self-attention versus recurrence</h4>
+  <p class="look"><b>The point:</b> Self-attention is cheaper per layer only while sequences are short relative to the width. <b>Do this:</b> Raise the sequence length until the two bars are equal. <b>Watch for:</b> They meet at <span class="tex">T = d_{\text{model}}</span>. Beyond that, the T² term dominates.</p>
+  <div class="controls">
+    <label class="ctl"><span class="row">Sequence length T <output id="cx-n-o"></output></span><input type="range" id="cx-n" min="3" max="13" step="1" value="6"></label>
+    <label class="ctl"><span class="row"><span>Width <span class="tex">d_{\text{model}}</span></span> <output id="cx-d-o"></output></span><input type="range" id="cx-d" min="6" max="11" step="1" value="9"></label>
+  </div>
+  <span class="lab">Work per layer (operations, up to a constant factor)</span>
+  <div id="cx-bars"></div>
+  <div class="scroll"><table class="numt" id="cx-table"></table></div>
+  <p class="readout" id="cx-read" aria-live="polite"></p>
+  <small>These are the growth rates from Table 1 of the paper with the constants dropped, so compare the two rows with each other and do not read them as measured costs.</small>
+  <div class="wjh"><b>What just happened?</b> Self-attention does less arithmetic per layer whenever the sequence is shorter than the model is wide, which was true for the sentences the paper translated. More important are the other two columns: all positions are computed at once, and any two words are one step apart. The price appears when <span class="tex">T</span> grows past <span class="tex">d_{\text{model}}</span>: the <span class="tex">T^2</span> term takes over. That is the long-context cost you will meet again in <a class="xref" data-ref="architecture"></a> and <a class="xref" data-ref="inference"></a>.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>Raise the sequence length until the two bars are equal, and check that it happens at <span class="tex">T = d_{\text{model}}</span>. Then keep going: how many times more work does self-attention do at <span class="tex">T = 8{,}192</span> with <span class="tex">d_{\text{model}} = 512</span>?</p></div>
+<h3>What the model is made of: the road ahead</h3>
+<p>Removing recurrence leaves gaps that other parts have to fill. Each gets its own section:</p>
+<ul>
+  <li><b>Tokens and embeddings</b> turn text into vectors (<a class="xref" data-ref="tokens"></a>).</li>
+  <li><b>Positional information</b> restores word order, which an RNN had for free (<a class="xref" data-ref="position"></a>).</li>
+  <li><b>Self-attention</b> lets every token read every other token (<a class="xref" data-ref="attention"></a>), several times in parallel (<a class="xref" data-ref="multihead"></a>).</li>
+  <li><b>A feed-forward network, residual connections and normalisation</b> turn attention into a trainable block (<a class="xref" data-ref="block"></a>).</li>
+  <li><b>A stack of blocks plus an output layer</b> is the complete model (<a class="xref" data-ref="architecture"></a>).</li>
+</ul>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“The paper invented attention.”</b> Attention was already used alongside RNNs. The contribution was a model built on it with no recurrence at all, plus multi-head attention and the surrounding recipe.</li>
+  <li><b>“Attention is literally all you need.”</b> The model also needs feed-forward layers, residual connections, normalisation, embeddings and positional information. Remove any of them and it stops working.</li>
+  <li><b>“The paper introduced large language models.”</b> It introduced a translation model of at most 213 million parameters. Pretraining on raw text and scaling up came later.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>RNNs process tokens one after another: no parallelism along the sequence, and long paths between distant words.</li><li>Self-attention connects every pair of tokens in one step and computes all positions in parallel.</li><li>The price is work that grows with the square of the sequence length.</li><li>The 2017 paper introduced the recipe; modern LLMs keep its core and change a few details.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. Why can an RNN not be trained in parallel along the sequence?</legend><button type="button" class="qo">It has too many parameters</button><button type="button" class="qo" data-ok="1">Each step needs the result of the previous step</button><button type="button" class="qo">It uses attention</button><p class="qx" hidden aria-live="polite"><b></b> Step 50 takes the memory vector produced by step 49 as input, so the steps must run in order.</p></fieldset>
+<fieldset><legend>2. When does a self-attention layer do less arithmetic than a recurrent layer?</legend><button type="button" class="qo" data-ok="1">When the sequence is shorter than the model is wide (<span class="tex">T \lt d_{\text{model}}</span>)</button><button type="button" class="qo">Always</button><button type="button" class="qo">When the sequence is longer than the model is wide</button><p class="qx" hidden aria-live="polite"><b></b> The costs are <span class="tex">T^2 d_{\text{model}}</span> against <span class="tex">T\,d_{\text{model}}^2</span>. They are equal at <span class="tex">T = d_{\text{model}}</span>.</p></fieldset>
+<fieldset><legend>3. What was the 2017 paper’s model built for?</legend><button type="button" class="qo">Chatbots</button><button type="button" class="qo" data-ok="1">Machine translation</button><button type="button" class="qo">Image recognition</button><p class="qx" hidden aria-live="polite"><b></b> It was an encoder–decoder translation model. Decoder-only language models came afterwards.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Context windows have grown from 512 tokens to hundreds of thousands. Given the T² cost, what does that imply for serving cost?</li><li>Which matters more for a team choosing a model today: per-layer arithmetic, or the ability to parallelise training?</li></ul></details>
+<p class="bridge">Now the build begins. The model can only do arithmetic, so the first step, in <a class="xref" data-ref="tokens"></a>, is to turn text into numbers.</p>
+</div>
+</section>
+<section class="view complete" id="complete" data-title="Part A complete"><div id="partDone"></div></section>
+<footer>Everything here runs locally in your browser. The only network request is for the KaTeX maths renderer.</footer>
+</main>
+</div>
+<div id="tip" role="tooltip"></div>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/shared.js"></script>
+<script src="assets/js/part-a.js"></script>
+<script src="assets/js/site.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous" onload="renderAllTex()" onerror="texFailed()"></script>
+</body>
+</html>

@@ -27,12 +27,13 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
 
-      # Publish only the guide, served as the site's index page.
+      # Publish the pages and their assets; snippets/ and tools/ stay out of the site.
       - name: Assemble site
         run: |
-          test -f transformers-from-scratch.html
+          test -f index.html
           mkdir -p _site
-          cp transformers-from-scratch.html _site/index.html
+          cp *.html _site/
+          cp -r assets _site/
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

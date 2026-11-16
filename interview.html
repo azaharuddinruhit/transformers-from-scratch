@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interview drill · Transformers and LLMs from Scratch</title>
+<meta name="description" content="An interactive, visual, from-scratch guide to decoder-only Transformers and large language models.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c2230'/%3E%3Crect x='5' y='5' width='10' height='10' rx='2' fill='%23fde725'/%3E%3Crect x='17' y='5' width='10' height='10' rx='2' fill='%2321918c'/%3E%3Crect x='5' y='17' width='10' height='10' rx='2' fill='%233b528b'/%3E%3Crect x='17' y='17' width='10' height='10' rx='2' fill='%235ec962'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/content.css">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body data-page="interview">
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="Transformers and LLMs from Scratch, home"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c2230"/><rect x="5" y="5" width="10" height="10" rx="2" fill="#fde725"/><rect x="17" y="5" width="10" height="10" rx="2" fill="#21918c"/><rect x="5" y="17" width="10" height="10" rx="2" fill="#3b528b"/><rect x="17" y="17" width="10" height="10" rx="2" fill="#5ec962"/></svg><span class="lgt">Transformers &amp; LLMs from Scratch</span><span class="sm">Transformers &amp; LLMs</span></a>
+  <span class="crumb" id="crumb"></span>
+  <div class="setwrap">
+    <button type="button" class="btn icon" id="setBtn" aria-haspopup="true" aria-expanded="false" aria-controls="setMenu" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="lgt">Settings</span></button>
+    <div id="setMenu" class="setmenu" role="dialog" aria-label="Settings" hidden>
+      <div class="sgrp"><span class="slab" id="lab-path">Path</span>
+        <div class="seg full" role="group" aria-labelledby="lab-path">
+          <button type="button" class="pathBtn" data-p="quick" aria-pressed="false">Quick tour</button>
+          <button type="button" class="pathBtn" data-p="full" aria-pressed="true">Full depth</button>
+        </div>
+        <small class="shint">Quick tour simplifies the worked examples and hides optional material.</small></div>
+      <div class="sgrp"><span class="slab" id="lab-theme">Theme</span>
+        <div class="seg full" role="group" aria-labelledby="lab-theme">
+          <button type="button" class="thBtn" data-t="light" aria-pressed="false">Light</button>
+          <button type="button" class="thBtn" data-t="dark" aria-pressed="false">Dark</button>
+          <button type="button" class="thBtn" data-t="auto" aria-pressed="true">Auto</button>
+        </div></div>
+      <div class="sgrp"><span class="slab" id="lab-code">Python code</span>
+        <div class="seg full" role="group" aria-labelledby="lab-code">
+          <button type="button" class="codeBtn" data-c="closed" aria-pressed="true">Collapsed</button>
+          <button type="button" class="codeBtn" data-c="open" aria-pressed="false">Expanded</button>
+        </div></div>
+      <div class="sgrp"><span class="slab">Progress</span>
+        <button type="button" class="btn full" id="pgReset">Reset progress</button></div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"><div id="progBar"></div></div>
+</header>
+<div id="texwarn" hidden>The maths renderer (KaTeX) could not be loaded, so equations are shown as LaTeX source. Everything else works offline.</div>
+<div class="layout single">
+<main id="main">
+<header class="hero slim">
+<h1>Interview drill</h1>
+<p class="lede">Questions for a mid-level AI engineer interview that mixes model internals with applied LLM work. Read the question, answer it out loud, then reveal the points an interviewer listens for and mark how you did.</p>
+<details class="callout note"><summary>How to answer any technical question</summary><ul>
+<li><b>Define</b> it in one sentence.</li>
+<li><b>Why</b> it exists: the problem it solves.</li>
+<li><b>How</b> it works: the mechanism, with one equation or shape if it helps.</li>
+<li><b>Trade-off</b>: what it costs, or when it fails.</li>
+<li><b>Example</b>: where you used it, or would use it.</li></ul>
+<p>Aim for 60 to 90 seconds, then stop and let the interviewer choose the follow-up.</p></details>
+</header>
+<div class="drillbar" id="drillbar"></div>
+<section class="topic" id="iv-core" data-title="Transformer fundamentals">
+<h2>Transformer fundamentals</h2>
+
+
+<h3>Architecture</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q1</span>Walk me through what happens when a prompt goes into a decoder-only LLM.</h4><p class="sample"><b>Sample answer</b> The text is split into tokens, each token becomes a vector with position information added, and a stack of identical blocks, each attention plus an MLP with residuals and LayerNorm, refines those vectors. The last position’s vector is projected to a probability for every vocabulary token; we pick one, append it and repeat, reusing a KV cache.</p><ul><li><b>Tokenize</b>: text becomes <span class="tex">T</span> integer IDs.</li><li><b>Embed</b>: each ID selects a row of <span class="tex">E</span>; add position information. Shape <code>[T, d_model]</code>.</li><li><b><span class="tex">L</span> blocks</b>, each: masked multi-head attention, then an MLP, each wrapped in LayerNorm and a residual add. Shape never changes.</li><li><b>Output</b>: final LayerNorm, then <span class="tex">W_U</span> gives logits <code>[T, n_vocab]</code>; softmax at the last position gives the next-token distribution.</li><li><b>Decode</b>: choose a token (greedy or sampling), append it, repeat. The KV cache avoids recomputing earlier positions.</li></ul><p class="fu"><b>Likely follow-up:</b> “Where are most of the parameters?” In the MLPs: with <span class="tex">d_{\text{ff}}=4d_{\text{model}}</span> an MLP has about <span class="tex">8d_{\text{model}}^2</span> weights, attention about <span class="tex">4d_{\text{model}}^2</span>. <b>Review:</b> <a class="xref" data-ref="architecture"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q2</span><span>Explain self-attention. Why divide by <span class="tex">\sqrt{d_k}</span>?</span></h4><p class="sample"><b>Sample answer</b> Each token builds a query, compares it with every token’s key by dot product, turns the scores into weights with a softmax and takes the weighted sum of the values. We divide by the square root of the key size because dot products grow with dimension, and unscaled scores would saturate the softmax and kill its gradients.</p><ul><li>Each token is projected to a query, a key and a value.</li><li>Score of token <span class="tex">j</span> for token <span class="tex">i</span> is <span class="tex">q_i\cdot k_j</span>; softmax over <span class="tex">j</span> gives weights that sum to 1; the output is the weighted sum of values.</li><li>Matrix form: <span class="tex">\mathrm{softmax}(QK^{\top}/\sqrt{d_k})\,V</span>.</li><li>A dot product of <span class="tex">d_k</span> terms has a spread of about <span class="tex">\sqrt{d_k}</span>. Unscaled, large scores saturate softmax into near one-hot outputs with vanishing gradients. Dividing keeps the spread near 1.</li></ul><p class="fu"><b>Trap:</b> “attention weights explain the model’s decision.” They show where information was read from, not why the output was produced. <b>Review:</b> <a class="xref" data-ref="attention"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q3</span>Why multi-head attention? What are MQA and GQA?</h4><p class="sample"><b>Sample answer</b> Several heads let each token follow several relationships at once, at the same cost as one wide head because each works in a slice of the width. MQA and GQA let query heads share key and value heads, which shrinks the KV cache and speeds up decoding with little loss in quality.</p><ul><li>One head gives each token one softmax, so one pattern of focus. Several heads capture several relationships at once (syntax, coreference, nearby tokens).</li><li>Each head works in <span class="tex">d_k=d_{\text{model}}/h</span> dimensions, so the cost and parameter count match one wide head.</li><li>Head outputs are concatenated and mixed by <span class="tex">W_O</span>.</li><li><b>MQA</b> (multi-query): all heads share one key and value head. <b>GQA</b> (grouped-query): groups of query heads share a key and value head.</li><li>Why: the KV cache shrinks by the sharing factor, which cuts inference memory and speeds up decoding, with little quality loss.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="multihead"></a>, <a class="xref" data-ref="inference"></a></p><details class="callout code opt"><summary>In Python: grouped-query attention and its KV cache</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_core_q03_gqa.py"><code>import numpy as np
+
+
+def softmax(S, axis=-1):
+    e = np.exp(S - S.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+rng = np.random.default_rng(0)
+B, T, d_k = 1, 6, 16
+n_q_heads, n_kv_heads = 8, 2            # GQA: 4 query heads share each KV head
+group = n_q_heads // n_kv_heads
+
+Q = rng.normal(size=(B, n_q_heads, T, d_k))
+K = rng.normal(size=(B, n_kv_heads, T, d_k))   # only these are cached
+V = rng.normal(size=(B, n_kv_heads, T, d_k))
+
+# Repeat each KV head so it lines up with its group of query heads
+K_full = np.repeat(K, group, axis=1)            # [B, 8, T, d_k]
+V_full = np.repeat(V, group, axis=1)
+S = Q @ K_full.transpose(0, 1, 3, 2) / np.sqrt(d_k)
+S = np.where(np.triu(np.ones((T, T), dtype=bool), k=1), -np.inf, S)
+out = softmax(S) @ V_full
+print("Q", Q.shape, " cached K", K.shape, " output", out.shape)
+
+
+def kv_cache_bytes(L, T, kv_heads, d_k, bytes_per_number=2):
+    return 2 * L * T * kv_heads * d_k * bytes_per_number
+
+
+L, T_ctx, heads, d_k = 32, 8192, 32, 128
+for name, kv in [("MHA", heads), ("GQA (8 KV heads)", 8), ("MQA", 1)]:
+    gb = kv_cache_bytes(L, T_ctx, kv, d_k) / 1e9
+    print(f"{name:17} KV cache per request: {gb:.2f} GB")
+
+# Output:
+# Q (1, 8, 6, 16)  cached K (1, 2, 6, 16)  output (1, 8, 6, 16)
+# MHA               KV cache per request: 4.29 GB
+# GQA (8 KV heads)  KV cache per request: 1.07 GB
+# MQA               KV cache per request: 0.13 GB</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q4</span>What does the causal mask do, and why does training still run in parallel?</h4><p class="sample"><b>Sample answer</b> The causal mask sets attention scores to future positions to minus infinity, so each position sees only itself and the past. Training still runs in parallel because we feed the true text and predict every next token in one pass; the mask keeps each prediction honest.</p><ul><li>It sets the scores for later positions to −∞ before softmax, so position <span class="tex">t</span> only sees positions ≤ <span class="tex">t</span>.</li><li>Training feeds the true text (teacher forcing) and predicts every next token in one pass; the mask makes every position’s prediction honest.</li><li>It matches generation, where the future does not exist yet.</li><li>It is also why the KV cache is exact: earlier positions never change when tokens are appended.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="attention"></a>, <a class="xref" data-ref="training"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q5</span>Why do Transformers need positional encodings? What options exist?</h4><p class="sample"><b>Sample answer</b> Attention on its own ignores order, so position has to be added. The options are fixed sinusoids, a learned position table, RoPE, which rotates queries and keys so scores depend on relative distance and is the usual choice today, and ALiBi, which penalises distant tokens.</p><ul><li>Attention without a mask treats its input as a set: shuffle the tokens and the outputs shuffle with them. Order must be supplied.</li><li><b>Sinusoidal</b> (2017 paper): fixed waves of different frequencies added to the embeddings.</li><li><b>Learned absolute</b> (GPT-2): a trainable table, one row per position, with a hard maximum length.</li><li><b>RoPE</b> (rotary): rotates queries and keys by a position-dependent angle so <span class="tex">q\cdot k</span> depends on the relative offset. Common in recent open models; context can be extended by rescaling its frequencies.</li><li><b>ALiBi</b>: adds a distance-proportional penalty to attention scores.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="position"></a></p><details class="callout code opt"><summary>In Python: rotary position embedding (RoPE)</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_core_q05_rope.py"><code>import numpy as np
+
+
+def rope(x, t, base=10000):
+    """Rotate each pair of dimensions (2i, 2i+1) by the angle t * theta_i."""
+    d = x.shape[-1]
+    theta = base ** (-2 * np.arange(d // 2) / d)   # one speed per pair
+    cos, sin = np.cos(t * theta), np.sin(t * theta)
+    x1, x2 = x[0::2], x[1::2]
+    out = np.empty_like(x)
+    out[0::2] = x1 * cos - x2 * sin
+    out[1::2] = x1 * sin + x2 * cos
+    return out
+
+
+rng = np.random.default_rng(0)
+q, k = rng.normal(size=8), rng.normal(size=8)
+
+# The score depends only on the offset between the two positions
+print("q at 5,  k at 3 :", round(rope(q, 5) @ rope(k, 3), 6))
+print("q at 12, k at 10:", round(rope(q, 12) @ rope(k, 10), 6))
+print("q at 12, k at 3 :", round(rope(q, 12) @ rope(k, 3), 6))
+
+# A rotation never changes a vector's length
+print("length kept:", np.isclose(np.linalg.norm(rope(q, 7)), np.linalg.norm(q)))
+
+# Output:
+# q at 5,  k at 3 : -1.763129
+# q at 12, k at 10: -1.763129
+# q at 12, k at 3 : -1.417411
+# length kept: True</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q6</span>Why residual connections and LayerNorm? Pre-norm or post-norm?</h4><p class="sample"><b>Sample answer</b> Residual connections let each layer learn a correction and give gradients a direct path back through a deep stack; LayerNorm keeps each token’s activations at a steady scale. Most modern models use pre-norm, often RMSNorm, because it trains more stably at depth than the original post-norm.</p><ul><li><b>Residual</b> (<span class="tex">x+f(x)</span>): layers learn corrections; the gradient has a path to early layers that bypasses all weights, so deep stacks train.</li><li><b>LayerNorm</b>: resets each token vector to mean 0 and spread 1, plus a learned scale and shift, so activations do not drift.</li><li><b>Post-norm</b> (2017): normalise after the add. <b>Pre-norm</b> (GPT-style): normalise a copy before each sublayer; easier to train at depth.</li><li><b>RMSNorm</b>, used in many recent models, drops the mean subtraction and the bias: cheaper and about as good.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="block"></a>, <a class="xref" data-ref="paper"></a></p><details class="callout code opt"><summary>In Python: RMSNorm next to LayerNorm</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_core_q06_rmsnorm.py"><code>import numpy as np
+
+
+def layer_norm(x, gamma=1.0, beta=0.0, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    return gamma * (x - mu) / np.sqrt(x.var(axis=-1, keepdims=True) + eps) + beta
+
+
+def rms_norm(x, gamma=1.0, eps=1e-5):
+    # No mean subtraction and no beta: divide by the root mean square
+    rms = np.sqrt((x ** 2).mean(axis=-1, keepdims=True) + eps)
+    return gamma * x / rms
+
+
+x = np.array([2.0, 4.0, 6.0, 8.0])
+print("LayerNorm:", layer_norm(x).round(4))
+print("RMSNorm:  ", rms_norm(x).round(4))
+
+# On a vector that already has mean 0 the two agree
+x0 = x - x.mean()
+print("same when the mean is 0:", np.allclose(layer_norm(x0), rms_norm(x0)))
+
+# Output:
+# LayerNorm: [-1.3416 -0.4472  0.4472  1.3416]
+# RMSNorm:   [0.3651 0.7303 1.0954 1.4606]
+# same when the mean is 0: True</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q7</span>What is the cost of attention, and how do models handle long context?</h4><p class="sample"><b>Sample answer</b> Attention compute grows with the square of the sequence length, and at inference the KV cache grows linearly with it. FlashAttention computes exact attention in tiles to save memory traffic, and GQA, paged KV memory, quantization and sliding windows keep long contexts affordable, though models still use the middle of a long context less reliably.</p><ul><li>Compute grows as <span class="tex">T^2 d_{\text{model}}</span>; a naive implementation stores a <span class="tex">T\times T</span> score matrix per head.</li><li><b>FlashAttention</b>: exact attention computed in tiles held in fast on-chip memory, never storing the full matrix. Same result, much less memory traffic, faster.</li><li><b>Approximate or restricted</b> attention: sliding windows, sparse patterns.</li><li>At inference, the KV cache grows linearly with <span class="tex">T</span>: GQA, paged KV memory and KV quantization address that.</li><li>Quality also matters: models often use information in the middle of a long context less reliably than at the start or end.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="why"></a>, <a class="xref" data-ref="inference"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q8</span>Encoder-only, decoder-only, encoder–decoder: when would you use each?</h4><p class="sample"><b>Sample answer</b> I would use an encoder-only model such as BERT for classification and embeddings, a decoder-only model for generation and general assistants, and an encoder–decoder model such as T5 for input-to-output tasks like translation. In practice a decoder-only model can also do those tasks by putting input and output in one sequence.</p><ul><li><b>Encoder-only</b> (BERT family): bidirectional; classification, tagging, and embedding models for search.</li><li><b>Decoder-only</b> (GPT family): causal; generation and general-purpose assistants. The dominant LLM design.</li><li><b>Encoder–decoder</b> (T5, the 2017 model): a separate input and output, linked by cross-attention; translation and summarisation.</li><li>A decoder-only model can do seq2seq tasks by putting input and output in one sequence.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="encdec"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q9</span>What is a mixture of experts (MoE)?</h4><p class="sample"><b>Sample answer</b> A mixture of experts replaces each MLP with many expert MLPs and a router that sends each token to its top one or two. You get far more parameters for roughly the compute of a smaller dense model, but every expert must sit in memory and load balancing makes training and serving harder.</p><ul><li>The MLP in each block is replaced by many expert MLPs plus a small router.</li><li>The router sends each token to its top-<span class="tex">k</span> experts (often 1 or 2).</li><li>Result: many more total parameters with roughly the compute per token of a much smaller dense model.</li><li>Costs: all experts must sit in memory, an auxiliary loss is needed to balance load across experts, training can be less stable, and serving is more complex.</li></ul><details class="callout code opt"><summary>In Python: a mixture-of-experts layer with a top-2 router</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_core_q09_moe.py"><code>import numpy as np
+
+
+def softmax(z, axis=-1):
+    e = np.exp(z - z.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+rng = np.random.default_rng(0)
+T, d_model, d_ff, n_experts, top_k = 6, 8, 16, 4, 2
+
+W_router = rng.normal(size=(d_model, n_experts))
+experts = [(rng.normal(0, 0.3, size=(d_model, d_ff)),
+            rng.normal(0, 0.3, size=(d_ff, d_model))) for _ in range(n_experts)]
+
+
+def expert_mlp(x, e):
+    W1, W2 = experts[e]
+    return np.maximum(0, x @ W1) @ W2
+
+
+def moe_layer(X):
+    logits = X @ W_router                              # [T, n_experts]
+    chosen = np.argsort(-logits, axis=1)[:, :top_k]    # top-k experts per token
+    out = np.zeros_like(X)
+    for t in range(len(X)):
+        gates = softmax(logits[t, chosen[t]])          # weights over the chosen
+        for g, e in zip(gates, chosen[t]):
+            out[t] += g * expert_mlp(X[t], e)          # only k experts run
+    return out, chosen
+
+
+X = rng.normal(size=(T, d_model))
+out, chosen = moe_layer(X)
+print("output shape:", out.shape)
+print("experts chosen per token:", chosen.tolist())
+print("tokens per expert (load):", np.bincount(chosen.ravel(), minlength=n_experts))
+print(f"each token runs {top_k} of {n_experts} expert MLPs")
+
+# Output:
+# output shape: (6, 8)
+# experts chosen per token: [[0, 2], [0, 2], [0, 2], [1, 0], [1, 3], [1, 3]]
+# tokens per expert (load): [4 3 3 2]
+# each token runs 2 of 4 expert MLPs</code></pre></details></div>
+<h3>Training</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q10</span>What is the pretraining objective? What is perplexity?</h4><p class="sample"><b>Sample answer</b> Pretraining minimises the cross-entropy of predicting each next token, so raw text provides its own labels. Perplexity is e to the power of that loss, the effective number of tokens the model is choosing between, and it is only comparable between models that share a tokenizer.</p><ul><li>Next-token prediction with cross-entropy: the average of <span class="tex">-\log p</span>(correct next token) over all positions.</li><li>Self-supervised: the targets are the text itself shifted by one, so any raw text is training data.</li><li><b>Perplexity</b> = <span class="tex">e^{\mathcal{L}}</span>: the effective number of tokens the model is choosing between. Lower is better.</li><li>Sanity check: an untrained model has loss near <span class="tex">\ln n_{\text{vocab}}</span>, perplexity near <span class="tex">n_{\text{vocab}}</span>.</li></ul><p class="fu"><b>Trap:</b> comparing perplexity across models with different tokenizers. The numbers are per token, and tokens differ. <b>Review:</b> <a class="xref" data-ref="training"></a></p><details class="callout code opt"><summary>In Python: perplexity</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_core_q10_perplexity.py"><code>import math
+
+p_correct = [0.5, 0.25, 0.9]           # probability given to each true token
+loss = -sum(math.log(p) for p in p_correct) / len(p_correct)
+print(f"loss {loss:.4f}  -&gt;  perplexity {math.exp(loss):.3f}")
+
+# An untrained model guesses uniformly: loss ln(n_vocab), perplexity n_vocab
+n_vocab = 21
+print(f"uniform: loss {math.log(n_vocab):.4f}  -&gt;  perplexity "
+      f"{math.exp(math.log(n_vocab)):.1f}")
+
+# Output:
+# loss 0.7283  -&gt;  perplexity 2.071
+# uniform: loss 3.0445  -&gt;  perplexity 21.0</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q11</span>How does a base model become a chat assistant?</h4><p class="sample"><b>Sample answer</b> Pretraining gives the model knowledge and language, supervised fine-tuning on prompt–response pairs teaches it to follow instructions in a chat format, and preference tuning with RLHF or DPO shapes helpfulness, tone and safety. Evaluation and red-teaming run throughout.</p><ul><li><b>Pretraining</b> on a very large text corpus: knowledge and language.</li><li><b>Supervised fine-tuning (SFT)</b> on prompt–response examples: follows instructions, uses a chat format.</li><li><b>Preference tuning</b> (RLHF or DPO) on pairs of better and worse answers: helpfulness, tone, safety.</li><li>Throughout: evaluation, red-teaming, safety data. Some models add training for reasoning or tool use.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-ft"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q12</span>Why AdamW, warm-up and gradient clipping?</h4><p class="sample"><b>Sample answer</b> AdamW gives each parameter its own step size from running gradient statistics and applies weight decay separately from that step. Warm-up keeps early updates small while those statistics are unreliable, and gradient clipping stops one bad batch from causing a loss spike.</p><ul><li><b>Adam</b> keeps running averages of each parameter’s gradient and squared gradient, giving every parameter its own step size.</li><li><b>AdamW</b> applies weight decay directly to the weights, separate from the adaptive step.</li><li><b>Warm-up</b>: early gradients are noisy and Adam’s estimates are poor, so the learning rate starts small, then decays.</li><li><b>Gradient clipping</b> caps the gradient norm, preventing one bad batch from causing a loss spike.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="training"></a>, <a class="xref" data-ref="paper"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q13</span>The loss curve misbehaves. How do you diagnose it?</h4><p class="sample"><b>Sample answer</b> I first check the shape of the curve: spikes or NaN point to the learning rate, warm-up, precision or a bad batch, and a flat loss from the start points to a bug, which I confirm by overfitting one small batch. If training loss falls while validation loss rises it is overfitting, and if both plateau high the model is too small or the learning rate too low.</p><ul><li><b>Loss spikes or NaN</b>: learning rate too high, missing warm-up, bad data batch, precision overflow. Lower the LR, clip gradients, use bf16, inspect the batch.</li><li><b>Flat from the start</b>: bug. Overfit one small batch first; check that labels are shifted and that the mask is right.</li><li><b>Train falls, validation rises</b>: overfitting. More data, dropout or weight decay, early stopping.</li><li><b>Both plateau high</b>: model too small or LR too low.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="training"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q14</span>What do scaling laws say? What is “Chinchilla-optimal”?</h4><p class="sample"><b>Sample answer</b> Loss falls as a smooth power law in parameters, data and compute, and training costs about six times parameters times tokens in FLOPs. Chinchilla showed that for a fixed budget you should grow both together, about 20 tokens per parameter, though today models are often trained far longer because smaller models are cheaper to serve.</p><ul><li>Loss falls as a smooth power law in parameters <span class="tex">N</span>, data <span class="tex">D</span> and compute, until one of them becomes the bottleneck.</li><li>Training compute is about <span class="tex">6ND</span> FLOPs.</li><li>Hoffmann et al. (2022): for a fixed compute budget, grow <span class="tex">N</span> and <span class="tex">D</span> together, roughly 20 tokens per parameter.</li><li>In practice many models are trained on far more tokens than that: a smaller model is cheaper to serve, and serving cost dominates over the model’s lifetime.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="scaling"></a></p></div>
+<h3>Inference</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q15</span>What is the KV cache, and how much memory does it use?</h4><p class="sample"><b>Sample answer</b> The KV cache stores the keys and values of earlier tokens so each decoding step computes only the new token, which is exact because of the causal mask. It takes about two times layers times tokens times the key–value width times bytes per number, per request, and it often limits how many users one GPU can serve.</p><ul><li>During generation, the keys and values of earlier tokens are stored and reused; each step computes only the new token.</li><li>Valid because of the causal mask: earlier positions never change.</li><li>Memory ≈ 2 × layers × tokens × (KV heads × <span class="tex">d_k</span>) × bytes per number × batch. Without GQA the bracket is <span class="tex">d_{\text{model}}</span>.</li><li>It grows with context length and concurrent requests, and often limits how many users one GPU can serve.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="inference"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q16</span>Prefill versus decode: why are they different?</h4><p class="sample"><b>Sample answer</b> Prefill processes the whole prompt in one parallel pass, so it is limited by compute and sets the time to the first token. Decode produces one token per step and rereads all the weights each time, so it is limited by memory bandwidth and sets tokens per second; batching helps because requests share each read.</p><ul><li><b>Prefill</b>: the whole prompt in one parallel pass. Compute-bound. Sets time to first token.</li><li><b>Decode</b>: one token per step, reading all weights each step. Memory-bandwidth-bound. Sets tokens per second.</li><li>Batching many requests raises decode throughput because they share each read of the weights.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="inference"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q17</span>How would you make inference cheaper or faster?</h4><p class="sample"><b>Sample answer</b> I would quantize the weights, serve with continuous batching and paged KV memory as vLLM does, cache shared prompt prefixes, and use speculative decoding. Beyond that, route easy requests to a smaller or distilled model and keep prompts and outputs short, checking quality on our eval after each change.</p><ul><li><b>Quantization</b>: 8- or 4-bit weights (e.g. GPTQ, AWQ) cut memory and bandwidth; check quality on your own eval.</li><li><b>Continuous batching</b> and <b>paged KV memory</b> (as in vLLM): keep the GPU full and memory unfragmented.</li><li><b>Speculative decoding</b>: a small draft model proposes several tokens, the large model checks them in one pass; with correct acceptance sampling the output distribution is unchanged.</li><li><b>Prefix (prompt) caching</b> for shared system prompts and documents.</li><li><b>Smaller or distilled model</b>, routing easy requests to it; shorter prompts; capped output length.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="inference"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q18</span>Explain temperature, top-k and top-p. Is temperature 0 deterministic?</h4><p class="sample"><b>Sample answer</b> Temperature scales the logits, sharper below 1 and flatter above, while top-k and top-p cut off the unlikely tail before sampling. Temperature 0 means greedy decoding, but results can still vary between runs because batching and floating-point order are not fully deterministic.</p><ul><li><b>Temperature</b> divides logits: below 1 sharpens, above 1 flattens; the ranking never changes.</li><li><b>Top-k</b> keeps the <span class="tex">k</span> most likely tokens; <b>top-p</b> keeps the smallest set whose probabilities reach <span class="tex">p</span>. Both cut the unreliable tail.</li><li>Low temperature for extraction, classification and code; higher for brainstorming.</li><li>Temperature 0 means greedy, but outputs can still vary run to run in practice, because batching and floating-point arithmetic order are not fully deterministic.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="generation"></a></p></div>
+<h3>Rapid-fire definitions</h3>
+<p>Interviewers often check vocabulary with quick questions. One line each:</p>
+<div class="scroll"><table class="numt cmp"><thead><tr><th>Term</th><th>One-line answer</th></tr></thead><tbody><tr><th scope="row">Token</th><td>≈ ¾ of an English word on average; non-English text and code often use more tokens.</td></tr><tr><th scope="row">Logits</th><td>Raw scores, one per vocabulary entry; softmax turns them into probabilities.</td></tr><tr><th scope="row"><span class="tex">d_{\text{model}}, d_k, d_{\text{ff}}</span></th><td>Model width; per-head width (<span class="tex">d_{\text{model}} / h</span>); MLP hidden width (often about <span class="tex">4 \times d_{\text{model}}</span>).</td></tr><tr><th scope="row">Residual stream</th><td>The per-token vector every layer reads from and adds to.</td></tr><tr><th scope="row">RMSNorm</th><td>LayerNorm without mean subtraction or bias.</td></tr><tr><th scope="row">SwiGLU</th><td>A gated MLP activation used in many recent models in place of GELU.</td></tr><tr><th scope="row">RoPE</th><td>Rotary position encoding: relative position enters through rotations of q and k.</td></tr><tr><th scope="row">GQA</th><td>Groups of query heads share key/value heads to shrink the KV cache.</td></tr><tr><th scope="row">FlashAttention</th><td>Exact attention computed tile by tile to avoid storing the T × T matrix.</td></tr><tr><th scope="row">MoE</th><td>Router sends each token to a few expert MLPs: more parameters, similar compute.</td></tr><tr><th scope="row">Perplexity</th><td>e to the power of the loss.</td></tr><tr><th scope="row">Weight tying</th><td>Output projection reuses the embedding table.</td></tr></tbody></table></div>
+
+</section>
+<section class="topic" id="iv-rag" data-title="RAG and embeddings">
+<h2>RAG and embeddings</h2>
+<p>RAG means fetching relevant text at question time and placing it in the prompt, so that the model answers from your documents and not from memory. It is the most common architecture in applied LLM work, and interviewers expect you to discuss each stage and how to evaluate it.</p>
+<div class="flow" role="img" aria-label="Diagram: offline, documents are chunked, embedded and indexed. Online, the query is embedded, the top chunks are retrieved and reranked, placed in the prompt, and the LLM answers with citations.">
+  <div><b>Offline</b><small>documents → chunk → embed → index</small></div><i>·</i>
+  <div class="fq"><b>Query</b><small>rewrite, embed</small></div><i>→</i>
+  <div class="fk"><b>Retrieve</b><small>vector + keyword, top 20–100</small></div><i>→</i>
+  <div class="fk"><b>Rerank</b><small>keep the best 3–10</small></div><i>→</i>
+  <div class="fv"><b>Generate</b><small>prompt with context, answer with citations</small></div>
+</div>
+<h3>Concepts</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q1</span>What is RAG, and when would you choose it over fine-tuning?</h4><p class="sample"><b>Sample answer</b> RAG retrieves relevant passages for each question and puts them in the prompt, so I choose it when the gap is knowledge, especially private or changing documents, because updating means re-indexing and it gives citations and access control. I would fine-tune for behaviour such as format or style, and the two combine well.</p><ul><li>Retrieve relevant passages for each query and include them in the prompt.</li><li>Use RAG for <b>knowledge</b>: private, changing or very large document sets. Updating means re-indexing, not retraining.</li><li>Gives <b>citations</b> and lets you enforce <b>access control</b> per user.</li><li>Use fine-tuning for <b>behaviour</b>: format, style, tone, domain phrasing. The two combine well.</li></ul><p class="fu"><b>Trap:</b> “fine-tune the model on our docs so it knows them.” Fine-tuning is unreliable for adding facts and cannot cite or be updated cheaply.</p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q2</span>What is an embedding model, and how is similarity measured?</h4><p class="sample"><b>Sample answer</b> An embedding model maps a whole text to one vector, trained so related texts land close together, and we compare vectors with cosine similarity. Because queries and documents are embedded separately, document vectors are computed once and search stays fast.</p><ul><li>A model, often encoder-only, that maps a text to one vector; trained contrastively so related texts land close together.</li><li>Similarity is usually <b>cosine similarity</b> (a dot product of normalised vectors).</li><li><b>Bi-encoder</b>: query and documents are embedded separately, so document vectors are computed once and search is fast.</li><li>Different from the token embeddings inside an LLM: one vector per text, not per token.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="tokens"></a></p><details class="callout code opt"><summary>In Python: cosine similarity search</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_rag_q02_cosine.py"><code>import re
+import numpy as np
+
+docs = [
+    "Reset your password from the account settings page.",
+    "Expense claims must be filed within 30 days of purchase.",
+    "The VPN client needs to be updated before connecting.",
+    "Annual leave requests go to your line manager for approval.",
+    "Forgotten password? Use the self-service reset link.",
+]
+words = lambda text: re.findall(r"[a-z0-9]+", text.lower())
+vocab = sorted({w for d in docs for w in words(d)})
+
+
+def embed(text):
+    # Word counts stand in for a real embedding model here; the search code
+    # below is the same whichever model produces the vectors.
+    v = np.array([words(text).count(w) for w in vocab], dtype=float)
+    return v / (np.linalg.norm(v) or 1.0)          # normalise to length 1
+
+
+doc_vectors = np.stack([embed(d) for d in docs])   # computed once, offline
+
+
+def search(query, k=2):
+    scores = doc_vectors @ embed(query)            # cosine = dot of unit vectors
+    best = np.argsort(-scores)[:k]
+    return [(round(float(scores[i]), 3), docs[i]) for i in best]
+
+
+for score, doc in search("how do I reset my password"):
+    print(score, doc)
+
+# Output:
+# 0.5 Reset your password from the account settings page.
+# 0.5 Forgotten password? Use the self-service reset link.</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q3</span>How do you chunk documents?</h4><p class="sample"><b>Sample answer</b> I split on the document’s structure, such as headings, paragraphs and table rows, into chunks of a few hundred tokens with some overlap, then tune the size on the eval. Each chunk carries metadata such as title, section path, date and permissions, and a parent–child scheme can retrieve small chunks but pass their larger section to the model.</p><ul><li>Chunk size trades precision against context: small chunks match precisely but lose surrounding meaning; large chunks dilute the embedding and waste prompt space.</li><li>A common start: a few hundred tokens with some overlap, then tune on your eval.</li><li>Split on structure (headings, paragraphs, code blocks, table rows), not at a fixed character count.</li><li>Attach metadata: title, section path, date, source URL, permissions.</li><li><b>Parent–child</b>: retrieve small chunks, pass their larger parent section to the model.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q4</span>How does vector search scale to millions of chunks?</h4><p class="sample"><b>Sample answer</b> Comparing the query with every vector is too slow at scale, so we use an approximate nearest-neighbour index such as HNSW, IVF or product quantization, which trades a little recall for a large speed-up. Metadata filters run during the search, and the tool, from pgvector to a dedicated vector database, depends on scale and operations effort.</p><ul><li>Exact search compares the query to every vector: too slow at scale.</li><li><b>Approximate nearest neighbour</b> (ANN) indexes trade a little recall for large speed-ups: <b>HNSW</b> (navigable graph), <b>IVF</b> (search only nearby clusters), <b>PQ</b> (compressed vectors).</li><li>Filter on metadata (permissions, date, product) during search.</li><li>Tooling ranges from pgvector or FAISS to dedicated vector databases; choose by scale, filtering needs and operations effort.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q5</span>Why hybrid search and reranking?</h4><p class="sample"><b>Sample answer</b> Embeddings capture meaning but miss exact strings such as error codes or product IDs, so I run keyword search alongside and merge the lists, for example with reciprocal rank fusion. A cross-encoder reranker then rescores the top few dozen results, which is accurate but too slow for the whole corpus, and only the best few go to the model.</p><ul><li>Embeddings capture meaning but miss exact strings: error codes, product IDs, names. <b>Keyword search (BM25)</b> catches those.</li><li>Run both and merge the lists, for example with <b>reciprocal rank fusion</b>.</li><li>A <b>cross-encoder reranker</b> reads query and passage together: much more accurate than a bi-encoder, but too slow for the whole corpus, so apply it to the top 20 to 100.</li><li>Then send only the best few passages to the LLM.</li></ul><details class="callout code opt"><summary>In Python: reciprocal rank fusion</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_rag_q05_rrf.py"><code>from collections import defaultdict
+
+
+def reciprocal_rank_fusion(rankings, k=60):
+    """Merge ranked lists: each list adds 1 / (k + rank) to a document."""
+    scores = defaultdict(float)
+    for ranking in rankings:
+        for rank, doc_id in enumerate(ranking, start=1):
+            scores[doc_id] += 1 / (k + rank)
+    return sorted(scores, key=scores.get, reverse=True)
+
+
+vector_hits = ["doc7", "doc2", "doc9", "doc4"]   # semantic search order
+keyword_hits = ["doc4", "doc7", "doc1"]          # BM25 order (exact terms)
+
+print(reciprocal_rank_fusion([vector_hits, keyword_hits]))
+
+# Output:
+# ['doc7', 'doc4', 'doc2', 'doc9', 'doc1']</code></pre></details></div>
+<h3>Quality and evaluation</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q6</span>How do you evaluate a RAG system?</h4><p class="sample"><b>Sample answer</b> I evaluate retrieval and generation separately: recall@k and MRR against labelled relevant chunks, then faithfulness, relevance and correctness of the answers, scored by an LLM judge calibrated against human labels. The test set comes from real questions plus hard cases, and it runs on every change.</p><ul><li>Evaluate <b>retrieval</b> and <b>generation</b> separately, so you know which stage to fix.</li><li>Retrieval: label which chunks answer each query; measure <b>recall@k</b>, <b>MRR</b>, <b>nDCG</b>.</li><li>Generation: <b>faithfulness</b> (every claim supported by the retrieved context), <b>answer relevance</b>, <b>correctness</b> against a reference answer.</li><li>Build the test set from real user questions plus hard cases; score with an LLM judge using a rubric, calibrated against human labels.</li><li>Re-run on every change: chunking, embedder, prompt, model.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-prod"></a></p><details class="callout code opt"><summary>In Python: recall@k and MRR</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_rag_q06_metrics.py"><code>def recall_at_k(retrieved, relevant, k):
+    """Share of the relevant chunks that appear in the top k."""
+    return len(set(retrieved[:k]) &amp; relevant) / len(relevant)
+
+
+def reciprocal_rank(retrieved, relevant):
+    """1 / position of the first relevant chunk (0 if none was found)."""
+    for rank, doc_id in enumerate(retrieved, start=1):
+        if doc_id in relevant:
+            return 1 / rank
+    return 0.0
+
+
+# One labelled test query per row: what was retrieved, and what is correct
+eval_set = [
+    (["c3", "c8", "c1", "c5"], {"c1"}),
+    (["c2", "c4", "c9", "c7"], {"c2", "c7"}),
+    (["c6", "c5", "c0", "c3"], {"c4"}),
+]
+
+for k in (1, 3):
+    mean = sum(recall_at_k(r, rel, k) for r, rel in eval_set) / len(eval_set)
+    print(f"recall@{k} = {mean:.3f}")
+mrr = sum(reciprocal_rank(r, rel) for r, rel in eval_set) / len(eval_set)
+print(f"MRR      = {mrr:.3f}")
+
+# Output:
+# recall@1 = 0.167
+# recall@3 = 0.500
+# MRR      = 0.444</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q7</span>Name common RAG failure modes and fixes.</h4><p class="sample"><b>Sample answer</b> The main failures are the right passage not being retrieved, being retrieved but ignored, answers that go beyond the context, stale or conflicting sources, and multi-part questions. The fixes are better chunking, hybrid search and query rewriting, reranking and sending fewer passages, requiring citations and allowing “I don’t know”, date metadata, and splitting complex questions into sub-queries.</p><ul><li><b>Right passage not retrieved</b>: improve chunking, add hybrid search, rewrite the query, try a better or domain-tuned embedder.</li><li><b>Retrieved but ignored</b>: too many passages, or the key one buried in the middle. Rerank, send fewer, put the best first.</li><li><b>Answers beyond the context</b>: instruct the model to use only the context, allow “I don’t know”, require citations, check faithfulness.</li><li><b>Stale or conflicting sources</b>: date metadata, de-duplication, prefer the newest.</li><li><b>Multi-part questions</b>: decompose into sub-queries, or retrieve iteratively.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q8</span>How do you handle follow-up questions in a conversation?</h4><p class="sample"><b>Sample answer</b> A follow-up such as “what about the second one?” retrieves nothing on its own, so I rewrite it into a standalone question using the chat history before retrieving. Other options are generating several query variants, HyDE, or breaking a complex question into parts.</p><ul><li>“What about the second one?” retrieves nothing useful on its own.</li><li><b>Rewrite</b> the latest message into a standalone query using the chat history, then retrieve.</li><li>Other query techniques: generate several query variants; <b>HyDE</b> (write a hypothetical answer and embed that); decompose complex questions.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q9</span>Context windows are huge now. Is RAG still needed?</h4><p class="sample"><b>Sample answer</b> Long context removes the need for retrieval on small, static document sets, but cost and latency grow with prompt length, quality drops as irrelevant text is added, and most corpora are still too large. RAG also gives per-user access control and fresh data, so I would retrieve generously, rerank and let the long context hold more.</p><ul><li>Long context removes the need to retrieve for small, static document sets.</li><li>But cost and latency grow with prompt length, quality drops as irrelevant text is added, and corpora often exceed any window.</li><li>RAG also gives per-user access control and fresh data.</li><li>Common middle ground: retrieve generously, rerank, and let the long context hold more; use prompt caching for content that repeats.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="inference"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q10</span>What security issues does RAG introduce?</h4><p class="sample"><b>Sample answer</b> The main risks are leaking documents a user may not see, indirect prompt injection from instructions hidden in documents, and sensitive data ending up in the index or logs. I enforce permissions at retrieval time, treat retrieved text as data and limit what the model can do with it, and redact before embedding.</p><ul><li><b>Permission leakage</b>: enforce access control at retrieval time, before any text reaches the model.</li><li><b>Indirect prompt injection</b>: a document can contain instructions. Treat retrieved text as data, delimit it clearly, and limit what the model is allowed to do with it.</li><li><b>Sensitive data</b> in the index: classify and redact before embedding; logs need the same care.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-agents"></a></p></div>
+
+</section>
+<section class="topic" id="iv-ft" data-title="Fine-tuning and alignment">
+<h2>Fine-tuning and alignment</h2>
+<p>Fine-tuning continues training a pretrained model on a smaller, targeted dataset. Interviewers want to know when it is the right tool, how parameter-efficient methods work, and how chat models are aligned with human preferences.</p>
+<div class="flow" role="img" aria-label="Diagram: a pretrained base model goes through supervised fine-tuning, then preference tuning, producing an aligned assistant.">
+  <div><b>Base model</b><small>next-token pretraining</small></div><i>→</i>
+  <div class="fa"><b>SFT</b><small>prompt → ideal response</small></div><i>→</i>
+  <div class="fa"><b>Preference tuning</b><small>RLHF or DPO on better/worse pairs</small></div><i>→</i>
+  <div><b>Assistant</b><small>follows instructions, safer</small></div>
+</div>
+<h3>When and how</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q1</span>Prompting, RAG or fine-tuning: how do you decide?</h4><p class="sample"><b>Sample answer</b> I start with prompting to get a baseline on our eval, add RAG if the gap is missing knowledge, and fine-tune only if the gap is behaviour, such as a consistent format, domain style or a narrow task a smaller model could do cheaply. Fine-tuning adds data, training and maintenance costs, so the eval numbers have to justify it.</p><ul><li>Start with <b>prompting</b>: cheapest, fastest to iterate, establishes a baseline on your eval.</li><li>Add <b>RAG</b> when the gap is missing knowledge.</li><li><b>Fine-tune</b> when the gap is behaviour: consistent format or style, domain jargon, a narrow task done cheaply by a smaller model, or prompts that have grown too long.</li><li>Fine-tuning brings data collection, training, evaluation and maintenance costs; justify it with eval numbers.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-rag"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q2</span>What is supervised fine-tuning (SFT)?</h4><p class="sample"><b>Sample answer</b> SFT continues training on prompt and ideal-response pairs with the usual next-token loss, usually counting the loss only on the response tokens. The data must use the model’s exact chat template, and a few hundred to a few thousand clean, consistent examples are often enough for format and style.</p><ul><li>Train on (prompt, ideal response) pairs with the usual next-token loss.</li><li>The loss is usually computed only on the response tokens; prompt tokens are masked out.</li><li>Use the model’s own chat template exactly, or behaviour degrades.</li><li>Quality beats quantity: a few hundred to a few thousand clean, consistent examples often suffice for format and style.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="training"></a></p><details class="callout code opt"><summary>In Python: masking the prompt out of the SFT loss</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_ft_q02_sft_mask.py"><code>import torch
+import torch.nn.functional as F
+
+torch.manual_seed(0)
+
+# A character "tokenizer" keeps the example self-contained
+prompt, response = "Q: 2+2? A:", " 4"
+chars = sorted(set(prompt + response))
+ids = torch.tensor([chars.index(c) for c in prompt + response])
+
+# Labels: copy the inputs, then hide the prompt with -100 (ignored by the loss)
+labels = ids.clone()
+labels[:len(prompt)] = -100
+
+# Random logits stand in for a model's output: [T, n_vocab]
+logits = torch.randn(len(ids), len(chars))
+
+# Position t predicts token t+1, so shift logits and labels by one
+loss = F.cross_entropy(logits[:-1], labels[1:], ignore_index=-100)
+full = F.cross_entropy(logits[:-1], ids[1:])
+
+counted = (labels[1:] != -100).sum().item()
+print(f"positions in the loss: {counted} of {len(ids) - 1} (response only)")
+print(f"masked loss {loss.item():.4f}   unmasked loss {full.item():.4f}")
+
+# Check: the masked loss is the mean over response positions only
+manual = -F.log_softmax(logits[:-1], dim=-1)[torch.arange(len(ids) - 1), ids[1:]]
+print("matches manual mean:", torch.isclose(loss, manual[len(prompt) - 1:].mean()).item())
+
+# Output (exact numbers can differ slightly between PyTorch versions):
+# positions in the loss: 2 of 11 (response only)
+# masked loss 3.1089   unmasked loss 2.5491
+# matches manual mean: True</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q3</span>Full fine-tuning versus LoRA. How does LoRA work?</h4><p class="sample"><b>Sample answer</b> Full fine-tuning updates every weight and needs about 16 bytes per parameter for weights, gradients and Adam state. LoRA freezes each weight matrix and learns a low-rank update B times A, often under 1% of the parameters, starting from zero and mergeable into the weights afterwards, so there is no extra latency.</p><ul><li><b>Full fine-tuning</b> updates every weight. Memory holds weights, gradients and optimizer state: roughly 16 bytes per parameter with Adam in mixed precision.</li><li><b>LoRA</b> freezes each chosen weight matrix <span class="tex">W</span> and learns a low-rank update: <span class="tex">W'=W+\tfrac{\alpha}{r}BA</span>, with rank <span class="tex">r</span> much smaller than the matrix sides.</li><li>Trainable parameters per matrix: <span class="tex">r\,(d_{\text{in}}+d_{\text{out}})</span>, often well under 1% of the model.</li><li><span class="tex">B</span> starts at zero, so training starts from the original model.</li><li>After training, <span class="tex">BA</span> can be merged into <span class="tex">W</span> (no extra latency), or kept as a swappable per-task adapter.</li></ul><p class="fu"><b>Likely follow-up:</b> “Which matrices get adapters?” Originally the attention projections; applying it to all linear layers often works better. <b>Review:</b> <a class="xref" data-ref="block"></a></p><details class="callout code opt"><summary>In Python: a LoRA layer</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_ft_q03_lora.py"><code>import torch
+import torch.nn as nn
+
+torch.manual_seed(0)
+
+
+class LoRALinear(nn.Module):
+    """W' = W + (alpha / r) * B A, with W frozen and only A, B trained."""
+
+    def __init__(self, base: nn.Linear, r=4, alpha=8):
+        super().__init__()
+        self.base = base
+        self.base.requires_grad_(False)                      # freeze W and b
+        self.A = nn.Parameter(torch.randn(r, base.in_features) * 0.01)
+        self.B = nn.Parameter(torch.zeros(base.out_features, r))  # starts at 0
+        self.scale = alpha / r
+
+    def forward(self, x):
+        return self.base(x) + (x @ self.A.T @ self.B.T) * self.scale
+
+    def merged(self) -&gt; nn.Linear:
+        """Fold B A into W: no extra cost at inference time."""
+        out = nn.Linear(self.base.in_features, self.base.out_features)
+        with torch.no_grad():
+            out.weight.copy_(self.base.weight + self.scale * self.B @ self.A)
+            out.bias.copy_(self.base.bias)
+        return out
+
+
+base = nn.Linear(512, 512)              # PyTorch stores W as [out, in]
+layer = LoRALinear(base, r=4)
+x = torch.randn(3, 512)
+print("same output as base at start:", torch.allclose(layer(x), base(x)))
+
+trainable = sum(p.numel() for p in layer.parameters() if p.requires_grad)
+print(f"trainable {trainable:,} of {trainable + base.weight.numel():,} weights",
+      f"= r * (d_in + d_out) = {4 * (512 + 512):,}")
+
+# A few training steps on a made-up target; only A and B change
+opt = torch.optim.AdamW([layer.A, layer.B], lr=1e-2)
+target = torch.randn(3, 512)
+for _ in range(20):
+    loss = ((layer(x) - target) ** 2).mean()
+    opt.zero_grad()
+    loss.backward()
+    opt.step()
+print("base weights unchanged:", torch.equal(layer.base.weight, base.weight))
+print("merged layer matches adapter:",
+      torch.allclose(layer.merged()(x), layer(x), atol=1e-5))
+
+# Output (exact numbers can differ slightly between PyTorch versions):
+# same output as base at start: True
+# trainable 4,096 of 266,240 weights = r * (d_in + d_out) = 4,096
+# base weights unchanged: True
+# merged layer matches adapter: True</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q4</span>What is QLoRA?</h4><p class="sample"><b>Sample answer</b> QLoRA stores the frozen base model in 4-bit NF4 and trains LoRA adapters in higher precision, with gradients flowing through the dequantized weights. It lets you fine-tune a large model on a single GPU at a small cost in quality.</p><ul><li>The frozen base model is stored in 4-bit precision (the NF4 format); LoRA adapters are trained in higher precision.</li><li>Gradients flow through the dequantised base weights into the adapters.</li><li>Makes fine-tuning large models possible on a single GPU, at a small quality cost.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="scaling"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q5</span>What can go wrong in fine-tuning?</h4><p class="sample"><b>Sample answer</b> The usual problems are overfitting a small dataset, forgetting general abilities, a learning rate that is wrong for the method, and data issues such as duplicates or test items leaking into training. I hold out data, train for one to three epochs, test general skills as well as the target task, and always compare against the best prompt-only baseline.</p><ul><li><b>Overfitting</b>: small datasets overfit within a few epochs. Hold out data, watch validation loss, usually 1 to 3 epochs.</li><li><b>Catastrophic forgetting</b>: general abilities degrade. Use a lower learning rate, LoRA, or mix in general data; test general skills, not only the target task.</li><li><b>Learning rate</b>: LoRA typically uses a higher LR than full fine-tuning.</li><li><b>Data problems</b>: inconsistent formats, duplicates, leakage of test items into training.</li><li><b>No baseline</b>: always compare against the best prompt-only result on the same eval.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="training"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q6</span>How would you build a fine-tuning dataset?</h4><p class="sample"><b>Sample answer</b> I start from real inputs such as logs or user requests, with consent and PII handled, and write or collect ideal outputs, using a stronger model for drafts that people then review. Then I clean and de-duplicate, use one format, cover edge cases and refusals, and split off an evaluation set before any training.</p><ul><li>Start from real inputs: logs or user requests (with consent and PII handling).</li><li>Write or collect ideal outputs; stronger models can draft synthetic data, then humans review it (check the provider’s terms).</li><li>Clean, de-duplicate, use one format, and cover edge cases and refusals.</li><li>Split off an evaluation set <b>before</b> training and never train on it.</li></ul></div>
+<h3>Alignment</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q7</span>Explain RLHF.</h4><p class="sample"><b>Sample answer</b> RLHF collects human judgements of which of two responses is better, trains a reward model to predict them, and then optimises the LLM with reinforcement learning, classically PPO, to maximise that reward. A KL penalty keeps it close to the SFT model, and the whole process is effective but complex and unstable.</p><ul><li>Collect human comparisons: for one prompt, which of two responses is better.</li><li>Train a <b>reward model</b> to predict those preferences.</li><li>Optimise the policy (the LLM) with reinforcement learning, classically PPO, to maximise reward.</li><li>Add a <b>KL penalty</b> that keeps the policy close to the SFT model.</li><li>Effective but complex: several models in memory, sensitive hyperparameters, unstable training.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q8</span>What is DPO, and why is it popular?</h4><p class="sample"><b>Sample answer</b> DPO trains directly on chosen and rejected response pairs, raising the probability of the chosen one relative to a frozen reference model. It needs no separate reward model or RL loop, so it is simpler and more stable and gives similar results in many settings.</p><ul><li>Direct Preference Optimization trains directly on preference pairs (chosen, rejected).</li><li>Its loss raises the probability of the chosen response relative to the rejected one, measured against a frozen reference model.</li><li>No separate reward model and no RL loop: simpler and more stable, similar results in many settings.</li><li>Many variants exist; the core idea is preference learning as a classification-style loss.</li></ul><details class="callout code opt"><summary>In Python: the DPO loss</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_ft_q08_dpo.py"><code>import torch
+import torch.nn.functional as F
+
+
+def sequence_logprob(logits, labels):
+    """Sum of log p(token) over a response. logits [T, V], labels [T]."""
+    logp = F.log_softmax(logits, dim=-1)
+    return logp[torch.arange(len(labels)), labels].sum()
+
+
+def dpo_loss(pi_chosen, pi_rejected, ref_chosen, ref_rejected, beta=0.1):
+    """Inputs are summed log-probabilities of whole responses, shape [batch]."""
+    margin = (pi_chosen - ref_chosen) - (pi_rejected - ref_rejected)
+    return -F.logsigmoid(beta * margin).mean()
+
+
+torch.manual_seed(0)
+logits, labels = torch.randn(5, 10), torch.randint(0, 10, (5,))
+print(f"log p(response) = {sequence_logprob(logits, labels).item():.3f}")
+
+ref_c, ref_r = torch.tensor([-12.0]), torch.tensor([-11.0])  # frozen reference
+
+# Policy equal to the reference: loss = ln 2
+print(f"policy = reference: {dpo_loss(ref_c, ref_r, ref_c, ref_r).item():.4f}")
+
+# Policy now prefers the chosen answer more than the reference does
+pi_c, pi_r = torch.tensor([-9.0]), torch.tensor([-14.0])
+print(f"policy prefers chosen: {dpo_loss(pi_c, pi_r, ref_c, ref_r).item():.4f}")
+
+# The gradient raises the chosen log-prob and lowers the rejected one
+pi_c = torch.tensor([-12.0], requires_grad=True)
+pi_r = torch.tensor([-11.0], requires_grad=True)
+dpo_loss(pi_c, pi_r, ref_c, ref_r).backward()
+print(f"step direction: chosen {-pi_c.grad.item():+.3f}, "
+      f"rejected {-pi_r.grad.item():+.3f}")
+
+# Output (exact numbers can differ slightly between PyTorch versions):
+# log p(response) = -13.736
+# policy = reference: 0.6931
+# policy prefers chosen: 0.4375
+# step direction: chosen +0.050, rejected -0.050</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q9</span>What is reward hacking, and why the KL penalty?</h4><p class="sample"><b>Sample answer</b> Reward hacking is when the policy finds outputs the reward model scores highly but people do not actually prefer, such as longer answers, flattery or false confidence. The KL penalty limits how far the policy can drift from the reference model, which restrains that exploitation.</p><ul><li>The policy finds outputs the reward model scores highly but people do not actually prefer: excess length, flattery, confident tone.</li><li>The KL penalty limits how far the policy moves from the reference model, restraining that exploitation.</li><li>Related symptom: <b>sycophancy</b>, agreeing with the user rather than being correct.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q10</span>What is distillation?</h4><p class="sample"><b>Sample answer</b> Distillation trains a small student model on the outputs or full probability distributions of a larger teacher. It keeps most of the teacher’s quality on the target task at a fraction of the serving cost, but the student rarely beats the teacher, and you must check the licence before distilling from a commercial model.</p><ul><li>Train a small <b>student</b> model on the outputs (or the full probability distributions) of a larger <b>teacher</b>.</li><li>Gives most of the teacher’s quality on the target task at a fraction of the serving cost.</li><li>The student rarely exceeds the teacher on that task; check licence terms before distilling from a commercial model.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="scaling"></a></p></div>
+
+</section>
+<section class="topic" id="iv-agents" data-title="Agents and tool use">
+<h2>Agents and tool use</h2>
+<p>An agent is an LLM running in a loop: it decides on an action, your code executes it, the result is fed back, and the loop continues until the task is done. Interviewers probe whether you know when an agent is justified, how tool calling works, what frameworks add, and how agents fail.</p>
+<div class="flow" role="img" aria-label="Diagram: the user goal goes to the LLM, which emits a tool call; code runs the tool and returns the result to the LLM; the loop repeats until a final answer.">
+  <div class="fq"><b>Goal</b><small>user request</small></div><i>→</i>
+  <div class="fa"><b>LLM decides</b><small>answer, or call a tool</small></div><i>→</i>
+  <div class="fk"><b>Tool call</b><small>name + JSON arguments</small></div><i>→</i>
+  <div class="fv"><b>Your code runs it</b><small>result returned as a message</small></div><i>↺</i>
+  <div class="fr"><b>Loop</b><small>until done or a limit is hit</small></div>
+</div>
+<h3>Building agents</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q1</span>What is an agent, and when should you not build one?</h4><p class="sample"><b>Sample answer</b> An agent is an LLM that decides its own sequence of tool calls from what it observes until the goal is met, whereas a workflow fixes the steps in code. I would not build one when a single call or a fixed workflow will do, because agents are slower, costlier and harder to test, and their errors compound.</p><ul><li>An LLM that chooses its own sequence of actions (tool calls) based on what it observes, until a goal is met.</li><li>A <b>workflow</b> is different: code fixes the steps and calls the LLM at chosen points.</li><li>Prefer the simplest thing that works: one call, then a fixed chain or workflow, then an agent only when the steps cannot be known in advance.</li><li>Agents cost more, are slower and harder to test, and errors compound over steps.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q2</span>How does tool (function) calling work?</h4><p class="sample"><b>Sample answer</b> You describe each tool with a name, a description and a JSON schema; the model replies with a structured call naming a tool and its arguments. Your code validates and runs it and sends the result back, and the model either calls another tool or answers. The model never executes anything itself.</p><ul><li>You describe each tool to the model: a name, a description and a JSON schema for its parameters.</li><li>The model replies with a structured call: tool name plus arguments.</li><li><b>Your code</b> validates the arguments, executes the tool and sends back the result; the model never executes anything itself.</li><li>The model then continues: another call, or a final answer.</li></ul><details class="callout code opt"><summary>In Python: a tool-calling loop</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_agent_q02_tools.py"><code>import json
+
+# 1. Describe each tool: name, description and a JSON schema for its arguments
+TOOLS = {
+    "get_order_status": {
+        "description": "Look up the delivery status of an order by its ID.",
+        "parameters": {"type": "object",
+                       "properties": {"order_id": {"type": "string"}},
+                       "required": ["order_id"]},
+        "run": lambda order_id: {"order_id": order_id, "status": "shipped",
+                                 "eta": "2 days"},
+    },
+}
+
+
+def fake_model(messages, tools):
+    """Stands in for an LLM API call. Real providers return the same shape:
+    either a tool call (name + JSON arguments) or a final text answer."""
+    if messages[-1]["role"] == "user":
+        return {"tool_call": {"name": "get_order_status",
+                              "arguments": json.dumps({"order_id": "A-1042"})}}
+    result = json.loads(messages[-1]["content"])
+    return {"text": f"Order {result['order_id']} has {result['status']}; "
+                    f"it should arrive in {result['eta']}."}
+
+
+def validate(args, schema):
+    missing = [k for k in schema["required"] if k not in args]
+    if missing:
+        raise ValueError(f"missing arguments: {missing}")
+
+
+def run_agent(user_message, max_steps=5):
+    messages = [{"role": "user", "content": user_message}]
+    specs = {n: {k: v for k, v in t.items() if k != "run"} for n, t in TOOLS.items()}
+    for step in range(max_steps):                    # always cap the loop
+        reply = fake_model(messages, specs)
+        if "text" in reply:                          # 4. final answer: stop
+            return reply["text"]
+        call = reply["tool_call"]                    # 2. model asks for a tool
+        tool = TOOLS[call["name"]]
+        args = json.loads(call["arguments"])
+        validate(args, tool["parameters"])           # 3. your code checks ...
+        result = tool["run"](**args)                 #    ... and runs it
+        print(f"step {step}: {call['name']}({args}) -&gt; {result}")
+        messages.append({"role": "tool", "content": json.dumps(result)})
+    return "Stopped: step limit reached."
+
+
+print(run_agent("Where is my order A-1042?"))
+
+# Output:
+# step 0: get_order_status({'order_id': 'A-1042'}) -&gt; {'order_id': 'A-1042', 'status': 'shipped', 'eta': '2 days'}
+# Order A-1042 has shipped; it should arrive in 2 days.</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q3</span>What makes a good tool?</h4><p class="sample"><b>Sample answer</b> A good tool has a clear name and description, because the model reads them like documentation, typed parameters with enums and defaults, and concise results with error messages the model can act on. I prefer a few well-scoped, safe tools: read-only or idempotent where possible and permission-checked.</p><ul><li>A clear name and description: the model reads them like documentation.</li><li>A few well-scoped tools instead of many overlapping ones.</li><li>Typed parameters, enums where possible, sensible defaults.</li><li>Concise results and actionable error messages the model can recover from.</li><li>Safe by design: read-only where possible, idempotent, permission-checked. Standards such as the Model Context Protocol (MCP) let one tool server work with many clients.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q4</span>What agent patterns do you know?</h4><p class="sample"><b>Sample answer</b> ReAct alternates reasoning, an action and its observation; plan-then-execute drafts a plan and works through it, re-planning as needed; reflection has the model critique and revise its own output. An orchestrator can also split a task across worker sub-agents, which suits independent parallel subtasks but costs more tokens.</p><ul><li><b>ReAct</b>: alternate reasoning, an action, and the observation it returns.</li><li><b>Plan then execute</b>: draft a plan, then work through its steps, re-planning when needed.</li><li><b>Reflection</b>: the model critiques and revises its own output.</li><li><b>Orchestrator and workers</b>: one agent splits the task and delegates to sub-agents. Useful for independent, parallel subtasks; costs more tokens and coordination.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q5</span>How does an agent remember things?</h4><p class="sample"><b>Sample answer</b> Short-term memory is the context window, which I trim or summarise as it fills. Long-term memory means writing facts or past episodes to a database or vector index and retrieving them when relevant, while authoritative state such as orders stays in our own systems.</p><ul><li><b>Short-term</b>: the context window. Trim, or summarise older turns, as it fills.</li><li><b>Long-term</b>: write facts or past episodes to a store (database, vector index) and retrieve them when relevant.</li><li>Keep authoritative state (orders, tickets, files) in your systems, not in the model’s context.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-rag"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q6</span>How do you get reliable structured output?</h4><p class="sample"><b>Sample answer</b> I use the provider’s structured-output mode with a schema, which relies on constrained decoding to rule out invalid tokens, and keep the schema small and flat with each field described. I still validate every response and retry with the validation error included.</p><ul><li>Use the provider’s structured-output or JSON mode with a schema.</li><li>Constrained decoding masks out tokens that would break the schema.</li><li>Always validate (for example with a schema library) and retry with the validation error included.</li><li>Keep schemas small and flat; describe each field.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="generation"></a></p><details class="callout code opt"><summary>In Python: validate structured output and retry</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_agent_q06_structured.py"><code>import json
+from dataclasses import dataclass
+
+
+@dataclass
+class Ticket:
+    title: str
+    priority: str          # one of PRIORITIES
+    component: str
+
+
+PRIORITIES = {"low", "medium", "high"}
+
+
+def parse_ticket(raw: str) -&gt; Ticket:
+    data = json.loads(raw)                              # may raise on bad JSON
+    missing = {"title", "priority", "component"} - data.keys()
+    if missing:
+        raise ValueError(f"missing fields: {sorted(missing)}")
+    if data["priority"] not in PRIORITIES:
+        raise ValueError(f"priority must be one of {sorted(PRIORITIES)}")
+    return Ticket(data["title"], data["priority"], data["component"])
+
+
+# Stands in for an LLM: two flawed replies, then a valid one
+replies = iter([
+    'Sure! {"title": "Login fails"',                                  # broken
+    '{"title": "Login fails", "priority": "urgent", "component": "auth"}',
+    '{"title": "Login fails", "priority": "high", "component": "auth"}',
+])
+fake_model = lambda prompt: next(replies)
+
+
+def extract_ticket(text, max_attempts=3):
+    prompt = f"Return JSON with title, priority, component for: {text}"
+    for attempt in range(1, max_attempts + 1):
+        raw = fake_model(prompt)
+        try:
+            return parse_ticket(raw)
+        except (json.JSONDecodeError, ValueError) as err:
+            print(f"attempt {attempt} rejected: {err}")
+            prompt += f"\nYour last reply was invalid: {err}. Try again."
+    raise RuntimeError("no valid output")
+
+
+print(extract_ticket("Users cannot log in since this morning's release."))
+
+# Output:
+# attempt 1 rejected: Expecting value: line 1 column 1 (char 0)
+# attempt 2 rejected: priority must be one of ['high', 'low', 'medium']
+# Ticket(title='Login fails', priority='high', component='auth')</code></pre></details></div>
+<h3>Frameworks</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q7</span>What do frameworks such as LangChain and LangGraph give you, and when would you skip them?</h4><p class="sample"><b>Sample answer</b> LangChain gives integrations behind one interface and agent building blocks such as create_agent, and LangGraph is a lower-level runtime for stateful agents with persistence, streaming and human approval. I use them when I need durable state, approvals or many integrations, and write plain code for a single call or a fixed chain, because frameworks add a layer to debug and change quickly.</p><ul><li><b>LangChain</b>: integrations behind one interface (many model providers, tools, vector stores) and agent building blocks; <code>create_agent</code> builds a tool-calling agent from a model, tools and a system prompt.</li><li><b>LangGraph</b>: a lower-level runtime for long-running, stateful agents. You define the flow as a graph; it adds persistence, streaming and pauses for human input. It does not need LangChain, and LangChain’s agents are built on it.</li><li><b>Gains</b>: less boilerplate, switching providers by configuration, durable state and approval steps without writing them yourself.</li><li><b>Costs</b>: another layer to debug, APIs that change quickly, and a dependency to keep up to date. The core agent loop is short enough to write yourself.</li><li>Rule of thumb: plain code for a single call or a fixed chain; a framework when you need durable state, human approval or many integrations.</li></ul><p class="fu"><b>Trap:</b> knowing only a framework’s API. Interviewers want the loop underneath: the model call, the tool execution, the state and the stop condition.</p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q8</span>Why model an agent as a graph instead of a plain loop?</h4><p class="sample"><b>Sample answer</b> A graph makes the control flow explicit: nodes are steps, edges say what runs next, conditional edges branch on a shared state, and loops are visible and bounded. Each node can be tested on its own, and adding a retry or a review step is just another node and edge.</p><ul><li><b>Nodes</b> are steps (call the model, run a tool, check the output); <b>edges</b> say what runs next; <b>conditional edges</b> choose the next step from the state.</li><li><b>State</b> is one shared record that every node reads and updates. In LangGraph, a <b>reducer</b> decides how an update merges, for example appending messages instead of replacing them.</li><li>Loops still exist (model → tool → model), but they are explicit and bounded, and fixed steps and model-driven steps sit in the same graph.</li><li>Each node can be tested alone, and adding a retry, a review step or a branch is one more node and edge.</li><li>In LangGraph: <code>StateGraph</code>, <code>add_node</code>, <code>add_edge</code>, <code>add_conditional_edges</code>, <code>START</code> and <code>END</code>, then <code>compile()</code>.</li></ul><details class="callout code opt"><summary>In Python: a graph agent with a checkpoint and a human approval step</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_agent_q08_graph.py"><code>import copy
+
+# What a graph runtime such as LangGraph automates, in plain Python: nodes that
+# update shared state, a conditional edge, a checkpoint after every step, and a
+# pause for human approval. The "model" is a scripted stand-in, not an LLM.
+
+
+def call_model(state):
+    if "order" not in state:
+        return {"action": "lookup_order"}
+    if state["order"]["status"] == "damaged" and "refund" not in state:
+        return {"action": "refund", "amount": 40}
+    return {"action": "finish", "answer": state.get("refund", "No refund needed.")}
+
+
+class Interrupt(Exception):
+    """Raised by a node to pause the run until a person answers."""
+
+
+def model_node(state, resume):
+    state["next"] = call_model(state)
+
+
+def lookup_node(state, resume):
+    state["order"] = {"id": "A-1042", "status": "damaged"}   # stands in for a tool
+
+
+def refund_node(state, resume):
+    # On resume the node runs again from its start, so nothing before the pause
+    # may have side effects (LangGraph's interrupt() behaves the same way)
+    if resume is None:
+        raise Interrupt(f"approve a refund of {state['next']['amount']}?")
+    state["refund"] = "Refund issued." if resume == "yes" else "Refund declined."
+
+
+NODES = {"model": model_node, "lookup_order": lookup_node, "refund": refund_node}
+EDGES = {"lookup_order": "model", "refund": "model"}       # tools return to the model
+
+
+def route(state):                                          # conditional edge
+    action = state["next"]["action"]
+    return "END" if action == "finish" else action
+
+
+CHECKPOINTS = {}                                           # thread_id -&gt; (state, node)
+
+
+def run(thread_id, state=None, resume=None, max_steps=10):
+    if state is None:                                      # resume from the checkpoint
+        state, node = copy.deepcopy(CHECKPOINTS[thread_id])
+    else:
+        node = "model"
+    for _ in range(max_steps):
+        print("  step:", node)
+        try:
+            NODES[node](state, resume)
+        except Interrupt as pause:
+            CHECKPOINTS[thread_id] = (copy.deepcopy(state), node)
+            return f"paused, {pause}"
+        resume = None
+        node = route(state) if node == "model" else EDGES[node]
+        CHECKPOINTS[thread_id] = (copy.deepcopy(state), node)
+        if node == "END":
+            return state["next"]["answer"]
+    return "stopped at the step limit"
+
+
+print(run("thread-1", state={"goal": "My order arrived damaged"}))
+print("...a person reviews the request, then the same thread resumes...")
+print(run("thread-1", resume="yes"))
+
+# Output:
+#   step: model
+#   step: lookup_order
+#   step: model
+#   step: refund
+# paused, approve a refund of 40?
+# ...a person reviews the request, then the same thread resumes...
+#   step: refund
+#   step: model
+# Refund issued.</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q9</span>How do checkpoints and human approval work in a stateful agent?</h4><p class="sample"><b>Sample answer</b> A checkpointer saves the graph’s state under a thread ID as it runs, so a run can resume after a crash or a pause. For approval a node calls interrupt() to pause and hand an action to a person, and the run resumes on the same thread with their answer, rerunning that node from its start, so anything before the pause must be safe to repeat.</p><ul><li>A <b>checkpointer</b> saves the graph’s state as it runs, under a <b>thread ID</b>. A run can then resume after a crash or a pause, and a conversation can continue later.</li><li>For approval, a node pauses the run (LangGraph’s <code>interrupt()</code>) and hands back a payload, such as the action it wants to take. Your application shows it to a person.</li><li>The run resumes on the same thread with the person’s answer (<code>Command(resume=...)</code>), which becomes the return value of <code>interrupt()</code>.</li><li>Use a durable checkpointer in production, such as one backed by Postgres; in-memory ones lose everything on restart.</li></ul><p class="fu"><b>Trap:</b> on resume, the paused node runs again from its start, so anything it does before the pause must be safe to repeat. <b>Likely follow-up:</b> “How is this different from long-term memory?” Checkpoints belong to one thread, one conversation; a separate store holds what should persist across threads.</p></div>
+<h3>Reliability and safety</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q10</span>How do agents fail, and how do you mitigate it?</h4><p class="sample"><b>Sample answer</b> Agents loop, choose the wrong tool or invent arguments, compound errors over long tasks, overflow their context and claim success too early. I add step and cost limits, validate arguments, keep tasks short with verification steps, summarise history, and check the end state with code.</p><ul><li><b>Loops</b> and repeated actions: step, time and cost limits; detect repeats.</li><li><b>Wrong tool or invented arguments</b>: clearer tool descriptions, validation, fewer tools.</li><li><b>Errors compound</b> over long tasks: shorter tasks, checkpoints, verification steps.</li><li><b>Context overflow</b>: summarise history, keep tool outputs short.</li><li><b>Stopping too early</b> or claiming success: check the end state with code where possible.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q11</span>What are the security risks of agents?</h4><p class="sample"><b>Sample answer</b> The biggest risk is prompt injection from web pages, emails or files, so I treat every tool output as untrusted data. I give agents only the permissions they need, require human confirmation for irreversible or outward-facing actions, sandbox code and keep audit logs, assuming an injected instruction will eventually get through.</p><ul><li><b>Prompt injection</b>: web pages, emails or files contain instructions the model may follow. Treat all tool output as untrusted data.</li><li><b>Least privilege</b>: only the tools and permissions the task needs.</li><li><b>Human confirmation</b> for irreversible or outward-facing actions: payments, deletions, sending messages.</li><li><b>Sandbox</b> code execution; keep audit logs of every action.</li><li>Assume an injected instruction will eventually get through, and limit what damage it could do.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-rag"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q12</span>How do you evaluate an agent?</h4><p class="sample"><b>Sample answer</b> I build a suite of realistic tasks with checkable outcomes, measure the success rate by checking the end state with code, and inspect trajectories for wrong tools, wasted steps, cost and latency. Each task runs several times because runs vary, and every production failure becomes a new test.</p><ul><li>A suite of realistic tasks with a checkable outcome; measure the <b>task success rate</b>.</li><li>Check the end state with code where possible (a record created, a test passing).</li><li>Inspect <b>trajectories</b>: right tools, wasted steps, cost and latency per task.</li><li>Run each task several times; report pass rates, because runs vary.</li><li>Add every production failure to the suite.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-prod"></a></p></div>
+
+</section>
+<section class="topic" id="iv-prod" data-title="Evaluation and production">
+<h2>Evaluation and production</h2>
+<p>Mid-level interviews usually include a “how would you ship and run this?” discussion. The questions below cover evaluation, cost, latency, reliability and safety, and end with a worked system-design answer you can adapt.</p>
+<h3>Evaluation</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q1</span>How do you evaluate an LLM feature?</h4><p class="sample"><b>Sample answer</b> I agree on what success means with stakeholders, then build an eval set of real inputs, edge cases and adversarial cases, each with a reference answer or rubric. Scoring depends on the output: exact checks for structured output, a calibrated LLM judge for open text, human review for a sample; it runs on every change, followed by online metrics after launch.</p><ul><li>Agree on what success means with stakeholders, and turn it into measurable criteria.</li><li>Build an eval set: real user inputs, edge cases, adversarial cases; a reference answer or rubric for each.</li><li>Choose the scorer by output type: exact match or parsing checks for structured output; task metrics; an LLM judge with a rubric for open-ended text; human review for a sample.</li><li>Run it <b>offline</b> on every prompt or model change, like a regression test; measure <b>online</b> after launch (A/B tests, feedback, task completion).</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q2</span>What are the pitfalls of LLM-as-judge?</h4><p class="sample"><b>Sample answer</b> LLM judges favour the first answer, longer answers and their own model family’s style, and they tend to be lenient. I give them a specific rubric with examples, run pairwise comparisons in both orders, score narrow criteria, and check agreement with human labels before trusting the scores.</p><ul><li>Biases: <b>position</b> (prefers the first answer), <b>verbosity</b> (prefers longer), <b>self-preference</b> (prefers its own model family’s style), leniency.</li><li>Mitigate: a specific rubric with examples, pairwise comparison run in both orders, scores on narrow criteria rather than “overall quality”.</li><li>Calibrate: measure agreement with human labels on a sample before trusting it.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q3</span>What causes hallucinations, and how do you reduce them?</h4><p class="sample"><b>Sample answer</b> Models are trained to produce probable text, not verified facts, so gaps get filled with plausible guesses. I ground answers in retrieved sources with citations, let the model say “I don’t know”, use low temperature and verification steps for high-stakes claims, and measure the rate on our eval, knowing it never reaches zero.</p><ul><li>The model is trained to produce probable text, not verified facts; gaps and outdated knowledge get filled with plausible guesses.</li><li>Ground answers in retrieved sources and require citations.</li><li>Let the model say “I don’t know”, and reward that in your eval.</li><li>Low temperature for factual tasks; a verification step for high-stakes claims; human review where errors are costly.</li><li>Measure the hallucination rate on your eval; it does not reach zero.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-rag"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q4</span>How do you write and manage prompts?</h4><p class="sample"><b>Sample answer</b> A good prompt states the task and role, gives the relevant context with long documents first, specifies the output format and includes a few examples, and complex work is split into steps or calls. I version prompts, review changes like code and run the eval before each release.</p><ul><li>Clear task and role, relevant context, explicit output format, a few examples.</li><li>For complex tasks, ask for step-by-step reasoning, or break the work into several calls.</li><li>Put long documents first and the question and instructions after them.</li><li>Version prompts, review changes like code, and run the eval before each release.</li></ul></div>
+<h3>Production</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q5</span>How do you choose a model?</h4><p class="sample"><b>Sample answer</b> I choose on quality measured by our own eval, then latency, price, context length, tool and multimodal support, data privacy, hosting and licence terms. I start with the strongest model to find the quality ceiling, then test cheaper ones and route easy requests to them.</p><ul><li>Quality on <b>your</b> eval, not public leaderboards alone.</li><li>Latency (time to first token, tokens per second), price per million input and output tokens, context length, tool-use and multimodal support.</li><li>Data privacy and hosting: a hosted API or self-hosted open weights; licence terms.</li><li>Start with the strongest model to find the quality ceiling, then test cheaper ones; route easy requests to a smaller model.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="scaling"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q6</span>How do you estimate and reduce cost?</h4><p class="sample"><b>Sample answer</b> Cost is roughly requests times input and output tokens times their prices, and output tokens usually cost more. I cut it with shorter prompts, capped outputs, prompt caching, routing to smaller models, batch APIs for offline work and caching repeated answers, and I track cost per request from day one.</p><ul><li>Cost ≈ requests × (input tokens × input price + output tokens × output price). Output tokens usually cost more.</li><li>Shorter prompts, capped output length, prompt caching for repeated prefixes, smaller models via routing, batch APIs for offline jobs, caching repeated answers.</li><li>Track cost per request and per user from day one.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="inference"></a></p><details class="callout code opt"><summary>In Python: estimating monthly cost</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_prod_q06_cost.py"><code>def monthly_cost(requests_per_day, input_tokens, output_tokens,
+                 price_in_per_m, price_out_per_m, cached_share=0.0,
+                 cached_discount=0.9):
+    """Prices are per million tokens. cached_share: fraction of input tokens
+    served from a prompt cache, billed at (1 - cached_discount)."""
+    effective_in = input_tokens * (1 - cached_share * cached_discount)
+    per_request = (effective_in * price_in_per_m
+                   + output_tokens * price_out_per_m) / 1e6
+    return per_request, per_request * requests_per_day * 30
+
+
+# Example prices only; use your provider's current price list
+prices = dict(price_in_per_m=3.0, price_out_per_m=15.0)
+
+for label, kwargs in [
+    ("baseline", dict(input_tokens=6000, output_tokens=500)),
+    ("shorter prompt", dict(input_tokens=3000, output_tokens=500)),
+    ("+ prompt cache 70%", dict(input_tokens=3000, output_tokens=500,
+                                cached_share=0.7)),
+    ("+ capped output", dict(input_tokens=3000, output_tokens=250,
+                             cached_share=0.7)),
+]:
+    per_req, month = monthly_cost(20_000, **kwargs, **prices)
+    print(f"{label:20} ${per_req:.4f} per request   ${month:,.0f} per month")
+
+# Output:
+# baseline             $0.0255 per request   $15,300 per month
+# shorter prompt       $0.0165 per request   $9,900 per month
+# + prompt cache 70%   $0.0108 per request   $6,498 per month
+# + capped output      $0.0071 per request   $4,248 per month</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q7</span>How do you reduce latency?</h4><p class="sample"><b>Sample answer</b> Time to first token grows with prompt length and total time with output length, so I stream the output and keep both short, with static content first so it can be cached. I also run independent calls in parallel, use a smaller model where quality allows, and use speculative decoding when we host the model.</p><ul><li>Time to first token grows with prompt length; total time grows with output length.</li><li><b>Stream</b> the output so users see progress.</li><li>Shorten prompts and outputs; put static content first so it can be cached.</li><li>Run independent calls in parallel; use a smaller model where quality allows; speculative decoding when you host the model.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="inference"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q8</span>What do you monitor in production?</h4><p class="sample"><b>Sample answer</b> I trace prompts, responses and tool calls with PII handling, and track latency, errors, timeouts, token usage, cost and refusal rate. I also watch user feedback and task completion, review a sample by hand regularly, and turn every failure into a new eval case.</p><ul><li>Traces of prompts, responses and tool calls, with PII handling and retention rules.</li><li>Latency, error and timeout rates, token usage and cost, refusal rate.</li><li>User feedback signals and task completion.</li><li>Regular sampled human review; every failure becomes a new eval case.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q9</span>How do you make an LLM service reliable?</h4><p class="sample"><b>Sample answer</b> I set timeouts and retry transient errors with exponential backoff, fall back to another model or provider, and degrade gracefully when everything fails. I validate every structured output, pin model versions and rerun the eval before any upgrade.</p><ul><li>Timeouts; retries with exponential backoff for rate limits and transient errors.</li><li>Fallback to another model or provider; graceful degradation when all fail.</li><li>Validate and parse every structured output; retry on failure.</li><li>Pin model versions; re-run the eval before upgrading.</li></ul><details class="callout code opt"><summary>In Python: retries with backoff, then a fallback</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="e_prod_q09_retry.py"><code>import random
+import time
+
+
+class TransientError(Exception):
+    """Rate limit, timeout or 5xx: worth retrying."""
+
+
+def call_with_retries(fn, max_attempts=5, base_delay=0.05, max_delay=2.0):
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return fn()
+        except TransientError as err:
+            if attempt == max_attempts:
+                raise                                  # give up: let a fallback run
+            # Exponential backoff with full jitter spreads retries out
+            delay = random.uniform(0, min(max_delay, base_delay * 2 ** attempt))
+            print(f"attempt {attempt} failed ({err}); retrying in {delay:.3f} s")
+            time.sleep(delay)
+
+
+random.seed(0)
+failures = iter([TransientError("429 rate limited"), TransientError("timeout")])
+
+
+def flaky_llm_call():                                 # stands in for an API call
+    err = next(failures, None)
+    if err:
+        raise err
+    return "answer"
+
+
+def with_fallback(primary, fallback):
+    try:
+        return call_with_retries(primary)
+    except TransientError:
+        return fallback()
+
+
+print(with_fallback(flaky_llm_call, lambda: "answer from the backup model"))
+
+# Output:
+# attempt 1 failed (429 rate limited); retrying in 0.084 s
+# attempt 2 failed (timeout); retrying in 0.152 s
+# answer</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q10</span>What guardrails would you add?</h4><p class="sample"><b>Sample answer</b> I check inputs for abuse, prompt injection and off-topic requests, and outputs for PII, policy violations, schema validity and groundedness. Tools get least privilege with confirmation for risky actions, and we red-team before launch and after major changes.</p><ul><li>Input checks: abuse, prompt injection patterns, off-topic requests.</li><li>Output checks: PII, policy violations, schema validity, groundedness for factual answers.</li><li>Least-privilege tools and confirmation steps for risky actions.</li><li>Red-team before launch and again after major changes.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-agents"></a></p></div>
+<h3>Worked system-design answer</h3>
+<div class="qa design"><h4 class="q"><span class="qn">Q11</span>System design: “Design a Q&amp;A assistant over our internal documents for 5,000 employees.”</h4><p class="sample"><b>Sample answer</b> I would clarify users, documents, permissions and success metrics, then build offline ingestion that chunks by headings with metadata and indexes for hybrid search, and an online path that rewrites the question, retrieves with permission filters, reranks and answers with citations. A golden set of real questions measures retrieval and faithfulness on every change, and I would ship a simple baseline first, then improve the weakest stage.</p><p class="dstep">Clarify (2–3 minutes)</p><ul><li>Who are the users and what do they ask? What document types, how many, how often do they change?</li><li>Do permissions differ per user? Latency and cost targets? Languages?</li><li>How will we know it works: deflected tickets, time saved, answer accuracy?</li></ul><p class="dstep">Ingestion (offline)</p><ul><li>Connectors per source; parse to text while keeping structure.</li><li>Chunk by headings with metadata: title, path, date, owner, access list.</li><li>Embed and index for both vector and keyword search; re-index incrementally on change.</li></ul><p class="dstep">Query path (online)</p><ul><li>Rewrite the question using chat history.</li><li>Hybrid retrieval of the top 50, filtered by the user’s permissions; rerank to the top 5–8.</li><li>Prompt: instructions, passages with IDs, question; require citations and allow “I don’t know”. Stream the answer.</li></ul><p class="dstep">Evaluation</p><ul><li>A golden set of about 200 real questions with answers and source passages from subject experts.</li><li>Retrieval recall@k; answer faithfulness and correctness with a calibrated LLM judge.</li><li>Run on every change; add failures from production.</li></ul><p class="dstep">Operations</p><ul><li>Cost per query estimate; prompt caching; answer caching for frequent questions.</li><li>Tracing, feedback buttons, dashboards for latency, cost and “no answer” rate.</li><li>Fallback model; rate limiting.</li></ul><p class="dstep">Risks and mitigations</p><ul><li>Permission leakage → filter at retrieval. Prompt injection in documents → treat as data, no write tools.</li><li>Stale documents → dates in metadata, prefer newest. Hallucination → citations, abstention, faithfulness checks.</li></ul><p class="dstep">Close</p><ul><li>Ship a simple baseline first, measure each stage, improve the weakest one. Name what you would do with more time.</li></ul></div>
+<h3>The project question</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q12</span>Tell me about an LLM project you built.</h4><p class="sample"><b>Sample answer</b> I answer in the STAR shape: the problem and who had it, my responsibility and the success metric, the design choices I made and the alternatives I rejected, and the results in numbers. I finish with what I learned and how the evaluation showed it worked.</p><ul><li><b>Situation</b>: the problem and who had it, in one sentence.</li><li><b>Task</b>: your responsibility and the success metric.</li><li><b>Action</b>: the design choices you made and the alternatives you rejected, with reasons.</li><li><b>Result</b>: numbers (accuracy, latency, cost, adoption) and what you learned.</li><li>Be ready to go deeper on the evaluation: how you knew it worked.</li></ul></div>
+
+</section>
+<section class="topic" id="iv-hw" data-title="Hardware">
+<h2>Hardware</h2>
+<p>Memory, bandwidth and the CUDA stack: the questions that come up when a team runs its own models.</p>
+<div class="qa"><h4 class="q"><span class="qn">Q1</span>How much GPU memory do you need to serve a model?</h4><p class="sample"><b>Sample answer</b> Memory is the weights, parameters times bytes per parameter, so 140 GB for a 70B model in bf16, plus the KV cache for every concurrent request, plus a 10 to 20% margin. If that does not fit, I quantize, choose a smaller model, shorten the context or cap concurrency, or split the model across GPUs.</p><ul><li>Weights: parameters × bytes per parameter (2 for bf16, 0.5 for int4). A 70B model in bf16 is 140 GB.</li><li>KV cache: 2 × layers × context length × key–value width × 2 bytes, for every request served at once. Grouped-query attention shrinks the width.</li><li>A margin of 10–20% for the CUDA context, activations and fragmentation.</li><li>If it does not fit: quantize, choose a smaller model, shorten the context or cap concurrency, or split the model across GPUs with tensor parallelism.</li></ul><p class="fu"><b>Likely follow-up:</b> “And to fine-tune it?” Full fine-tuning with Adam in mixed precision needs about 16 bytes per parameter plus activations; LoRA and QLoRA freeze the base weights and need far less. <b>Review:</b> <a class="xref" data-ref="hardware"></a>, <a class="xref" data-ref="iv-ft"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q2</span>Why is decoding limited by memory bandwidth, and what follows from that?</h4><p class="sample"><b>Sample answer</b> Each decode step reads every weight to produce one token per request, about one operation per byte, while a GPU such as the H100 can do about 295 operations per byte of bandwidth, so the tensor cores wait for memory. That is why quantization speeds decoding up, batching raises throughput almost for free, and for chat-style serving I compare GPUs by memory bandwidth before TFLOPS.</p><ul><li>Each decode step reads every weight once to produce one token per request: about one operation per byte read.</li><li>GPUs can do hundreds of operations per byte of bandwidth (an H100 about 295), so at small batch sizes the tensor cores wait for memory.</li><li>So quantization speeds up decoding as well as saving memory; batching raises throughput almost for free; for interactive use, compare GPUs by memory and bandwidth before TFLOPS.</li><li>Prefill is the opposite: all prompt tokens share each weight read, so it is limited by compute.</li></ul><p class="fu"><b>Trap:</b> quoting the headline TFLOPS. Data-centre figures are usually given with sparsity, twice the dense rate. <b>Review:</b> <a class="xref" data-ref="hardware"></a>, <a class="xref" data-ref="inference"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q3</span><span><code>torch.cuda.is_available()</code> returns <code>False</code> on a machine with an NVIDIA GPU. How do you debug it?</span></h4><p class="sample"><b>Sample answer</b> I run nvidia-smi to check the driver, then print torch.__version__ and torch.version.cuda: “+cpu” or None means a CPU-only build, so I reinstall the CUDA build that matches the driver. If it is a version mismatch I update the driver or install an older build, and in a container I check the GPU is passed through and CUDA_VISIBLE_DEVICES is not hiding it.</p><ul><li>Run <code>nvidia-smi</code>. If it fails, the driver is missing or broken.</li><li>Print <code>torch.__version__</code> and <code>torch.version.cuda</code>. A “+cpu” version or <code>None</code> means a CPU-only build: reinstall the CUDA build that matches the driver.</li><li>Compare <code>torch.version.cuda</code> with the CUDA version <code>nvidia-smi</code> reports. If PyTorch needs a newer one, update the driver or install an older build.</li><li>In a container, check the GPU is passed through (for Docker, <code>--gpus all</code> with the NVIDIA Container Toolkit), and that <code>CUDA_VISIBLE_DEVICES</code> is not hiding it.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="hardware"></a></p></div>
+</section>
+<footer>Everything here runs locally in your browser. The only network request is for the KaTeX maths renderer.</footer>
+</main>
+</div>
+<div id="tip" role="tooltip"></div>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/site.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous" onload="renderAllTex()" onerror="texFailed()"></script>
+</body>
+</html>

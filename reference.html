@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference · Transformers and LLMs from Scratch</title>
+<meta name="description" content="An interactive, visual, from-scratch guide to decoder-only Transformers and large language models.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c2230'/%3E%3Crect x='5' y='5' width='10' height='10' rx='2' fill='%23fde725'/%3E%3Crect x='17' y='5' width='10' height='10' rx='2' fill='%2321918c'/%3E%3Crect x='5' y='17' width='10' height='10' rx='2' fill='%233b528b'/%3E%3Crect x='17' y='17' width='10' height='10' rx='2' fill='%235ec962'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/content.css">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body data-page="reference">
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="Transformers and LLMs from Scratch, home"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c2230"/><rect x="5" y="5" width="10" height="10" rx="2" fill="#fde725"/><rect x="17" y="5" width="10" height="10" rx="2" fill="#21918c"/><rect x="5" y="17" width="10" height="10" rx="2" fill="#3b528b"/><rect x="17" y="17" width="10" height="10" rx="2" fill="#5ec962"/></svg><span class="lgt">Transformers &amp; LLMs from Scratch</span><span class="sm">Transformers &amp; LLMs</span></a>
+  <span class="crumb" id="crumb"></span>
+  <div class="setwrap">
+    <button type="button" class="btn icon" id="setBtn" aria-haspopup="true" aria-expanded="false" aria-controls="setMenu" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="lgt">Settings</span></button>
+    <div id="setMenu" class="setmenu" role="dialog" aria-label="Settings" hidden>
+      <div class="sgrp"><span class="slab" id="lab-path">Path</span>
+        <div class="seg full" role="group" aria-labelledby="lab-path">
+          <button type="button" class="pathBtn" data-p="quick" aria-pressed="false">Quick tour</button>
+          <button type="button" class="pathBtn" data-p="full" aria-pressed="true">Full depth</button>
+        </div>
+        <small class="shint">Quick tour simplifies the worked examples and hides optional material.</small></div>
+      <div class="sgrp"><span class="slab" id="lab-theme">Theme</span>
+        <div class="seg full" role="group" aria-labelledby="lab-theme">
+          <button type="button" class="thBtn" data-t="light" aria-pressed="false">Light</button>
+          <button type="button" class="thBtn" data-t="dark" aria-pressed="false">Dark</button>
+          <button type="button" class="thBtn" data-t="auto" aria-pressed="true">Auto</button>
+        </div></div>
+      <div class="sgrp"><span class="slab" id="lab-code">Python code</span>
+        <div class="seg full" role="group" aria-labelledby="lab-code">
+          <button type="button" class="codeBtn" data-c="closed" aria-pressed="true">Collapsed</button>
+          <button type="button" class="codeBtn" data-c="open" aria-pressed="false">Expanded</button>
+        </div></div>
+      <div class="sgrp"><span class="slab">Progress</span>
+        <button type="button" class="btn full" id="pgReset">Reset progress</button></div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"><div id="progBar"></div></div>
+</header>
+<div id="texwarn" hidden>The maths renderer (KaTeX) could not be loaded, so equations are shown as LaTeX source. Everything else works offline.</div>
+<div class="layout single">
+<main id="main">
+<header class="hero slim">
+<h1>Reference</h1>
+<p class="lede">The glossary, the notation used throughout, and where to go next.</p>
+<p class="jump"><a href="#glossary">Glossary</a> · <a href="#notation">Notation</a> · <a href="#further">Further learning</a></p>
+</header>
+<section class="refsec" id="glossary">
+<h2>Glossary</h2>
+<label class="ctl" style="max-width:420px">Filter the glossary<input type="text" id="gl-q" placeholder="e.g. soft, cache, top" autocomplete="off"></label>
+<dl id="gloss">
+  <div class="term"><dt>Token</dt><dd>The unit of text a model reads and writes: a word, part of a word, a character or a symbol.</dd></div>
+  <div class="term"><dt>Embedding</dt><dd>A learned vector that represents a token (or a position) as numbers the network can compute with.</dd></div>
+  <div class="term"><dt>Attention</dt><dd>The operation that lets each token build a weighted blend of information from other tokens.</dd></div>
+  <div class="term"><dt>Query</dt><dd>The vector a token uses to express what it is looking for in other tokens.</dd></div>
+  <div class="term"><dt>Key</dt><dd>The vector a token exposes so queries can be matched against it.</dd></div>
+  <div class="term"><dt>Value</dt><dd>The vector a token contributes to whoever attends to it.</dd></div>
+  <div class="term"><dt>Softmax</dt><dd>A function that turns any list of numbers into positive values that sum to 1.</dd></div>
+  <div class="term"><dt>Logits</dt><dd>The raw, unnormalised scores a model outputs, one per vocabulary entry.</dd></div>
+  <div class="term"><dt>Logits vs. probabilities</dt><dd>Logits can be any real number and only their differences matter; probabilities are what softmax makes of them, lying between 0 and 1 and summing to 1.</dd></div>
+  <div class="term"><dt>Residual stream</dt><dd>The running vector for each token that every layer reads from and adds to.</dd></div>
+  <div class="term"><dt>LayerNorm</dt><dd>Rescales one token’s vector to mean 0 and standard deviation 1, then applies a learned scale and shift.</dd></div>
+  <div class="term"><dt>MLP</dt><dd>Multi-layer perceptron: the feed-forward network applied to each token separately inside every block.</dd></div>
+  <div class="term"><dt>Context window</dt><dd>The maximum number of tokens the model can take as input at once.</dd></div>
+  <div class="term"><dt>KV cache</dt><dd>Stored keys and values of earlier tokens, reused during generation to avoid recomputing them.</dd></div>
+  <div class="term"><dt>Temperature</dt><dd>A divisor applied to logits before softmax; low values sharpen the distribution, high values flatten it.</dd></div>
+  <div class="term"><dt>Top-k</dt><dd>Sampling restricted to the k most probable tokens.</dd></div>
+  <div class="term"><dt>Top-p</dt><dd>Sampling restricted to the smallest set of top tokens whose probabilities total at least p. Also called nucleus sampling.</dd></div>
+  <div class="term"><dt>Loss</dt><dd>A single number measuring how wrong the model’s predictions were; training tries to lower it.</dd></div>
+  <div class="term"><dt>Gradient</dt><dd>For every parameter, the rate at which the loss changes when that parameter changes.</dd></div>
+  <div class="term"><dt>Optimizer</dt><dd>The algorithm that converts gradients into parameter updates, for example SGD or AdamW.</dd></div>
+  <div class="term"><dt>Parameter</dt><dd>One learned number in the model: an entry of a weight matrix, bias or embedding.</dd></div>
+  <div class="term"><dt>Checkpoint</dt><dd>A saved snapshot of all parameters (and often optimizer state) at some point in training.</dd></div>
+  <div class="term"><dt>Fine-tuning</dt><dd>Further training of a pretrained model on a smaller, more specific dataset.</dd></div>
+  <div class="term"><dt>RLHF</dt><dd>Reinforcement learning from human feedback: optimising a model towards outputs people prefer.</dd></div>
+  <div class="term"><dt>Encoder</dt><dd>A Transformer stack with unmasked self-attention that reads a whole input sequence and outputs one vector per token.</dd></div>
+  <div class="term"><dt>Decoder</dt><dd>A Transformer stack with causal self-attention that generates a sequence one token at a time.</dd></div>
+  <div class="term"><dt>Cross-attention</dt><dd>Attention whose queries come from the decoder and whose keys and values come from the encoder output.</dd></div>
+  <div class="term"><dt>Prefill</dt><dd>The first phase of inference: the whole prompt is processed in one parallel pass and its keys and values are cached.</dd></div>
+  <div class="term"><dt>Time to first token</dt><dd>The delay between sending a request and receiving the first output token; roughly the prefill time.</dd></div>
+  <div class="term"><dt>Throughput</dt><dd>Tokens generated per second summed over all requests being served at once.</dd></div>
+  <div class="term"><dt>BLEU</dt><dd>A 0 to 100 score for machine translation that measures overlap of word sequences with human reference translations.</dd></div>
+  <div class="term"><dt>Warm-up</dt><dd>Raising the learning rate gradually from near zero over the first training steps, before letting it decay.</dd></div>
+  <div class="term"><dt>Hallucination</dt><dd>Fluent output that is false or unsupported. It arises because the model generates probable text, not verified facts.</dd></div>
+  <div class="term"><dt>RAG</dt><dd>Retrieval-augmented generation: fetching relevant passages at query time and placing them in the prompt so the model answers from them.</dd></div>
+  <div class="term"><dt>Embedding model</dt><dd>A model that maps a whole text to one vector so that similar texts have similar vectors; used for semantic search.</dd></div>
+  <div class="term"><dt>Cosine similarity</dt><dd>The dot product of two vectors after scaling each to length 1; the usual similarity measure for embeddings.</dd></div>
+  <div class="term"><dt>BM25</dt><dd>A classic keyword-ranking formula; strong for exact terms such as names and codes.</dd></div>
+  <div class="term"><dt>Reranker</dt><dd>A model that reads a query and a passage together and scores their relevance; more accurate and slower than embedding search.</dd></div>
+  <div class="term"><dt>HNSW</dt><dd>Hierarchical navigable small world: a graph index for fast approximate nearest-neighbour search.</dd></div>
+  <div class="term"><dt>Chunking</dt><dd>Splitting documents into passages of manageable size before embedding them.</dd></div>
+  <div class="term"><dt>SFT</dt><dd>Supervised fine-tuning on prompt and ideal-response pairs.</dd></div>
+  <div class="term"><dt>LoRA</dt><dd>Low-rank adaptation: fine-tuning by learning a small low-rank update to frozen weight matrices.</dd></div>
+  <div class="term"><dt>QLoRA</dt><dd>LoRA trained on top of a base model stored in 4-bit precision.</dd></div>
+  <div class="term"><dt>DPO</dt><dd>Direct preference optimization: training on chosen and rejected answer pairs without a separate reward model.</dd></div>
+  <div class="term"><dt>Reward model</dt><dd>A model trained to predict which of two responses people prefer; used in RLHF.</dd></div>
+  <div class="term"><dt>Distillation</dt><dd>Training a smaller model to imitate a larger one.</dd></div>
+  <div class="term"><dt>Agent</dt><dd>An LLM running in a loop that chooses actions, such as tool calls, until a goal is reached.</dd></div>
+  <div class="term"><dt>Tool calling</dt><dd>The model emits a structured request (name and arguments) for your code to run a function and return the result.</dd></div>
+  <div class="term"><dt>Human-in-the-loop</dt><dd>Pausing an agent so a person can approve, edit or reject a step before it continues.</dd></div>
+  <div class="term"><dt>LangChain</dt><dd>An open-source framework with integrations for many model providers and tools, and agent building blocks such as <code>create_agent</code>; its agents are built on LangGraph.</dd></div>
+  <div class="term"><dt>LangGraph</dt><dd>A low-level runtime for long-running, stateful agents: the flow is a graph of nodes and edges over shared state, with checkpoints, streaming and pauses for human input.</dd></div>
+  <div class="term"><dt>Prompt injection</dt><dd>Instructions hidden in user input, documents or tool output that try to override the intended behaviour.</dd></div>
+  <div class="term"><dt>LLM-as-judge</dt><dd>Using a language model with a rubric to score or compare outputs.</dd></div>
+  <div class="term"><dt>Perplexity</dt><dd>The exponential of the cross-entropy loss: the effective number of choices the model is unsure between.</dd></div>
+  <div class="term"><dt>RoPE</dt><dd>Rotary position embedding: encodes position by rotating query and key vectors.</dd></div>
+  <div class="term"><dt>GQA</dt><dd>Grouped-query attention: several query heads share one key/value head, shrinking the KV cache.</dd></div>
+  <div class="term"><dt>FlashAttention</dt><dd>An exact attention algorithm that works tile by tile in fast memory, avoiding the full T × T matrix.</dd></div>
+  <div class="term"><dt>Mixture of experts</dt><dd>A layer with many expert MLPs and a router that sends each token to only a few of them.</dd></div>
+  <div class="term"><dt>Quantization</dt><dd>Storing weights (and sometimes activations or the KV cache) in fewer bits to save memory and bandwidth.</dd></div>
+  <div class="term"><dt>Speculative decoding</dt><dd>A small draft model proposes tokens that the large model verifies in one pass, speeding up generation.</dd></div>
+  <div class="term"><dt>GPU</dt><dd>A processor with thousands of simple cores that apply the same operation to many numbers at once; it runs nearly all model training and inference.</dd></div>
+  <div class="term"><dt>Tensor core</dt><dd>A unit inside a GPU that multiplies a small block of a matrix in one step, at reduced precision such as bf16 or fp8.</dd></div>
+  <div class="term"><dt>VRAM</dt><dd>The GPU’s own memory. The weights, the KV cache and intermediate values must fit in it.</dd></div>
+  <div class="term"><dt>Memory bandwidth</dt><dd>The bytes per second a GPU can read from its memory; the usual limit on generation speed for a single request.</dd></div>
+  <div class="term"><dt>CUDA</dt><dd>NVIDIA’s platform for running programs on its GPUs: a driver, a runtime, a compiler and libraries such as cuBLAS and cuDNN.</dd></div>
+  <div class="term"><dt>bf16</dt><dd>A 16-bit floating-point format with the same range as 32-bit floats and less precision; the usual format for training and inference.</dd></div>
+  <div class="term"><dt>Open-weight model</dt><dd>A model whose trained weights anyone can download and run. Not the same as open source: the training data and code are usually not published, and a licence sets the terms of use.</dd></div>
+  <div class="term"><dt>Ollama</dt><dd>An app for Windows, macOS and Linux that downloads quantized open-weight models by name and runs them on a GPU, a CPU or both, with an OpenAI-compatible API.</dd></div>
+  <div class="term"><dt>vLLM</dt><dd>A serving engine for Linux GPU servers that handles many requests at once with continuous batching and paged KV-cache memory, with an OpenAI-compatible API.</dd></div>
+  <div class="term"><dt>GGUF</dt><dd>The single-file model format used by llama.cpp and Ollama, usually holding quantized weights.</dd></div>
+</dl>
+<p id="gl-none" hidden>No glossary entry matches that filter.</p>
+</section>
+<section class="refsec" id="notation">
+<h2>Notation</h2>
+<p>One symbol means one thing everywhere in this guide. Vectors are written as rows, so a linear layer is <span class="tex">xW</span> and shapes read left to right exactly as they do in code. Shapes are given in square brackets, for example <code>[T, d_model]</code>.</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th>Symbol</th><th>Meaning</th><th>Shape or range</th></tr></thead>
+  <tbody>
+    <tr><th scope="row"><span class="tex">w_t</span></th><td>the token ID at position t</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">T</span></th><td>sequence length: number of tokens (also the context length)</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">t</span></th><td>a position in the sequence</td><td>0 … T−1</td></tr>
+    <tr><th scope="row"><span class="tex">n_{\text{vocab}}</span></th><td>vocabulary size</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">d_{\text{model}}</span></th><td>width of the model: length of each token’s vector</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">E,\ E_{\text{pos}}</span></th><td>token embedding table; learned position table</td><td><code>[n_vocab, d_model]; [T, d_model]</code></td></tr>
+    <tr><th scope="row"><span class="tex">PE(t)</span></th><td>sinusoidal position vector</td><td><code>[d_model]</code></td></tr>
+    <tr><th scope="row"><span class="tex">x_t,\ X</span></th><td>one token’s vector (a row); all of them stacked</td><td><code>[d_model]; [T, d_model]</code></td></tr>
+    <tr><th scope="row"><span class="tex">Q,\ K,\ V</span></th><td>queries, keys, values (one row per token)</td><td><code>[T, d_k]</code></td></tr>
+    <tr><th scope="row"><span class="tex">W_Q,\ W_K,\ W_V,\ W_O</span></th><td>attention projection matrices</td><td><code>[d_model, d_k] or [d_model, d_model]</code></td></tr>
+    <tr><th scope="row"><span class="tex">d_k,\ h</span></th><td>dimensions per head; number of heads, with <span class="tex">d_k = d_{\text{model}} / h</span></td><td>integers</td></tr>
+    <tr><th scope="row"><span class="tex">\alpha_{ij}</span></th><td>attention weight: how much token i reads from token j</td><td>0 … 1</td></tr>
+    <tr><th scope="row"><span class="tex">d_{\text{ff}}</span></th><td>hidden width of the feed-forward network</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">L,\ \ell</span></th><td>number of blocks (layers); index of one block</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">z,\ p</span></th><td>logits; probabilities after softmax</td><td><code>[n_vocab]</code></td></tr>
+    <tr><th scope="row"><span class="tex">\tau</span></th><td>sampling temperature</td><td>positive number</td></tr>
+    <tr><th scope="row"><span class="tex">\theta,\ N</span></th><td>all the parameters; how many there are</td><td>—</td></tr>
+    <tr><th scope="row"><span class="tex">\mathcal{L},\ \eta</span></th><td>loss; learning rate</td><td>numbers</td></tr>
+    <tr><th scope="row"><span class="tex">B</span></th><td>batch size: sequences processed together</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">P,\ n</span></th><td>prompt length; number of tokens generated</td><td>integers</td></tr>
+    <tr><th scope="row"><span class="tex">D</span></th><td>number of training tokens</td><td>integer</td></tr>
+  </tbody>
+</table></div>
+<p>Where a source uses different letters (the 2017 paper writes <span class="tex">pos</span>, <span class="tex">n</span> and <span class="tex">d</span>, for instance), the section says so.</p>
+</section>
+<section class="refsec" id="further">
+<h2>Further learning</h2>
+<h3>Foundational papers</h3>
+<ul class="res-list">
+  <li><a href="https://arxiv.org/abs/1706.03762" rel="noopener">Attention Is All You Need</a>, Vaswani et al., 2017. The paper that introduced the Transformer.</li>
+  <li><a href="https://arxiv.org/abs/1607.06450" rel="noopener">Layer Normalization</a>, Ba, Kiros and Hinton, 2016.</li>
+  <li><a href="https://arxiv.org/abs/1606.08415" rel="noopener">Gaussian Error Linear Units (GELUs)</a>, Hendrycks and Gimpel, 2016.</li>
+  <li><a href="https://arxiv.org/abs/1412.6980" rel="noopener">Adam: A Method for Stochastic Optimization</a>, Kingma and Ba, 2014.</li>
+  <li><a href="https://arxiv.org/abs/2001.08361" rel="noopener">Scaling Laws for Neural Language Models</a>, Kaplan et al., 2020.</li>
+  <li><a href="https://arxiv.org/abs/2203.15556" rel="noopener">Training Compute-Optimal Large Language Models</a>, Hoffmann et al., 2022.</li>
+  <li><a href="https://arxiv.org/abs/2203.02155" rel="noopener">Training language models to follow instructions with human feedback</a>, Ouyang et al., 2022.</li>
+</ul>
+<h3>Resources for going deeper</h3>
+<ul class="res-list">
+  <li><a href="https://jalammar.github.io/illustrated-transformer/" rel="noopener">The Illustrated Transformer</a>, Jay Alammar. A gentle visual walkthrough.</li>
+  <li><a href="https://nlp.seas.harvard.edu/annotated-transformer/" rel="noopener">The Annotated Transformer</a>, Harvard NLP. The original paper, line by line, in PyTorch.</li>
+  <li><a href="https://github.com/karpathy/nanoGPT" rel="noopener">nanoGPT</a>, Andrej Karpathy. A small, readable GPT training codebase; his “Let’s build GPT” video builds one from an empty file.</li>
+  <li><a href="https://transformer-circuits.pub/2021/framework/index.html" rel="noopener">A Mathematical Framework for Transformer Circuits</a>, Elhage et al., 2021. Where the “residual stream” view comes from.</li>
+</ul>
+</section>
+<footer>Everything here runs locally in your browser. The only network request is for the KaTeX maths renderer.</footer>
+</main>
+</div>
+<div id="tip" role="tooltip"></div>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/reference.js"></script>
+<script src="assets/js/site.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous" onload="renderAllTex()" onerror="texFailed()"></script>
+</body>
+</html>

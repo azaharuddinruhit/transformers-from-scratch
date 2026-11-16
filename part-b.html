@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part B: Building the model · Transformers and LLMs from Scratch</title>
+<meta name="description" content="An interactive, visual, from-scratch guide to decoder-only Transformers and large language models.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c2230'/%3E%3Crect x='5' y='5' width='10' height='10' rx='2' fill='%23fde725'/%3E%3Crect x='17' y='5' width='10' height='10' rx='2' fill='%2321918c'/%3E%3Crect x='5' y='17' width='10' height='10' rx='2' fill='%233b528b'/%3E%3Crect x='17' y='17' width='10' height='10' rx='2' fill='%235ec962'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/content.css">
+<link rel="stylesheet" href="assets/css/widgets.css">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body data-page="part-b">
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="Transformers and LLMs from Scratch, home"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c2230"/><rect x="5" y="5" width="10" height="10" rx="2" fill="#fde725"/><rect x="17" y="5" width="10" height="10" rx="2" fill="#21918c"/><rect x="5" y="17" width="10" height="10" rx="2" fill="#3b528b"/><rect x="17" y="17" width="10" height="10" rx="2" fill="#5ec962"/></svg><span class="lgt">Transformers &amp; LLMs from Scratch</span><span class="sm">Transformers &amp; LLMs</span></a>
+  <span class="crumb" id="crumb"></span>
+  <div class="setwrap">
+    <button type="button" class="btn icon" id="setBtn" aria-haspopup="true" aria-expanded="false" aria-controls="setMenu" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="lgt">Settings</span></button>
+    <div id="setMenu" class="setmenu" role="dialog" aria-label="Settings" hidden>
+      <div class="sgrp"><span class="slab" id="lab-path">Path</span>
+        <div class="seg full" role="group" aria-labelledby="lab-path">
+          <button type="button" class="pathBtn" data-p="quick" aria-pressed="false">Quick tour</button>
+          <button type="button" class="pathBtn" data-p="full" aria-pressed="true">Full depth</button>
+        </div>
+        <small class="shint">Quick tour simplifies the worked examples and hides optional material.</small></div>
+      <div class="sgrp"><span class="slab" id="lab-theme">Theme</span>
+        <div class="seg full" role="group" aria-labelledby="lab-theme">
+          <button type="button" class="thBtn" data-t="light" aria-pressed="false">Light</button>
+          <button type="button" class="thBtn" data-t="dark" aria-pressed="false">Dark</button>
+          <button type="button" class="thBtn" data-t="auto" aria-pressed="true">Auto</button>
+        </div></div>
+      <div class="sgrp"><span class="slab" id="lab-code">Python code</span>
+        <div class="seg full" role="group" aria-labelledby="lab-code">
+          <button type="button" class="codeBtn" data-c="closed" aria-pressed="true">Collapsed</button>
+          <button type="button" class="codeBtn" data-c="open" aria-pressed="false">Expanded</button>
+        </div></div>
+      <div class="sgrp"><span class="slab">Progress</span>
+        <button type="button" class="btn full" id="pgReset">Reset progress</button></div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"><div id="progBar"></div></div>
+</header>
+<div id="texwarn" hidden>The maths renderer (KaTeX) could not be loaded, so equations are shown as LaTeX source. Everything else works offline.</div>
+<div class="layout">
+<div id="scrim" hidden></div>
+<nav id="mbar" aria-label="Section navigation">
+  <span class="mpb" aria-hidden="true"><i id="mFill"></i></span>
+  <button type="button" id="mPrev" aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button type="button" id="mMid" aria-haspopup="true" aria-expanded="false" aria-controls="toc"><span id="mNum"></span><span id="mTxt">Contents</span><svg class="mico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>
+  <button type="button" id="mNext" aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+</nav>
+<nav id="toc" aria-label="Contents"></nav>
+<main id="main">
+<section class="view opener" id="start" data-title="Part B: Building the model">
+<p class="kicker">Part B</p>
+<h1>Building the model</h1>
+<p class="lede" id="partGoal"></p>
+<div class="legend" aria-label="Colour key used in this part"><span><i class="sw q"></i>Query (Q)</span><span><i class="sw k"></i>Key (K)</span><span><i class="sw v"></i>Value (V)</span><span><i class="sw r"></i>Residual path</span><span><i class="sw vir"></i>Attention weight, 0 → 1</span></div>
+<ol class="partlist" id="partList"></ol>
+<p id="partGo"></p>
+</section>
+<section class="ch" id="tokens" data-title="Tokenization and embeddings">
+<h2>Text to numbers: tokenization and embeddings</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why models use subword tokens and not characters or whole words.</li><li>Describe an embedding as a row lookup in a learned table.</li><li>State the shape of the embedding table and of the model’s input.</li></ul></div><p class="needs"><b>Builds on</b> Vectors and matrices; the vocabulary idea from <a class="xref" data-ref="intro"></a>.</p></div>
+<div class="story"><p>“the cat sat on the” becomes 5 tokens, then 5 integer IDs, then 5 rows of the table <span class="tex">E</span>: a matrix of shape <code>[5, d_model]</code>. Both copies of “the” get exactly the same row, which is the problem the next section solves.</p></div>
+<p>Neural networks do arithmetic, so text has to become numbers. This happens in two steps: the <b>tokenizer</b> cuts text into tokens and replaces each with an integer ID, then the <b>embedding table</b> swaps each ID for a vector of real numbers that the network can learn to adjust.</p>
+<h3>Characters, words or subwords?</h3>
+<ul>
+  <li><b>Characters</b>: tiny vocabulary, never meets an unknown symbol, but sequences get very long and each unit carries little meaning.</li>
+  <li><b>Words</b>: meaningful units, but the vocabulary is enormous and any word not seen in training cannot be represented.</li>
+  <li><b>Subwords</b> (what real LLMs use): common words stay whole, rare words are assembled from pieces. “played” becomes <code>play</code> + <code>##ed</code>. Nothing is ever out of vocabulary, and sequences stay short.</li>
+</ul>
+<div class="flow" role="img" aria-label="Diagram: text is split into tokens, tokens become IDs, IDs select rows of the embedding table">
+  <div><b>“The cats played”</b><small>text</small></div><i>→</i>
+  <div><b>the · cat · ##s · play · ##ed</b><small>tokens</small></div><i>→</i>
+  <div><b>[5, 6, 96, 20, 70]</b><small>token IDs</small></div><i>→</i>
+  <div class="fa"><b>E[5], E[6], E[96], …</b><small>one vector per token</small></div>
+</div>
+<h3>The equation, and the reasoning behind it</h3>
+<p><b>The question:</b> how should a token be presented to a network that only does arithmetic? Three candidates:</p>
+<ul>
+  <li><b>The ID itself</b> (say 4071). This would tell the network that token 4071 is nearly the same as 4072 and very different from 12, which is meaningless.</li>
+  <li><b>A one-hot vector</b>: <span class="tex">n_{\text{vocab}}</span> numbers, all 0 except a single 1. No false ordering, but it is enormous and makes every pair of tokens exactly equally different.</li>
+  <li><b>A short learned vector</b> of <span class="tex">d_{\text{model}}</span> numbers per token. Compact, and training can move similar tokens close together. This is the embedding.</li>
+</ul>
+<p>The vectors are stored as the rows of one matrix, and using a token means reading its row:</p>
+<div class="tex d">x_t = E[w_t], \qquad E\in\mathbb{R}^{n_{\text{vocab}}\times d_{\text{model}}}</div>
+<p class="sym"><span class="tex">w_t</span> is the token ID at position <span class="tex">t</span>; <span class="tex">E</span> is the embedding table; <span class="tex">E[w_t]</span> is its row number <span class="tex">w_t</span>; <span class="tex">x_t</span> is the resulting vector of length <span class="tex">d_{\text{model}}</span>.</p>
+<details class="callout math opt"><summary>Math detail: lookup is a matrix product in disguise</summary>
+<p>Multiplying a one-hot row vector by <span class="tex">E</span> picks out exactly one row: <span class="tex">x_t=\mathrm{onehot}(w_t)\,E</span>. Nobody computes it that way because indexing is far cheaper, but it shows that the embedding table is an ordinary weight matrix, trained by gradient descent like every other one.</p></details>
+<div class="worked">
+  <h4>Worked example</h4>
+  <div class="x-only"><p>Take <span class="tex">n_{\text{vocab}}=5</span> and <span class="tex">d_{\text{model}}=2</span>:</p>
+  <div class="tex d">E=\begin{bmatrix}0.1&amp;0.3\\-0.2&amp;0.5\\0.7&amp;-0.4\\0.0&amp;0.9\\0.6&amp;0.6\end{bmatrix},\quad w_t=2 \;\Rightarrow\; \mathrm{onehot}(w_t)=[0,0,1,0,0] \;\Rightarrow\; x_t=E[2]=[0.7,\,-0.4]</div>
+  <p>Rows are counted from 0, so ID 2 is the third row.</p></div>
+  <p class="s-only">Think of the embedding table as a spreadsheet with one row per token. Token ID 2 means “use row 2”. That row of numbers is the token’s vector.</p>
+</div>
+<details class="callout code opt"><summary>In Python: a greedy subword tokenizer and the embedding lookup</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s03_tokens.py"><code>import numpy as np
+
+# A toy WordPiece-style vocabulary. "##" marks a piece that continues a word.
+letters = "abcdefghijklmnopqrstuvwxyz"
+vocab = (["[UNK]", "the", "cat", "sat", "on", "mat", "play", "jump", "un",
+          "##s", "##ed", "##ing", "##happy", "##ly"]
+         + list(letters) + ["##" + c for c in letters])
+token_id = {tok: i for i, tok in enumerate(vocab)}
+
+
+def tokenize_word(word):
+    """Greedy longest match from the left, as WordPiece does."""
+    pieces, start = [], 0
+    while start &lt; len(word):
+        for end in range(len(word), start, -1):  # try the longest piece first
+            piece = word[start:end] if start == 0 else "##" + word[start:end]
+            if piece in token_id:
+                pieces.append(piece)
+                start = end
+                break
+        else:
+            return ["[UNK]"]  # no piece fits, not even one letter
+    return pieces
+
+
+def tokenize(text):
+    return [p for word in text.lower().split() for p in tokenize_word(word)]
+
+
+for text in ["the cats played", "unhappy", "zebra"]:
+    toks = tokenize(text)
+    print(f"{text!r:18} -&gt; {toks} -&gt; ids {[token_id[t] for t in toks]}")
+
+# Embedding lookup: each ID selects one row of the table E
+E = np.array([[0.1, 0.3], [-0.2, 0.5], [0.7, -0.4], [0.0, 0.9], [0.6, 0.6]])
+w_t = 2
+print("E[2]            =", E[w_t])
+
+one_hot = np.zeros(len(E))
+one_hot[w_t] = 1
+print("onehot(2) @ E   =", one_hot @ E)  # the same row, by a matrix product
+
+# The model's input: one row per token, shape [T, d_model]
+rng = np.random.default_rng(0)
+E_big = rng.normal(0, 0.02, size=(len(vocab), 8))  # untrained: random numbers
+ids = [token_id[t] for t in tokenize("the cat sat on the mat")]
+X = E_big[ids]
+print("X.shape         =", X.shape)
+print("both 'the' rows equal:", np.array_equal(X[0], X[4]))
+
+# Output:
+# 'the cats played'  -&gt; ['the', 'cat', '##s', 'play', '##ed'] -&gt; ids [1, 2, 58, 6, 10]
+# 'unhappy'          -&gt; ['un', '##happy'] -&gt; ids [8, 12]
+# 'zebra'            -&gt; ['z', '##e', '##b', '##r', '##a'] -&gt; ids [39, 44, 41, 57, 40]
+# E[2]            = [ 0.7 -0.4]
+# onehot(2) @ E   = [ 0.7 -0.4]
+# X.shape         = (6, 8)
+# both 'the' rows equal: True</code></pre></details>
+
+<div class="widget" id="w-tok">
+  <h4 class="wt">Interactive · a toy subword tokenizer</h4>
+  <p class="look"><b>The point:</b> Text becomes pieces, pieces become IDs, IDs select rows of the embedding table. <b>Do this:</b> Type a sentence with one common and one unusual word, then click a token. <b>Watch for:</b> Common words stay whole; rare words break into several pieces. Each piece has one ID and one row of numbers.</p>
+  <label class="ctl" style="max-width:none">Type a short sentence<input type="text" id="tk-in" value="The cats played on the mat." maxlength="80" autocomplete="off"></label>
+  <p class="cap" id="tk-cmp" aria-live="polite"></p>
+  <span class="lab">Tokens (click one)</span>
+  <div class="chips" id="tk-chips"></div>
+  <div id="tk-detail"></div>
+  <small>This tokenizer has a 104-entry vocabulary and uses greedy longest-match, as WordPiece does. <code>##</code> marks a piece that continues a word. The embedding numbers are random, which is what an embedding table looks like before training. One shortcut: this toy maps digits and unusual symbols to <code>[UNK]</code>, whereas real subword tokenizers can represent any input, falling back to single bytes.</small>
+  <div class="wjh"><b>What just happened?</b> Each word was matched against the vocabulary from the left, always taking the longest piece available. Words in the vocabulary stay whole; others fall apart into smaller pieces, down to single letters if necessary. Each token then became an ID, and the ID selected one row of <span class="tex">E</span>.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>Type <code>unhappy</code>, then <code>jumping quickly</code>, then a word the vocabulary has never seen, such as <code>zebra</code>. Watch the token count change while the character count barely moves.</p></div>
+<h3>What training does to embeddings</h3>
+<p>At the start the vectors are random. Training nudges them so that tokens used in similar contexts end up with similar vectors. Real embeddings have hundreds or thousands of dimensions; squashed to two for plotting, related tokens tend to sit near each other.</p>
+<div class="widget opt" id="w-scatter">
+  <h4 class="wt">Interactive · embedding space in two dimensions</h4>
+  <p class="look"><b>The point:</b> After training, tokens used in similar ways end up close together. <b>Do this:</b> Click a point. <b>Watch for:</b> Clusters by kind of word. The axes themselves have no assigned meaning.</p>
+  <svg id="sc-emb" role="group" aria-label="Scatter plot of toy token embeddings; related tokens are clustered"></svg>
+  <div class="lg" id="sc-lg"></div>
+  <p class="readout" id="sc-out" aria-live="polite">Click or focus a token to see its nearest neighbours.</p>
+  <small>Positions here are placed by hand to show what a trained embedding space typically looks like. Tokens from your sentence above are ringed.</small>
+  <div class="wjh"><b>What just happened?</b> Distance stands in for similarity. The nearest neighbours of an animal are other animals, because a trained model would have learned that they appear in interchangeable contexts.</div>
+</div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“One token is one word.”</b> A rough rule for English is 3 to 4 characters per token. Rare words, names and code split into many pieces.</li>
+  <li><b>“Token IDs carry meaning.”</b> ID 6 is not “close to” ID 7. IDs are arbitrary labels; only the embedding vectors carry meaning.</li>
+  <li><b>“Embeddings are designed by people.”</b> They start random and are learned. Nobody assigns a dimension to mean “is an animal”.</li>
+  <li><b>Pitfall:</b> a model must be used with the exact tokenizer it was trained with. A different tokenizer produces IDs that point at the wrong rows.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>A tokenizer is a fixed algorithm, not a neural network: text in, integer IDs out.</li><li>An embedding is a lookup: ID <span class="tex">w_t</span> selects row <span class="tex">E[w_t]</span>.</li><li><span class="tex">E</span> has shape <code>[n_vocab, d_model]</code> and is learned like any other weight matrix.</li><li>Training moves tokens that are used alike close together; nobody assigns the dimensions a meaning.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. Why not feed the token ID (for example 4071) straight into the network?</legend><button type="button" class="qo">IDs are too large for floating point</button><button type="button" class="qo" data-ok="1">It would imply that tokens with nearby IDs are similar, which is arbitrary</button><button type="button" class="qo">IDs change during training</button><p class="qx" hidden aria-live="polite"><b></b> ID order is an accident of how the vocabulary was built. A learned vector per token carries no such false ordering.</p></fieldset>
+<fieldset><legend>2. The vocabulary has 50,000 entries and <span class="tex">d_{\text{model}}</span> is 768. How many numbers are in the embedding table?</legend><button type="button" class="qo">50,768</button><button type="button" class="qo" data-ok="1">38,400,000</button><button type="button" class="qo">768</button><p class="qx" hidden aria-live="polite"><b></b> One row of 768 numbers for each of 50,000 tokens: 50,000 × 768.</p></fieldset>
+<fieldset><legend>3. What happens to a word that is not in the vocabulary?</legend><button type="button" class="qo">It is dropped</button><button type="button" class="qo" data-ok="1">It is split into smaller pieces that are in the vocabulary</button><button type="button" class="qo">The model stops</button><p class="qx" hidden aria-live="polite"><b></b> Subword tokenizers fall back to smaller pieces, down to single characters or bytes.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Token counts drive cost and context limits. How would you estimate the token count of one of our typical documents?</li><li>What problems could arise when the text contains product codes, identifiers or languages the tokenizer rarely saw?</li></ul></details>
+<p class="bridge">The five vectors carry meaning but no order: both “the” tokens are identical. <a class="xref" data-ref="position"></a> adds the missing information.</p>
+</div>
+</section>
+<section class="ch" id="position" data-title="Positional information">
+<h2>Positional information</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why a Transformer needs explicit position information.</li><li>Read the sinusoidal formula as “waves of different speeds”.</li><li>Explain why the position vector is added to the token vector.</li></ul></div><p class="needs"><b>Builds on</b> Embeddings from <a class="xref" data-ref="tokens"></a>; sine and cosine.</p></div>
+<div class="story"><p>Each of the 5 vectors gets a position vector added. The two “the” tokens, at positions 0 and 4, started identical and are now different. The shape is still <code>[5, d_model]</code>.</p></div>
+<p>The attention mechanism you will meet next treats its input as an unordered collection of vectors. Shuffle the input tokens and each token’s output is the same as before, just shuffled along with it. So “dog bites man” and “man bites dog” would look identical to it. To fix this, we add a second vector to every token embedding that depends only on <b>where</b> the token sits.</p>
+<div class="flow" role="img" aria-label="Diagram: token embedding plus position vector gives the input to the first layer">
+  <div><b>E[“dog”]</b><small>what the token is</small></div><i>+</i>
+  <div class="fr"><b>position vector for slot 2</b><small>where it is</small></div><i>=</i>
+  <div class="fa"><b>input to layer 1</b><small>“dog, in third place”</small></div>
+</div>
+<h3>Two common ways to build position vectors</h3>
+<ul>
+  <li><b>Learned positional embeddings</b> (GPT-2): a second table <span class="tex">E_{\text{pos}}</span> with one trainable row per position. Simple, but there is no row for positions beyond the trained maximum.</li>
+  <li><b>Sinusoidal positional encoding</b> (the original Transformer): a fixed formula using sine and cosine waves of different wavelengths. Nothing to train, and any position has a defined value.</li>
+</ul>
+<p>Many recent models use relative schemes such as rotary embeddings (RoPE) that inject position inside attention itself. The goal is unchanged: make order visible.</p>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>The question:</b> what vector should stand for “position <span class="tex">t</span>”? It has to have length <span class="tex">d_{\text{model}}</span> so it can be added to a token vector, its values should stay small, every position needs a different vector, and neighbouring positions should get similar ones.</p>
+<p><b>The idea:</b> think of how a binary counter writes numbers. The last digit flips at every step, the next one every two steps, the next every four. Read together, the digits identify the number. Sinusoidal encoding is the smooth version of this: each pair of dimensions is a wave with its own wavelength, short for the first pairs and very long for the last.</p>
+<div class="tex d">PE(t,2i)=\sin\!\left(\frac{t}{10000^{2i/d_{\text{model}}}}\right),\qquad PE(t,2i+1)=\cos\!\left(\frac{t}{10000^{2i/d_{\text{model}}}}\right)</div>
+<p class="sym"><span class="tex">t</span> is the position (0, 1, 2, …); <span class="tex">i=0,1,\dots,d_{\text{model}}/2-1</span> numbers the pairs of dimensions, so dimensions <span class="tex">2i</span> and <span class="tex">2i+1</span> share a wavelength. The 2017 paper writes <span class="tex">pos</span> where this guide writes <span class="tex">t</span>.</p>
+<details class="why"><summary>Why this form?</summary><div class="whyb">The divisor <span class="tex">10000^{2i/d_{\text{model}}}</span> grows from 1 for the first pair to almost 10000 for the last, so wavelengths run from about 6 positions to about 63,000: fast waves separate neighbours, slow waves separate distant positions. Sine and cosine come as a pair because together they fix a point on a circle, like a clock hand; with sine alone, two positions on either side of a peak would look identical. The constant 10000 is simply large enough that the slowest wave never repeats within a realistic sequence.</div></details>
+<p>The input to the first layer is the sum of the two vectors. From here on, <span class="tex">x_t</span> means this sum:</p>
+<div class="tex d">x_t = E[w_t] + PE(t)</div>
+<details class="why"><summary>Why add and not concatenate?</summary><div class="whyb">Adding keeps the width at <span class="tex">d_{\text{model}}</span>, so nothing downstream changes size. In hundreds of dimensions there is room for both signals, and the model learns to read content from some directions and position from others.</div></details>
+<div class="worked">
+  <h4>Worked example</h4>
+  <div class="x-only"><p>With <span class="tex">d_{\text{model}}=4</span> there are two pairs: <span class="tex">i=0</span> divides by <span class="tex">10000^{0}=1</span> and <span class="tex">i=1</span> divides by <span class="tex">10000^{2/4}=100</span>.</p>
+  <div class="tex d">\begin{aligned}PE(0)&amp;=[\sin 0,\ \cos 0,\ \sin 0,\ \cos 0]=[0,\ 1,\ 0,\ 1]\\ PE(1)&amp;=[\sin 1,\ \cos 1,\ \sin 0.01,\ \cos 0.01]=[0.8415,\ 0.5403,\ 0.0100,\ 1.0000]\\ PE(2)&amp;=[\sin 2,\ \cos 2,\ \sin 0.02,\ \cos 0.02]=[0.9093,\ -0.4161,\ 0.0200,\ 0.9998]\end{aligned}</div>
+  <p>The first two numbers change a lot from one position to the next. The last two barely move; they only become informative across hundreds of positions.</p></div>
+  <p class="s-only">Picture a row of clock hands turning at different speeds. The fast hands distinguish position 3 from position 4. The slow hands distinguish position 30 from position 300. Read together, they give every position a unique fingerprint.</p>
+</div>
+<details class="callout code opt"><summary>In Python: sinusoidal position vectors</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s04_position.py"><code>import numpy as np
+
+
+def sinusoidal_pe(T, d_model):
+    t = np.arange(T)[:, None]                 # positions, shape [T, 1]
+    i = np.arange(d_model // 2)[None, :]      # pair index, shape [1, d_model/2]
+    angle = t / 10000 ** (2 * i / d_model)    # shape [T, d_model/2]
+    pe = np.zeros((T, d_model))
+    pe[:, 0::2] = np.sin(angle)               # even dimensions: sine
+    pe[:, 1::2] = np.cos(angle)               # odd dimensions: cosine
+    return pe
+
+
+print(sinusoidal_pe(3, 4).round(4))
+
+# Add positions to token vectors: x_t = E[w_t] + PE(t)
+rng = np.random.default_rng(0)
+vocab = ["the", "cat", "sat", "on", "mat"]
+E = rng.normal(0, 0.5, size=(len(vocab), 8))
+ids = [0, 1, 2, 3, 0]                         # "the cat sat on the"
+X_tokens = E[ids]
+X = X_tokens + sinusoidal_pe(len(ids), 8)
+
+print("'the' rows equal without positions:", np.allclose(X_tokens[0], X_tokens[4]))
+print("'the' rows equal with positions:   ", np.allclose(X[0], X[4]))
+print("shape is unchanged:", X.shape)
+
+# Output:
+# [[ 0.      1.      0.      1.    ]
+#  [ 0.8415  0.5403  0.01    1.    ]
+#  [ 0.9093 -0.4161  0.02    0.9998]]
+# 'the' rows equal without positions: True
+# 'the' rows equal with positions:    False
+# shape is unchanged: (5, 8)</code></pre></details>
+
+<div class="widget" id="w-pe">
+  <h4 class="wt">Interactive · sinusoidal positional-encoding heatmap</h4>
+  <p class="look"><b>The point:</b> Every position gets a unique pattern, built from waves of different speeds. <b>Do this:</b> Read the heatmap row by row (one row = one position), then hover or use the arrow keys on a cell. <b>Watch for:</b> The left columns flicker quickly from row to row; the right columns change slowly.</p>
+  <div class="controls">
+    <label class="ctl"><span class="row">Sequence length <output id="pe-T-o"></output></span><input type="range" id="pe-T" min="4" max="64" step="1" value="24"></label>
+    <label class="ctl"><span class="row"><span>Embedding dimension <span class="tex">d_{\text{model}}</span></span> <output id="pe-d-o"></output></span><input type="range" id="pe-d" min="4" max="64" step="2" value="32"></label>
+  </div>
+  <canvas id="pe-cv" tabindex="0" role="img" aria-label="Heatmap of positional encodings. Rows are positions, columns are dimensions. Use arrow keys to move the cursor."></canvas>
+  <div class="lg"><span>Rows: position, 0 at the top</span><span>Columns: dimension, 0 at the left</span><span><i class="sw" style="--c:#2166ac"></i>−1</span><span><i class="sw" style="--c:#f4f1ea;border:1px solid var(--line)"></i>0</span><span><i class="sw" style="--c:#e66101"></i>+1</span></div>
+  <p class="readout" id="pe-read" aria-live="polite"></p>
+  <div class="wjh"><b>What just happened?</b> Each row is the vector added to the token at that position. Columns on the left flicker rapidly down the rows (short wavelength); columns on the right change slowly (long wavelength). No two rows are the same, which is what lets the model tell positions apart.</div>
+</div>
+<div class="widget" id="w-order">
+  <h4 class="wt">Interactive · “dog bites man” versus “man bites dog”</h4>
+  <p class="look"><b>The point:</b> Without positions, word order is invisible to the model. <b>Do this:</b> Compare the vector for “dog” in the two sentences, then tick the box. <b>Watch for:</b> Identical before, different after.</p>
+  <label class="chk"><input type="checkbox" id="or-pe"> Add positional encoding</label>
+  <div id="or-out"></div>
+  <div class="wjh"><b>What just happened?</b> Without positions, both sentences hand the model the same three vectors, so it cannot tell who bit whom. With positions, “dog” at slot 0 and “dog” at slot 2 are different vectors, and the two sentences become different inputs.</div>
+</div>
+<details class="callout math opt"><summary>Math detail: equivariant, strictly speaking</summary>
+<p>People say attention is “permutation-invariant”. The precise statement is that self-attention without positions is permutation-<i>equivariant</i>: permuting the inputs permutes the outputs in the same way and changes nothing else. Anything computed from the collection as a whole is then invariant to order. Either way, word order is invisible.</p><p>This holds for attention with no mask. A causal mask does break the symmetry, because each token sees a different number of predecessors, but that is a weak and indirect signal. GPT-style models still add explicit positional information.</p></details>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Adding position vectors corrupts the token’s meaning.”</b> In high dimensions there is room for both. The model learns to read content and position from the same vector.</li>
+  <li><b>“Position is concatenated.”</b> In the classic design it is added, so the vector size stays <span class="tex">d_{\text{model}}</span>.</li>
+  <li><b>Pitfall:</b> a model with learned absolute positions cannot process sequences longer than its position table.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Attention by itself treats its input as a set, so order must be supplied.</li><li>Each position gets its own vector of length <span class="tex">d_{\text{model}}</span>, added to the token vector.</li><li>Sinusoidal encoding: fast waves separate neighbours, slow waves separate distant positions.</li><li>Learned position tables and newer relative schemes do the same job in other ways.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. Without position information, how would the model see “dog bites man” and “man bites dog”?</legend><button type="button" class="qo" data-ok="1">As the same set of three vectors</button><button type="button" class="qo">As two different sentences</button><button type="button" class="qo">As an error</button><p class="qx" hidden aria-live="polite"><b></b> The same three token vectors appear in both; only their order differs, and order is invisible without positions.</p></fieldset>
+<fieldset><legend>2. In the sinusoidal encoding, which dimensions change fastest from one position to the next?</legend><button type="button" class="qo">The last ones</button><button type="button" class="qo" data-ok="1">The first ones</button><button type="button" class="qo">All change equally</button><p class="qx" hidden aria-live="polite"><b></b> The divisor grows with the pair index, so the first pairs have the shortest wavelengths.</p></fieldset>
+<fieldset><legend>3. Why add the position vector and not append it?</legend><button type="button" class="qo" data-ok="1">Adding keeps the width at <span class="tex">d_{\text{model}}</span>, so nothing downstream changes</button><button type="button" class="qo">Appending is impossible</button><button type="button" class="qo">Adding is more accurate</button><p class="qx" hidden aria-live="polite"><b></b> Both would work in principle. Adding keeps every later matrix the same size, and the model learns to separate the two signals.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>A learned position table has no row beyond the trained maximum. What does that mean for inputs longer than anything seen in training?</li><li>How would you explain “fast and slow clock hands” to someone on the team without using the formula?</li></ul></details>
+<p class="bridge">Each vector now says what the token is and where it is, but knows nothing about its neighbours. <a class="xref" data-ref="attention"></a> lets tokens read each other.</p>
+</div>
+</section>
+<section class="ch" id="attention" data-title="Self-attention from scratch">
+<h2>Self-attention from scratch</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain what queries, keys and values are for.</li><li>Compute attention weights and a context vector by hand for one query.</li><li>Justify each part of the formula: the dot product, the division by <span class="tex">\sqrt{d_k}</span>, the softmax.</li><li>Explain what the causal mask does and why GPT-style models need it.</li></ul></div><p class="needs"><b>Builds on</b> The input matrix <span class="tex">X</span> from <a class="xref" data-ref="position"></a>; dot products; softmax from <a class="xref" data-ref="intro"></a>.</p></div>
+<div class="story"><p>The token “sat” builds a query. It matches the key of “cat” best, so about 46% of its attention goes there, and its new vector is mostly made of “cat”’s value. (The simulator uses the five words “the cat sat on mat” so that the tables stay small.)</p></div>
+<p>So far each token’s vector knows only about itself. To predict what follows “The cat sat on the”, the vector for “the” needs information from “cat” and “sat”. <b>Self-attention</b> is the step where every token gathers information from the other tokens, deciding for itself which ones matter.</p>
+<h3>Queries, keys and values: a library analogy</h3>
+<p>Imagine each token is both a reader and a book in a library.</p>
+<ul>
+  <li>As a reader it writes a <b class="tq">query</b>: a note describing what it is looking for.</li>
+  <li>As a book it carries a <b class="tk">key</b>: a label on the spine describing what it contains.</li>
+  <li>It also holds a <b class="tv">value</b>: the content it hands over if someone picks it.</li>
+</ul>
+<p>Each reader compares its query with every book’s key. A good match means “read more of this one”. But instead of choosing a single book, the reader takes a blend of all the values, weighted by how well each key matched.</p>
+<div class="flow" role="img" aria-label="Diagram: a query is compared with every key to give scores, softmax turns scores into weights, the weights blend the values into a context vector">
+  <div class="fq"><b>query q</b><small>what am I looking for?</small></div><i>·</i>
+  <div class="fk"><b>keys k₁ … kₙ</b><small>what does each token offer?</small></div><i>→</i>
+  <div><b>scores</b><small>one dot product per token</small></div><i>→</i>
+  <div><b>softmax</b><small>weights that sum to 1</small></div><i>→</i>
+  <div class="fv"><b>blend of values</b><small>weighted sum of v₁ … vₙ</small></div>
+</div>
+<h3>Deriving the formula, one decision at a time</h3>
+<p><b>The goal:</b> give token <span class="tex">i</span> a new vector that summarises the other tokens, weighted by how relevant each is to token <span class="tex">i</span>. Each step below settles one design question. The input is the matrix <span class="tex">X</span> of shape <code>[T, d_model]</code>, whose row <span class="tex">t</span> is the vector <span class="tex">x_t</span> from the previous section.</p>
+<p><b>1. Three roles, three projections.</b> What a token is looking for, what it advertises about itself, and what it hands over are three different things. So each gets its own learned matrix:</p>
+<div class="tex d">Q = XW_Q,\qquad K = XW_K,\qquad V = XW_V</div>
+<p class="sym">Row <span class="tex">i</span> of <span class="tex">Q</span> is the query <span class="tex">q_i</span>; row <span class="tex">j</span> of <span class="tex">K</span> and <span class="tex">V</span> are the key <span class="tex">k_j</span> and value <span class="tex">v_j</span>. Each matrix has shape <code>[T, d_k]</code>, where <span class="tex">d_k</span> is the length of a query or key.</p>
+<p><b>2. Relevance is a dot product.</b> We need one number for “how relevant is token <span class="tex">j</span> to token <span class="tex">i</span>?”. The dot product <span class="tex">q_i\cdot k_j</span> is large when the two vectors point the same way, near zero when they are unrelated and negative when they are opposed. It is cheap, and because <span class="tex">W_Q</span> and <span class="tex">W_K</span> are learned, the model itself decides what “pointing the same way” should mean.</p>
+<p><b>3. Divide by <span class="tex">\sqrt{d_k}</span>.</b> A dot product adds up <span class="tex">d_k</span> terms. If each term varies by about 1, the sum varies by about <span class="tex">\sqrt{d_k}</span>, so longer vectors give larger scores for no meaningful reason. Dividing by <span class="tex">\sqrt{d_k}</span> returns the scores to a typical size of 1 whatever the dimension. Without it, large scores push softmax into a near one-hot output where gradients vanish.</p>
+<p><b>4. Softmax turns scores into a budget.</b> Token <span class="tex">i</span> should distribute a fixed amount of attention: weights that are positive and sum to 1. That is exactly what softmax produces (<a class="xref" data-ref="intro"></a>).</p>
+<p><b>5. Blend the values.</b> The new vector is the average of the value vectors, weighted by the budget.</p>
+<div class="tex d">s_{ij}=\frac{q_i\cdot k_j}{\sqrt{d_k}},\qquad \alpha_{ij}=\frac{e^{s_{ij}}}{\sum_{j'}e^{s_{ij'}}},\qquad c_i=\sum_j \alpha_{ij}\,v_j</div>
+<p class="sym"><span class="tex">s_{ij}</span> is the scaled score of key <span class="tex">j</span> for query <span class="tex">i</span>; <span class="tex">\alpha_{ij}</span> is the attention weight; <span class="tex">c_i</span> is the <b>context vector</b> for token <span class="tex">i</span>.</p>
+<p><b>6. All tokens at once.</b> Stack the three steps into matrices. Entry <span class="tex">(i,j)</span> of <span class="tex">QK^{\top}</span> is <span class="tex">q_i\cdot k_j</span>, softmax is applied to each row, and multiplying by <span class="tex">V</span> forms every weighted sum in one go:</p>
+<div class="tex d">\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V</div>
+<ul>
+  <li><span class="tex">Q</span>, <span class="tex">K</span>, <span class="tex">V</span>: one row per token, shape <code>[T, d_k]</code>.</li>
+  <li><span class="tex">QK^{\top}</span>: every query dotted with every key, shape <code>[T, T]</code>.</li>
+  <li><b>softmax</b>, applied to each row: one query’s scores become weights that sum to 1.</li>
+  <li><b>Multiplying by <span class="tex">V</span></b>: row <span class="tex">i</span> of the result is <span class="tex">c_i</span>. Output shape <code>[T, d_k]</code>.</li>
+</ul>
+<div class="worked">
+  <h4>Worked example: the query “sat”</h4>
+  <div class="x-only"><p>Take <span class="tex">d_k=4</span>, the query <span class="tex">q_{\text{sat}}=[1,2,0,0]</span> and the keys and values shown in the simulator below.</p>
+  <div class="tex d">\begin{aligned}\text{dot products } q\cdot k_j &amp;= [1,\ 4,\ 3,\ 0,\ 1]\\ \text{divide by }\sqrt{4}=2 &amp;\Rightarrow [0.5,\ 2,\ 1.5,\ 0,\ 0.5]\\ \exp &amp;\Rightarrow [1.6487,\ 7.3891,\ 4.4817,\ 1,\ 1.6487],\ \text{sum}=16.1682\\ \alpha &amp;= [0.1020,\ 0.4570,\ 0.2772,\ 0.0618,\ 0.1020]\\ c=\textstyle\sum_j\alpha_jv_j &amp;= [0.7119,\ 1.1912,\ 0.4410,\ 0.3276]\end{aligned}</div>
+  <p>For instance, the second dot product is <span class="tex">1\cdot0+2\cdot2+0\cdot1+0\cdot0=4</span>, and the first entry of <span class="tex">c</span> is <span class="tex">0.1020\cdot0.5+0.4570\cdot1+0.2772\cdot0+0.0618\cdot0+0.1020\cdot2=0.7119</span>.</p></div>
+  <p class="s-only">The token “sat” asks, in effect, “who did the sitting?”. Its query matches the key of “cat” best, so “cat” gets about 46% of the attention, “sat” itself 28%, and the rest share what is left. The new vector for “sat” is mostly cat-flavoured.</p>
+</div>
+<details class="callout code opt"><summary>In Python: attention for the query “sat”, step by step</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s05a_attention_one.py"><code>import numpy as np
+
+tokens = ["the", "cat", "sat", "on", "mat"]
+K = np.array([[1, 0, 0, 1], [0, 2, 1, 0], [1, 1, 0, -1],
+              [0, 0, 2, 1], [-1, 1, 1, 0]], dtype=float)
+V = np.array([[0.5, 0, 0, 1], [1, 2, 0, 0], [0, 1, 1, 0],
+              [0, 0, 1, 2], [2, 0, 1, 1]], dtype=float)
+q = np.array([1, 2, 0, 0], dtype=float)  # the query of "sat"
+d_k = q.size
+
+scores = K @ q                      # 1. one dot product per key
+scaled = scores / np.sqrt(d_k)      # 2. divide by sqrt(d_k)
+e = np.exp(scaled)                  # 3. exponentiate ...
+alpha = e / e.sum()                 #    ... and normalise: softmax
+c = alpha @ V                       # 4. weighted sum of the values
+
+print("dot products  =", scores)
+print("scaled        =", scaled)
+print("exp           =", e.round(4), " sum =", round(e.sum(), 4))
+print("alpha         =", alpha.round(4))
+print("context c     =", c.round(4))
+print("most attended =", tokens[alpha.argmax()])
+
+# Output:
+# dot products  = [1. 4. 3. 0. 1.]
+# scaled        = [0.5 2.  1.5 0.  0.5]
+# exp           = [1.6487 7.3891 4.4817 1.     1.6487]  sum = 16.1682
+# alpha         = [0.102  0.457  0.2772 0.0618 0.102 ]
+# context c     = [0.7119 1.1912 0.441  0.3276]
+# most attended = cat</code></pre></details>
+
+<div class="widget" id="w-attn">
+  <h4 class="wt">Interactive · attention, one step at a time</h4>
+  <p class="look"><b>The point:</b> The attention formula is five small steps you can check by hand. <b>Do this:</b> Choose a query token and press Step until all five steps are shown. Then switch on the causal mask. <b>Watch for:</b> Which key gets the largest score, how softmax turns scores into weights, and how the mask removes later tokens.</p>
+  <div class="controls">
+    <div class="ctl" style="max-width:none"><span>Query token</span><div class="chips" id="at-toks" role="group" aria-label="Choose the query token"></div></div>
+    <label class="ctl"><span class="row">Softmax temperature τ <output id="at-tau-o"></output></span><input type="range" id="at-tau" min="-2" max="2" step="0.25" value="0" aria-describedby="at-tau-d"></label>
+    <label class="chk"><input type="checkbox" id="at-mask"> Causal mask</label>
+  </div>
+  <div class="controls">
+    <button class="pri" id="at-play">▶ Play</button><button id="at-step">Step ›</button><button id="at-reset">Reset</button>
+    <ol class="stepper" id="at-steps" aria-label="Computation steps"></ol>
+  </div>
+  <p class="cap" id="at-cap" aria-live="polite"></p>
+  <div id="at-q"></div>
+  <div class="scroll"><table class="numt" id="at-table"></table></div>
+  <div id="at-soft"></div>
+  <div id="at-ctx"></div>
+  <small id="at-tau-d">Q, K and V here are small hand-picked numbers so you can verify every step; a real model computes them as <span class="tex">XW_Q</span>, <span class="tex">XW_K</span>, <span class="tex">XW_V</span>. The τ slider is an extra divisor for exploration: scores are divided by <span class="tex">\sqrt{d_k}\cdot\tau</span>. Standard attention has τ = 1.</small>
+  <div class="wjh"><b>What just happened?</b> One query was compared against every key by dot product, the scores were scaled down and pushed through softmax to become weights, and those weights mixed the value vectors into a single context vector. That vector is what this token carries forward: a summary of the other tokens, customised by what it asked for.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>Set τ to 0.25: the distribution sharpens until the query almost copies one value. Set τ to 4: it flattens towards a plain average. This is the effect that <span class="tex">\sqrt{d_k}</span> scaling is there to keep under control.</p></div>
+<h3>The whole attention matrix, and the causal mask</h3>
+<p>Running every token as a query gives a square table: row <span class="tex">i</span> shows where token <span class="tex">i</span> looks. A GPT-style model has one more rule. It is trained to predict the next token, so a token must not be allowed to look at tokens that come after it, or it could simply read the answer. The <b>causal mask</b> enforces this by setting the score to <span class="tex">-\infty</span> wherever <span class="tex">j \gt i</span>, before softmax. Since <span class="tex">e^{-\infty}=0</span>, those positions receive exactly zero weight.</p>
+<div class="tex d">s_{ij}\leftarrow\begin{cases}s_{ij}&amp; j\le i\\-\infty&amp; j\gt i\end{cases}\qquad\text{then}\qquad \alpha_{i}=\mathrm{softmax}(s_{i})</div>
+
+<details class="callout code opt"><summary>In Python: the attention matrix and the causal mask</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s05b_attention_matrix.py"><code>import numpy as np
+
+
+def softmax(S, axis=-1):
+    e = np.exp(S - S.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+def attention(Q, K, V, causal=False):
+    d_k = Q.shape[-1]
+    S = Q @ K.T / np.sqrt(d_k)                      # [T, T] scores
+    if causal:
+        T = S.shape[0]
+        future = np.triu(np.ones((T, T), dtype=bool), k=1)  # j &gt; i
+        S = np.where(future, -np.inf, S)            # mask BEFORE softmax
+    A = softmax(S)                                  # each row sums to 1
+    return A @ V, A
+
+
+Q = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [1, 2, 0, 0],
+              [0, 0, 1, 1], [0, 1, 2, 0]], dtype=float)
+K = np.array([[1, 0, 0, 1], [0, 2, 1, 0], [1, 1, 0, -1],
+              [0, 0, 2, 1], [-1, 1, 1, 0]], dtype=float)
+V = np.array([[0.5, 0, 0, 1], [1, 2, 0, 0], [0, 1, 1, 0],
+              [0, 0, 1, 2], [2, 0, 1, 1]], dtype=float)
+
+np.set_printoptions(precision=3, suppress=True)
+out, A = attention(Q, K, V)
+print("weights, no mask (rows = queries):\n", A)
+out, A = attention(Q, K, V, causal=True)
+print("weights, causal mask:\n", A)
+print("row sums:", A.sum(axis=1))
+print("output shape:", out.shape)
+
+# In a real model Q, K and V are projections of the same input X
+rng = np.random.default_rng(0)
+T, d_model, d_k = 5, 8, 4
+X = rng.normal(size=(T, d_model))
+W_Q, W_K, W_V = (rng.normal(size=(d_model, d_k)) for _ in range(3))
+out, A = attention(X @ W_Q, X @ W_K, X @ W_V, causal=True)
+print("X", X.shape, "-&gt; weights", A.shape, "-&gt; output", out.shape)
+
+# Output:
+# weights, no mask (rows = queries):
+#  [[0.19  0.19  0.19  0.314 0.115]
+#  [0.19  0.314 0.115 0.19  0.19 ]
+#  [0.102 0.457 0.277 0.062 0.102]
+#  [0.164 0.164 0.06  0.447 0.164]
+#  [0.046 0.337 0.075 0.337 0.205]]
+# weights, causal mask:
+#  [[1.    0.    0.    0.    0.   ]
+#  [0.378 0.622 0.    0.    0.   ]
+#  [0.122 0.547 0.331 0.    0.   ]
+#  [0.197 0.197 0.072 0.534 0.   ]
+#  [0.046 0.337 0.075 0.337 0.205]]
+# row sums: [1. 1. 1. 1. 1.]
+# output shape: (5, 4)
+# X (5, 8) -&gt; weights (5, 5) -&gt; output (5, 4)</code></pre></details>
+<div class="widget" id="w-mat">
+  <h4 class="wt">Interactive · attention matrix and causal mask</h4>
+  <p class="look"><b>The point:</b> All queries at once form a square table, and the causal mask blanks its upper triangle. <b>Do this:</b> Tick the mask and compare one row before and after. <b>Watch for:</b> Every row still sums to 1; the weight that was on later tokens is redistributed to earlier ones.</p>
+  <label class="chk"><input type="checkbox" id="at-mask2"> Apply causal mask</label>
+  <div class="grid2">
+    <div><span class="lab">Attention weights (rows = query, columns = key)</span><div id="at-mat"></div></div>
+    <div><span class="lab">Mask added to the scores before softmax</span><div id="at-maskgrid"></div></div>
+  </div>
+  <small>Hover, tap or tab to a cell for the exact value. Click a row to make it the query in the simulator above. Hatched cells are masked.</small>
+  <div class="wjh"><b>What just happened?</b> With the mask on, everything above the diagonal becomes zero and each row is re-normalised over the tokens that remain, forming a lower triangle. The first token can only attend to itself, so its weight there is exactly 1.</div>
+</div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Attention weights explain the model’s reasoning.”</b> They show where information flowed in one layer and head. They are a useful clue, not a complete explanation.</li>
+  <li><b>“The mask is applied after softmax.”</b> It must be applied before, so the remaining weights still sum to 1.</li>
+  <li><b>“Q, K and V are three different inputs.”</b> In self-attention all three are projections of the same token vectors.</li>
+  <li><b>Pitfall:</b> forgetting the <span class="tex">\sqrt{d_k}</span> scaling. With large <span class="tex">d_k</span>, unscaled scores make softmax nearly one-hot and learning stalls.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Attention = for each token, a weighted average of all tokens’ value vectors.</li><li>Weights come from query·key dot products, scaled by <span class="tex">\sqrt{d_k}</span>, then softmax.</li><li>In matrix form: <span class="tex">\mathrm{softmax}(QK^{\top}/\sqrt{d_k})\,V</span>.</li><li>The causal mask sets scores for later tokens to −∞ so that a position cannot see the future.</li><li>Attention weights show where information was read from; they are not an explanation of the model’s reasoning.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. What do the attention weights of one query token add up to?</legend><button type="button" class="qo"><span class="tex">d_k</span></button><button type="button" class="qo" data-ok="1">1</button><button type="button" class="qo">The number of tokens</button><p class="qx" hidden aria-live="polite"><b></b> They come out of a softmax over that query’s row of scores.</p></fieldset>
+<fieldset><legend>2. Why divide the scores by <span class="tex">\sqrt{d_k}</span>?</legend><button type="button" class="qo">To make them sum to 1</button><button type="button" class="qo" data-ok="1">To keep their typical size independent of the vector length, so softmax does not saturate</button><button type="button" class="qo">To save memory</button><p class="qx" hidden aria-live="polite"><b></b> A dot product of <span class="tex">d_k</span> terms has a spread of about <span class="tex">\sqrt{d_k}</span>. Dividing restores a spread of about 1.</p></fieldset>
+<fieldset><legend>3. With a causal mask, which tokens can position 3 attend to?</legend><button type="button" class="qo" data-ok="1">Positions 1 to 3</button><button type="button" class="qo">All positions</button><button type="button" class="qo">Only position 3</button><p class="qx" hidden aria-live="polite"><b></b> A position sees itself and everything before it, never anything after it.</p></fieldset>
+<fieldset><legend>4. For T tokens, what is the shape of the attention weight table?</legend><button type="button" class="qo"><code>[T, d_k]</code></button><button type="button" class="qo" data-ok="1"><code>[T, T]</code></button><button type="button" class="qo"><code>[d_k, d_k]</code></button><p class="qx" hidden aria-live="polite"><b></b> One row per query and one column per key.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>The scores are computed for every pair of tokens. What does that imply for a prompt that is ten times longer?</li><li>When is it reasonable to read an attention heatmap as “what the model looked at”, and when is that misleading?</li></ul></details>
+<p class="bridge">One softmax per token means one “question” per token. <a class="xref" data-ref="multihead"></a> runs several in parallel.</p>
+</div>
+</section>
+<section class="ch" id="multihead" data-title="Multi-head attention">
+<h2>Multi-head attention</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why one attention pattern per token is not enough.</li><li>Describe how <span class="tex">d_{\text{model}}</span> is split between heads and put back together.</li><li>Follow the tensor shapes through a multi-head layer.</li></ul></div><p class="needs"><b>Builds on</b> The single-head formula from <a class="xref" data-ref="attention"></a>.</p></div>
+<div class="story"><p>One head could link “sat” to its subject “cat” while another links each word to the word before it. (The demonstration uses “the cat sat because it purred” so that there is a pronoun to resolve.)</p></div>
+<p>A single attention computation gives each token one set of weights, so it can ask only one kind of question at a time. But a token often needs several things at once: the previous word, the subject of the sentence, what “it” refers to. <b>Multi-head attention</b> runs several smaller attention computations in parallel, each with its own learned projections, and joins the results.</p>
+<div class="flow" role="img" aria-label="Diagram: the input is projected separately for each head, each head runs attention, the outputs are concatenated and passed through a final linear layer">
+  <div><b>X</b><small><code>[B, T, d_model]</code></small></div><i>→</i>
+  <div class="fq"><b>head 1 … head h</b><small>each: own <span class="tex">W_Q, W_K, W_V</span> of width <span class="tex">d_{\text{model}} / h</span></small></div><i>→</i>
+  <div><b>h outputs</b><small>each <code>[B, T, d_model / h]</code></small></div><i>→</i>
+  <div><b>Concat</b><small><code>[B, T, d_model]</code></small></div><i>→</i>
+  <div class="fa"><b><span class="tex">W_O</span></b><small>mix the heads</small></div>
+</div>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>The limitation:</b> in <a class="xref" data-ref="attention"></a>, each token gets one row of weights, one softmax, one “question”. <b>The fix:</b> run <span class="tex">h</span> separate attention computations, called heads. To keep the cost unchanged, each head works in a smaller space of <span class="tex">d_k=d_{\text{model}}/h</span> dimensions, with its own projection matrices of shape <code>[d_model, d_k]</code>:</p>
+<div class="tex d">\mathrm{head}_m=\mathrm{Attention}\!\left(XW_Q^{(m)},\;XW_K^{(m)},\;XW_V^{(m)}\right),\qquad m=1,\dots,h</div>
+<p class="sym">This is the single-head formula with matrices that belong to head <span class="tex">m</span>; the superscript <span class="tex">(m)</span> only says “which head”. Each head’s output has shape <code>[T, d_k]</code>. The 2017 paper writes these matrices as <span class="tex">W_i^{Q}, W_i^{K}, W_i^{V}</span>.</p>
+<p>The <span class="tex">h</span> outputs are placed side by side, which restores the width <span class="tex">h\cdot d_k=d_{\text{model}}</span>, and one more matrix mixes them:</p>
+<div class="tex d">\mathrm{MultiHead}(X)=\mathrm{Concat}(\mathrm{head}_1,\dots,\mathrm{head}_h)\,W_O</div>
+<details class="why"><summary>Why <span class="tex">W_O</span>?</summary><div class="whyb">Concatenation alone would confine each head to its own fixed slice of the output vector. The matrix <span class="tex">W_O</span>, of shape <code>[d_model, d_model]</code>, lets the model combine what different heads found and write the result anywhere in the vector that later layers read. In code the per-head projections are usually one big matrix whose output is reshaped into <span class="tex">h</span> slices, which is the same thing.</div></details>
+<div class="scroll" id="shapes-mh"><table class="numt cmp">
+  <thead><tr><th>Tensor</th><th>Shape</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Input X</th><td><code>[B, T, d_model]</code></td><td>one vector per token, for each of B sequences</td></tr>
+    <tr><th scope="row">Q, K, V after projecting and splitting</th><td><code>[B, h, T, d_k]</code></td><td>one set per head, with <span class="tex">d_k = d_{\text{model}} / h</span></td></tr>
+    <tr><th scope="row">Scores, and weights after softmax</th><td><code>[B, h, T, T]</code></td><td>one T × T table per head</td></tr>
+    <tr><th scope="row">Each head’s output</th><td><code>[B, h, T, d_k]</code></td><td>weights times values</td></tr>
+    <tr><th scope="row">After concatenation, and after <span class="tex">W_O</span></th><td><code>[B, T, d_model]</code></td><td>same shape as the input</td></tr>
+  </tbody>
+</table></div>
+<div class="worked">
+  <h4>Worked example</h4>
+  <p class="x-only">With <span class="tex">d_{\text{model}}=8</span> and <span class="tex">h=2</span>, each head works with <span class="tex">d_k=4</span>. Head 1 produces 4 numbers per token, head 2 another 4; concatenated they give 8 again. Parameters for the query, key and value projections: one head needs <span class="tex">3\times(8\times8)=192</span> weights; two heads need <span class="tex">2\times3\times(8\times4)=192</span>. The same.</p>
+  <p class="s-only">Splitting an 8-number vector between 2 heads gives each head 4 numbers to work with. You get two independent “where should I look?” decisions for the price of one.</p>
+</div>
+<details class="callout code opt"><summary>In Python: multi-head attention: split, attend, concatenate</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s06_multihead.py"><code>import numpy as np
+
+
+def softmax(S, axis=-1):
+    e = np.exp(S - S.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+rng = np.random.default_rng(0)
+B, T, d_model, h = 2, 5, 8, 2
+d_k = d_model // h                       # 4 dimensions per head
+
+X = rng.normal(size=(B, T, d_model))
+W_Q, W_K, W_V, W_O = (rng.normal(size=(d_model, d_model)) / np.sqrt(d_model)
+                      for _ in range(4))
+
+
+def split_heads(M):                      # [B, T, d_model] -&gt; [B, h, T, d_k]
+    return M.reshape(B, T, h, d_k).transpose(0, 2, 1, 3)
+
+
+Q, K, V = split_heads(X @ W_Q), split_heads(X @ W_K), split_heads(X @ W_V)
+S = Q @ K.transpose(0, 1, 3, 2) / np.sqrt(d_k)          # [B, h, T, T]
+S = np.where(np.triu(np.ones((T, T), dtype=bool), k=1), -np.inf, S)
+heads = softmax(S) @ V                                  # [B, h, T, d_k]
+concat = heads.transpose(0, 2, 1, 3).reshape(B, T, d_model)
+out = concat @ W_O                                      # [B, T, d_model]
+
+for name, arr in [("X", X), ("Q per head", Q), ("scores", S),
+                  ("heads", heads), ("concat", concat), ("output", out)]:
+    print(f"{name:11} {arr.shape}")
+
+# One big matrix, sliced, is the same as separate per-head matrices
+m = 1                                                   # check head 2
+cols = slice(m * d_k, (m + 1) * d_k)
+q, k, v = X @ W_Q[:, cols], X @ W_K[:, cols], X @ W_V[:, cols]
+s = q @ k.transpose(0, 2, 1) / np.sqrt(d_k)
+s = np.where(np.triu(np.ones((T, T), dtype=bool), k=1), -np.inf, s)
+print("head 2 matches:", np.allclose(softmax(s) @ v, heads[:, m]))
+
+# Same parameter count whatever h is
+print("1 head :", 3 * d_model * d_model, "weights in W_Q, W_K, W_V")
+print("2 heads:", h * 3 * d_model * d_k, "weights in W_Q, W_K, W_V")
+
+# Output:
+# X           (2, 5, 8)
+# Q per head  (2, 2, 5, 4)
+# scores      (2, 2, 5, 5)
+# heads       (2, 2, 5, 4)
+# concat      (2, 5, 8)
+# output      (2, 5, 8)
+# head 2 matches: True
+# 1 head : 192 weights in W_Q, W_K, W_V
+# 2 heads: 192 weights in W_Q, W_K, W_V</code></pre></details>
+
+<div class="widget" id="w-mh">
+  <h4 class="wt">Interactive · one head, two heads, four heads</h4>
+  <p class="look"><b>The point:</b> Several heads can each attend to something different in the same sentence. <b>Do this:</b> Switch between 1, 2 and 4 heads. <b>Watch for:</b> With one head the patterns blur together; with four, each head shows one clean pattern.</p>
+  <div class="controls">
+    <div class="ctl"><span>Number of heads</span><div class="chips" id="mh-h" role="group" aria-label="Number of attention heads"></div></div>
+  </div>
+  <span class="lab">How <span class="tex">d_{\text{model}} = 8</span> is divided</span>
+  <div class="split" id="mh-split"></div>
+  <span class="lab">Each head’s attention pattern (numbers are percentages; causal mask on)</span>
+  <div class="mhgrid" id="mh-grid"></div>
+  <span class="lab">Concatenated head outputs, one row per token</span>
+  <div class="scroll" id="mh-out"></div>
+  <small>These four patterns are designed by hand to resemble behaviours found in trained models; they are not learned here. With fewer than four heads, the score tables are averaged to imitate one head trying to do several jobs. The value vectors are fixed random numbers, each head’s output is its attention weights times its slice of the values, and the final mixing matrix <span class="tex">W_O</span> is left out.</small>
+  <div class="wjh"><b>What just happened?</b> With four heads, each pattern is sharp: one head tracks the previous token, one links “it” to “cat”, one finds each verb’s subject, one averages the context. Reduce to one head and the same jobs have to share a single softmax, so the pattern blurs into a compromise that does none of them well.</div>
+</div>
+<p>Nobody tells a head what to do. Training discovers useful specialisations: heads that follow syntax, heads that resolve references, heads that look at the adjacent token, heads that reach far back. Many heads have no tidy description at all, and some turn out to be redundant.</p>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“More heads means more parameters.”</b> For fixed <span class="tex">d_{\text{model}}</span>, the parameter count does not depend on the number of heads. You will see this in the calculator in <a class="xref" data-ref="architecture"></a>.</li>
+  <li><b>“Each head has an assigned role.”</b> Roles emerge from training and vary between models and random seeds.</li>
+  <li><b>Pitfall:</b> <span class="tex">d_{\text{model}}</span> must be divisible by <span class="tex">h</span>. Too many heads also leaves each one too few dimensions to express a useful match.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>A head is one complete attention computation with its own <span class="tex">W_Q, W_K, W_V</span>.</li><li><span class="tex">h</span> heads each work in <span class="tex">d_k=d_{\text{model}}/h</span> dimensions, so the total cost is the same as one wide head.</li><li>Outputs are concatenated back to <span class="tex">d_{\text{model}}</span> and mixed by <span class="tex">W_O</span>.</li><li>Input and output shapes are identical: <code>[B, T, d_model]</code>.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. <span class="tex">d_{\text{model}} = 768</span> and <span class="tex">h = 12</span>. What is <span class="tex">d_k</span>?</legend><button type="button" class="qo" data-ok="1">64</button><button type="button" class="qo">768</button><button type="button" class="qo">9,216</button><p class="qx" hidden aria-live="polite"><b></b> 768 / 12 = 64 dimensions per head.</p></fieldset>
+<fieldset><legend>2. You double the number of heads and keep <span class="tex">d_{\text{model}}</span> fixed. What happens to the parameter count?</legend><button type="button" class="qo">It doubles</button><button type="button" class="qo" data-ok="1">It stays the same</button><button type="button" class="qo">It halves</button><p class="qx" hidden aria-live="polite"><b></b> Heads slice the same projection matrices, so the count does not depend on h.</p></fieldset>
+<fieldset><legend>3. What is the job of <span class="tex">W_O</span>?</legend><button type="button" class="qo">Normalising the output</button><button type="button" class="qo" data-ok="1">Mixing the heads’ outputs back into one vector</button><button type="button" class="qo">Masking future tokens</button><p class="qx" hidden aria-live="polite"><b></b> Without it each head would be confined to its own slice of the output vector.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Heads are not assigned jobs; they emerge in training. How would you find out what a head in a trained model does?</li><li>More heads means fewer dimensions per head. What might be lost if h is pushed very high?</li></ul></details>
+<p class="bridge">Attention moves information between tokens but does little computation on it. <a class="xref" data-ref="block"></a> adds the missing parts and assembles one full block.</p>
+</div>
+</section>
+<section class="ch" id="block" data-title="FFN, residuals and normalization">
+<h2>Feed-forward network, residuals and normalization</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Describe what the feed-forward network does and why it needs a non-linearity.</li><li>Explain how residual connections keep signal and gradient alive in deep stacks.</li><li>Compute LayerNorm by hand and say what problem it solves.</li><li>Write down the two lines that define a pre-norm Transformer block.</li></ul></div><p class="needs"><b>Builds on</b> Multi-head attention from <a class="xref" data-ref="multihead"></a>; the idea of a hidden layer and an activation function.</p></div>
+<div class="story"><p>Each of the 5 vectors is updated twice: once with what attention gathered from the other tokens, once with what the MLP computed from it. Both updates are added to the vector. The shape is still <code>[5, d_model]</code>.</p></div>
+<p>Attention moves information between tokens. Three more ingredients turn it into a layer you can stack dozens of times: a small network that processes each token on its own, shortcut connections that keep signals alive through depth, and a normalisation step that keeps numbers in a sensible range. Together they form a <b>Transformer block</b>.</p>
+
+<h3>The feed-forward network (MLP)</h3>
+<p>After attention has gathered context, each token’s vector is passed through the same small network, independently of every other token. Attention decides <i>what to collect</i>; the MLP decides <i>what to make of it</i>. Most of a Transformer’s parameters live here. It works in three moves:</p>
+<ul>
+  <li><b>Expand.</b> <span class="tex">W_1</span> maps the vector from <span class="tex">d_{\text{model}}</span> up to <span class="tex">d_{\text{ff}}</span> numbers, typically 4 times as many. Think of each of these as a detector for one pattern.</li>
+  <li><b>Bend.</b> A non-linear function lets each detector respond strongly to some inputs and stay quiet for others.</li>
+  <li><b>Contract.</b> <span class="tex">W_2</span> maps back to <span class="tex">d_{\text{model}}</span>, writing what the detectors found into the token’s vector.</li>
+</ul>
+<div class="tex d">\mathrm{FFN}(x)=\mathrm{GELU}(xW_1+b_1)\,W_2+b_2</div>
+<p class="sym"><span class="tex">x</span> is one token’s vector (length <span class="tex">d_{\text{model}}</span>); <span class="tex">W_1</span> has shape <code>[d_model, d_ff]</code> and <span class="tex">W_2</span> has shape <code>[d_ff, d_model]</code>; <span class="tex">b_1</span> and <span class="tex">b_2</span> are bias vectors.</p>
+<details class="why"><summary>Why the non-linearity?</summary><div class="whyb">Without it the formula would be <span class="tex">(xW_1)W_2=x(W_1W_2)</span>: two matrices in a row are just one matrix, so the second layer would add nothing. The bend in the middle is what lets the network compute things a single matrix cannot. <b>A note on notation:</b> many texts write this as <span class="tex">W_2\,\mathrm{GELU}(W_1x+b_1)+b_2</span> with column vectors. It is the same computation transposed. This guide writes vectors as rows, so <span class="tex">xW</span> lines up with the shapes <code>[T, d_model]</code> you see in code.</div></details>
+<p>This guide uses <b>GELU</b>, the activation in GPT-2 and most LLMs since. It is applied to each number <span class="tex">a</span> separately:</p>
+<div class="tex d">\mathrm{GELU}(a)=a\,\Phi(a),\qquad \mathrm{ReLU}(a)=\max(0,a)</div>
+<p class="sym"><span class="tex">\Phi(a)</span> is the probability that a standard normal random number is below <span class="tex">a</span>, a value between 0 and 1.</p>
+<details class="why"><summary>Why this form?</summary><div class="whyb">Read <span class="tex">\Phi(a)</span> as a smooth gate: close to 1 for large positive <span class="tex">a</span> (the input passes through), close to 0 for large negative <span class="tex">a</span> (it is blocked), and in between near zero. ReLU is the same gate with a hard on/off switch at 0. The smooth version gives a usable gradient everywhere, which tends to make training better behaved.</div></details>
+<div class="worked">
+  <h4>Worked example: a tiny FFN</h4>
+  <div class="x-only"><p>Input <span class="tex">x=[1,2]</span>, <span class="tex">d_{\text{ff}}=3</span>, biases zero.</p>
+  <div class="tex d">W_1=\begin{bmatrix}1&amp;0.5&amp;-1\\-1&amp;2&amp;1\end{bmatrix},\quad xW_1=[-1,\ 4.5,\ 1],\quad \mathrm{GELU}=[-0.1587,\ 4.5000,\ 0.8413]</div>
+  <div class="tex d">W_2=\begin{bmatrix}1&amp;0\\0&amp;1\\1&amp;-1\end{bmatrix},\quad \mathrm{FFN}(x)=[0.6827,\ 3.6586]</div>
+  <p>The first entry of <span class="tex">xW_1</span> is <span class="tex">1\cdot1+2\cdot(-1)=-1</span>. The first output is <span class="tex">-0.1587+0.8413</span> and the second is <span class="tex">4.5000-0.8413</span>. Results are computed at full precision and rounded for display, which is why a last digit can differ by one from adding the rounded terms.</p></div>
+  <p class="s-only">The two input numbers are stretched into three, bent by GELU (big positives pass through, negatives are mostly squashed), then recombined into two. The bending is what lets the network compute things a single matrix cannot.</p>
+</div>
+<details class="callout code opt"><summary>In Python: the tiny FFN, GELU and ReLU</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s07a_ffn.py"><code>import math
+import numpy as np
+
+
+def gelu(a):
+    # a * Phi(a), where Phi is the standard normal CDF
+    return a * 0.5 * (1 + np.vectorize(math.erf)(a / math.sqrt(2)))
+
+
+def relu(a):
+    return np.maximum(0, a)
+
+
+def ffn(x, W1, b1, W2, b2):
+    return gelu(x @ W1 + b1) @ W2 + b2
+
+
+x = np.array([1.0, 2.0])
+W1 = np.array([[1, 0.5, -1], [-1, 2, 1]])
+W2 = np.array([[1, 0], [0, 1], [1, -1]])
+b1, b2 = np.zeros(3), np.zeros(2)
+
+print("x W1      =", x @ W1)
+print("GELU      =", gelu(x @ W1).round(4))
+print("FFN(x)    =", ffn(x, W1, b1, W2, b2).round(4))
+
+# Without the non-linearity, two matrices collapse into one
+print("linear only = one matrix:", np.allclose((x @ W1) @ W2, x @ (W1 @ W2)))
+
+a = np.array([-3, -1, -0.5, 0, 0.5, 1, 3])
+print("a         =", a)
+print("GELU(a)   =", gelu(a).round(4))
+print("ReLU(a)   =", relu(a))
+
+# Output:
+# x W1      = [-1.   4.5  1. ]
+# GELU      = [-0.1587  4.5     0.8413]
+# FFN(x)    = [0.6827 3.6586]
+# linear only = one matrix: True
+# a         = [-3.  -1.  -0.5  0.   0.5  1.   3. ]
+# GELU(a)   = [-0.004  -0.1587 -0.1543  0.      0.3457  0.8413  2.996 ]
+# ReLU(a)   = [0.  0.  0.  0.  0.5 1.  3. ]</code></pre></details>
+
+<div class="widget opt" id="w-act">
+  <h4 class="wt">Interactive · GELU versus ReLU</h4>
+  <p class="look"><b>The point:</b> GELU is a smooth version of ReLU. <b>Do this:</b> Drag the input from −3 to 3. <b>Watch for:</b> They agree for large positive inputs and differ near zero, where GELU lets a little negative signal through.</p>
+  <label class="ctl"><span class="row">Input x <output id="ac-x-o"></output></span><input type="range" id="ac-x" min="-4" max="4" step="0.1" value="-1"></label>
+  <svg id="ac-svg" role="img" aria-label="Line chart of ReLU and GELU activation functions"></svg>
+  <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> GELU (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> ReLU (dashed)</span></div>
+  <p class="readout" id="ac-read" aria-live="polite"></p>
+  <div class="wjh"><b>What just happened?</b> Both functions pass large positive inputs almost unchanged and suppress large negative ones. They differ near zero: ReLU has a sharp corner and outputs exactly 0 for every negative input, while GELU curves smoothly and dips slightly below zero.</div>
+</div>
+
+<h3>Residual connections</h3>
+<p>Instead of replacing a token’s vector, each sublayer <b>adds</b> its result to it:</p>
+<div class="tex d">x \leftarrow x + \mathrm{Sublayer}(x)</div>
+<p class="sym"><span class="tex">\mathrm{Sublayer}</span> stands for either attention or the MLP; the arrow means “the new value of <span class="tex">x</span> is”.</p>
+<p>Each token’s vector becomes a running total that every layer reads from and writes to. This running total is called the <b class="tr">residual stream</b>.</p>
+<details class="why"><summary>Why add?</summary><div class="whyb">Two reasons. Going forward, a layer only has to learn a <i>correction</i> to the vector; if it has nothing useful to say it can output something near zero and the information passes through untouched. Going backward, the slope of <span class="tex">x+\mathrm{Sublayer}(x)</span> with respect to <span class="tex">x</span> is “1 plus the sublayer’s slope”. That constant 1 gives the gradient a path to every earlier layer that is never multiplied by any weights, so it cannot shrink to nothing however deep the stack is.</div></details>
+
+<h3>Layer normalization</h3>
+<p>As vectors pass through many layers their scale can drift, growing huge or shrinking towards zero. LayerNorm resets it, one token’s vector at a time, in four steps:</p>
+<ol>
+  <li>Compute the mean of the vector’s numbers: <span class="tex">\mu=\frac{1}{d_{\text{model}}}\sum_i x_i</span>.</li>
+  <li>Compute their variance: <span class="tex">\sigma^2=\frac{1}{d_{\text{model}}}\sum_i (x_i-\mu)^2</span>.</li>
+  <li>Subtract the mean and divide by the standard deviation. The vector now has mean 0 and standard deviation 1.</li>
+  <li>Multiply by a learned scale <span class="tex">\gamma</span> and add a learned shift <span class="tex">\beta</span>.</li>
+</ol>
+<div class="tex d">\mathrm{LayerNorm}(x)=\gamma\odot\frac{x-\mu}{\sqrt{\sigma^{2}+\epsilon}}+\beta</div>
+<p class="sym"><span class="tex">x_i</span> is the <span class="tex">i</span>-th number of the vector; <span class="tex">\gamma</span> and <span class="tex">\beta</span> are learned vectors of length <span class="tex">d_{\text{model}}</span>; <span class="tex">\odot</span> multiplies element by element; <span class="tex">\epsilon</span> is a tiny constant that prevents division by zero.</p>
+<details class="why"><summary>Why step 4?</summary><div class="whyb">Forcing every vector to mean 0 and spread 1 might be too rigid for what a layer needs. <span class="tex">\gamma</span> and <span class="tex">\beta</span> start at 1 and 0 (no effect) and let training choose a different scale and offset per dimension. The scale is then under the model’s control instead of drifting.</div></details>
+<div class="worked">
+  <h4>Worked example: LayerNorm</h4>
+  <div class="x-only"><p><span class="tex">x=[2,4,6,8]</span>, with <span class="tex">\gamma=1,\ \beta=0</span> and ignoring <span class="tex">\epsilon</span>.</p>
+  <p>Mean <span class="tex">\mu=\tfrac{2+4+6+8}{4}=5</span>. Variance <span class="tex">\sigma^2=\tfrac{9+1+1+9}{4}=5</span>, so <span class="tex">\sigma=2.2361</span>.</p>
+  <div class="tex d">\mathrm{LayerNorm}(x)=\left[\tfrac{-3}{2.2361},\tfrac{-1}{2.2361},\tfrac{1}{2.2361},\tfrac{3}{2.2361}\right]=[-1.3416,\ -0.4472,\ 0.4472,\ 1.3416]</div></div>
+  <p class="s-only">Subtract the average so the numbers centre on zero, then divide by their spread. [2, 4, 6, 8] and [200, 400, 600, 800] come out identical: only the pattern survives, not the scale.</p>
+</div>
+<details class="callout code opt"><summary>In Python: LayerNorm</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s07b_layernorm.py"><code>import numpy as np
+
+
+def layer_norm(x, gamma=1.0, beta=0.0, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)          # 1. mean
+    var = x.var(axis=-1, keepdims=True)          # 2. variance
+    x_hat = (x - mu) / np.sqrt(var + eps)        # 3. normalise
+    return gamma * x_hat + beta                  # 4. learned scale and shift
+
+
+x = np.array([2.0, 4.0, 6.0, 8.0])
+print("mean, variance =", x.mean(), x.var())
+print("LayerNorm(x)   =", layer_norm(x, eps=0).round(4))
+
+# Scale and offset disappear: only the pattern survives
+print("x * 100        =", layer_norm(x * 100, eps=0).round(4))
+print("x + 7          =", layer_norm(x + 7, eps=0).round(4))
+
+# Applied to every token's vector independently: shape [T, d_model]
+rng = np.random.default_rng(0)
+X = rng.normal(5, 3, size=(3, 8))
+Y = layer_norm(X)
+print("per-token means:", Y.mean(axis=-1).round(6))
+print("per-token stds: ", Y.std(axis=-1).round(4))
+
+# Output:
+# mean, variance = 5.0 5.0
+# LayerNorm(x)   = [-1.3416 -0.4472  0.4472  1.3416]
+# x * 100        = [-1.3416 -0.4472  0.4472  1.3416]
+# x + 7          = [-1.3416 -0.4472  0.4472  1.3416]
+# per-token means: [0. 0. 0.]
+# per-token stds:  [1. 1. 1.]</code></pre></details>
+
+<div class="widget opt" id="w-ln">
+  <h4 class="wt">Interactive · LayerNorm, before and after</h4>
+  <p class="look"><b>The point:</b> LayerNorm removes scale and offset and keeps the pattern. <b>Do this:</b> Multiply the input, then add to it. <b>Watch for:</b> The “before” chart changes; the “after” chart does not.</p>
+  <div class="controls">
+    <label class="ctl"><span class="row">Multiply input by <output id="ln-scale-o"></output></span><input type="range" id="ln-scale" min="-1" max="1" step="0.05" value="0"></label>
+    <label class="ctl"><span class="row">Add to input <output id="ln-shift-o"></output></span><input type="range" id="ln-shift" min="-5" max="5" step="0.5" value="0"></label>
+    <button id="ln-rand">New random vector</button>
+  </div>
+  <div class="grid2">
+    <div><span class="lab">Before</span><svg id="ln-before" role="img" aria-label="Bar chart of the vector before LayerNorm"></svg></div>
+    <div><span class="lab">After LayerNorm (γ = 1, β = 0)</span><svg id="ln-after" role="img" aria-label="Bar chart of the vector after LayerNorm"></svg></div>
+  </div>
+  <p class="readout" id="ln-read" aria-live="polite"></p>
+  <div class="wjh"><b>What just happened?</b> However you scale or shift the input, the output on the right does not move. LayerNorm removes overall scale and offset, so the next layer always sees inputs in the same range.</div>
+</div>
+
+<h3>Putting it together: the Transformer block</h3>
+<p>GPT-style models use the “pre-norm” arrangement. Read each line below as: normalise a copy of the stream, compute an update from it, add the update to the stream.</p>
+<div class="tex d">\begin{aligned}x' &amp;= x + \mathrm{MultiHead}(\mathrm{LayerNorm}(x))\\ y &amp;= x' + \mathrm{FFN}(\mathrm{LayerNorm}(x'))\end{aligned}</div>
+<p class="sym"><span class="tex">x</span> is the block’s input, <span class="tex">x'</span> the stream after the attention update and <span class="tex">y</span> the block’s output. <span class="tex">\mathrm{MultiHead}</span> is the self-attention of <a class="xref" data-ref="multihead"></a>, with the causal mask.</p>
+<p>The shape never changes, which is what makes blocks stackable. Tensor shapes are written <code>[batch, sequence_length, d_model]</code>, shortened to <code>[B, T, d_model]</code>: <code>B</code> independent sequences processed together, <code>T</code> tokens in each, <code>d_model</code> numbers per token.</p>
+
+<details class="callout code opt"><summary>In Python: a pre-norm Transformer block</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s07c_block.py"><code>import math
+import numpy as np
+
+
+def softmax(S, axis=-1):
+    e = np.exp(S - S.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+def layer_norm(x, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    return (x - mu) / np.sqrt(x.var(axis=-1, keepdims=True) + eps)
+
+
+def gelu(a):
+    return a * 0.5 * (1 + np.vectorize(math.erf)(a / math.sqrt(2)))
+
+
+def multi_head(x, p, h):
+    T, d_model = x.shape
+    d_k = d_model // h
+    split = lambda M: M.reshape(T, h, d_k).transpose(1, 0, 2)  # [h, T, d_k]
+    Q, K, V = split(x @ p["W_Q"]), split(x @ p["W_K"]), split(x @ p["W_V"])
+    S = Q @ K.transpose(0, 2, 1) / np.sqrt(d_k)
+    S = np.where(np.triu(np.ones((T, T), dtype=bool), k=1), -np.inf, S)
+    heads = softmax(S) @ V
+    return heads.transpose(1, 0, 2).reshape(T, d_model) @ p["W_O"]
+
+
+def ffn(x, p):
+    return gelu(x @ p["W1"]) @ p["W2"]
+
+
+def block(x, p, h=2):
+    x = x + multi_head(layer_norm(x), p, h)   # x' = x + MultiHead(LN(x))
+    x = x + ffn(layer_norm(x), p)             # y  = x' + FFN(LN(x'))
+    return x
+
+
+rng = np.random.default_rng(0)
+T, d_model, d_ff, L = 5, 8, 32, 4
+
+
+def init(shape):
+    return rng.normal(0, 0.02, size=shape)
+
+
+layers = [{"W_Q": init((d_model, d_model)), "W_K": init((d_model, d_model)),
+           "W_V": init((d_model, d_model)), "W_O": init((d_model, d_model)),
+           "W1": init((d_model, d_ff)), "W2": init((d_ff, d_model))}
+          for _ in range(L)]
+
+x = rng.normal(size=(T, d_model))
+print("input  shape:", x.shape)
+for p in layers:
+    x = block(x, p)
+print("output shape:", x.shape, f"after {L} blocks: the shape never changes")
+
+# Output:
+# input  shape: (5, 8)
+# output shape: (5, 8) after 4 blocks: the shape never changes</code></pre></details>
+<div class="widget" id="w-block">
+  <h4 class="wt">Interactive · block data flow and signal stability</h4>
+  <p class="look"><b>The point:</b> Residual connections and LayerNorm are what make deep stacks trainable. <b>Do this:</b> Untick “Residual connections”, then “LayerNorm”, and raise the depth. <b>Watch for:</b> Whether the signal and gradient curves stay level, shrink to zero or blow up as depth grows.</p>
+  <div class="controls">
+    <label class="chk"><input type="checkbox" id="bl-res" checked> Residual connections</label>
+    <label class="chk"><input type="checkbox" id="bl-norm" checked> LayerNorm</label>
+    <label class="ctl"><span class="row">Weight scale <output id="bl-gain-o"></output></span><input type="range" id="bl-gain" min="0.5" max="2.5" step="0.1" value="1"></label>
+    <label class="ctl"><span class="row">Depth (layers) <output id="bl-depth-o"></output></span><input type="range" id="bl-depth" min="4" max="48" step="1" value="24"></label>
+    <button id="bl-seed">New random weights</button>
+  </div>
+  <div class="grid2">
+    <svg class="bd" id="bl-svg" viewBox="0 0 340 484" style="max-width:340px;margin:auto" role="img" aria-label="Transformer block: input, LayerNorm, multi-head attention, residual add, LayerNorm, feed-forward network, residual add, output. Two residual paths skip around the sublayers.">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+      <g style="color:var(--ink)">
+        <path class="arr" marker-end="url(#ah)" d="M150 54V84"/><path class="arr" marker-end="url(#ah)" d="M150 130V150"/><path class="arr" marker-end="url(#ah)" d="M150 196V212"/>
+        <path class="arr" marker-end="url(#ah)" d="M150 240V256"/><path class="arr" marker-end="url(#ah)" d="M150 302V322"/><path class="arr" marker-end="url(#ah)" d="M150 368V384"/><path class="arr" marker-end="url(#ah)" d="M150 412V428"/>
+      </g>
+      <g style="color:var(--res)"><path class="res" marker-end="url(#ah)" d="M150 69H296V226H166"/><path class="res" marker-end="url(#ah)" d="M150 248H296V398H166"/></g>
+      <text class="rest" x="312" y="150" transform="rotate(90 312 150)">residual (skip)</text>
+      <text class="rest" x="312" y="324" transform="rotate(90 312 324)">residual (skip)</text>
+      <g><rect x="50" y="8" width="200" height="46" rx="8"/><text x="150" y="28">Input x</text><text class="s" x="150" y="45">[B, T, d_model]</text></g>
+      <g class="lnb"><rect class="ln1" x="50" y="84" width="200" height="46" rx="8"/><text x="150" y="104">LayerNorm</text><text class="s" x="150" y="121">[B, T, d_model]</text></g>
+      <g><rect x="50" y="150" width="200" height="46" rx="8"/><text x="150" y="170">Multi-head attention</text><text class="s" x="150" y="187">[B, T, d_model] in and out</text></g>
+      <g><circle cx="150" cy="226" r="14"/><text x="150" y="231">+</text></g>
+      <g class="lnb"><rect class="ln1" x="50" y="256" width="200" height="46" rx="8"/><text x="150" y="276">LayerNorm</text><text class="s" x="150" y="293">[B, T, d_model]</text></g>
+      <g><rect x="50" y="322" width="200" height="46" rx="8"/><text x="150" y="342">Feed-forward (MLP)</text><text class="s" x="150" y="359">d_model → d_ff → d_model</text></g>
+      <g><circle cx="150" cy="398" r="14"/><text x="150" y="403">+</text></g>
+      <g><rect x="50" y="428" width="200" height="46" rx="8"/><text x="150" y="448">Output y</text><text class="s" x="150" y="465">[B, T, d_model]</text></g>
+    </svg>
+    <div>
+      <span class="lab">Magnitude through the stack (log scale)</span>
+      <svg id="bl-chart" role="img" aria-label="Line chart of forward signal size and gradient size at each layer"></svg>
+      <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> forward signal (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> gradient (dashed)</span></div>
+      <p class="readout" id="bl-read" aria-live="polite"></p>
+    </div>
+  </div>
+  <small>What is simplified: this is a real forward and backward pass through a stack of random, untrained layers on one token’s 32-number vector. Each layer is a GELU MLP standing in for the whole sublayer, with no attention. Both curves are relative: the forward curve is divided by the input’s size, the gradient curve by the gradient’s size at the output.</small>
+  <div class="wjh"><b>What just happened?</b> With both switches on, the two curves stay within a small factor of 1 across the whole depth. Turn both off and the signal either dies away or blows up exponentially, depending on the weight scale; a network in that state cannot be trained. Residuals without normalisation keep the signal alive but let it grow layer after layer. Normalisation without residuals keeps the sizes tame in this toy, but each layer then overwrites its input, so nothing guarantees the original token information survives.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>Switch off both boxes, then sweep the weight scale from 0.5 to 2.5. There is almost no setting where a plain deep stack is stable. Switch both back on and sweep again.</p></div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“The MLP mixes information between tokens.”</b> It does not. It is applied to each position separately; only attention moves information across positions.</li>
+  <li><b>“LayerNorm is the same as BatchNorm.”</b> LayerNorm uses statistics of a single token’s vector, so it behaves identically in training and inference and does not depend on batch size.</li>
+  <li><b>“Residual connections are an optimisation trick you could drop.”</b> Deep Transformers do not train without them.</li>
+  <li><b>Pitfall:</b> the original 2017 paper put the normalisation <i>after</i> the residual add (post-norm). Pre-norm, shown here, is what GPT-style models use because it is easier to train at depth. <a class="xref" data-ref="paper"></a> compares the two.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>FFN: expand to <span class="tex">d_{\text{ff}}</span>, apply GELU, contract back. Applied to each token separately.</li><li>Residual: every sublayer adds to the stream and never replaces it.</li><li>LayerNorm: rescale each token’s vector to mean 0, spread 1, then apply a learned scale and shift.</li><li>Block = <span class="tex">x+\mathrm{MultiHead}(\mathrm{LayerNorm}(x))</span>, then the same pattern with the FFN.</li><li>Input and output shapes match, so blocks stack.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. What would the FFN be without its activation function?</legend><button type="button" class="qo" data-ok="1">A single linear map</button><button type="button" class="qo">Twice as powerful</button><button type="button" class="qo">A LayerNorm</button><p class="qx" hidden aria-live="polite"><b></b> Two matrices in a row multiply into one matrix, so the second layer would add nothing.</p></fieldset>
+<fieldset><legend>2. Why do residual connections help very deep models train?</legend><button type="button" class="qo">They reduce the parameter count</button><button type="button" class="qo" data-ok="1">They give the gradient a path that is not multiplied by any weights</button><button type="button" class="qo">They remove the need for attention</button><p class="qx" hidden aria-live="polite"><b></b> The derivative of x + f(x) contains a constant 1, so the gradient reaches early layers undiminished.</p></fieldset>
+<fieldset><legend>3. LayerNorm is applied to [2, 4, 6, 8] and to [200, 400, 600, 800] (γ = 1, β = 0). How do the results compare?</legend><button type="button" class="qo">The second is 100 times larger</button><button type="button" class="qo" data-ok="1">They are identical</button><button type="button" class="qo">They have opposite signs</button><p class="qx" hidden aria-live="polite"><b></b> Subtracting the mean and dividing by the spread removes scale; only the pattern remains.</p></fieldset>
+<fieldset><legend>4. In the FFN, are tokens allowed to exchange information?</legend><button type="button" class="qo">Yes</button><button type="button" class="qo" data-ok="1">No, each token is processed independently</button><button type="button" class="qo">Only with a causal mask</button><p class="qx" hidden aria-live="polite"><b></b> Mixing between tokens happens only in attention.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Most parameters sit in the FFN, not in attention. Does that change how you think about “where knowledge is stored”?</li><li>Pre-norm and post-norm differ by where one line of code sits. Why can such a small change matter at 48 layers?</li></ul></details>
+<p class="bridge">You now have every part. <a class="xref" data-ref="architecture"></a> stacks the blocks, adds the output layer and counts the parameters.</p>
+</div>
+</section>
+<section class="ch" id="architecture" data-title="Full decoder-only architecture">
+<h2>The full decoder-only Transformer</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Trace a prompt from text to next-token probabilities and name every stage.</li><li>Give the tensor shape after each stage.</li><li>Estimate a model’s parameter count from its configuration.</li></ul></div><p class="needs"><b>Builds on</b> Everything from <a class="xref" data-ref="tokens" data-to="block"></a>.</p></div>
+<div class="story"><p>After <span class="tex">L</span> blocks, the vector at the last position (the second “the”) is multiplied by <span class="tex">W_U</span> to give one logit per vocabulary entry. Softmax turns those into probabilities: “mat” 0.44, “sofa” 0.24, and so on.</p></div>
+<p>You now have every part. A GPT-style model is those parts in a straight line: turn text into vectors, refine the vectors through a stack of identical blocks, then turn the final vectors back into a probability for every token in the vocabulary. It is called “decoder-only” because it keeps just the generating half of the original encoder–decoder Transformer, which <a class="xref" data-ref="encdec"></a> covers.</p>
+<p>The whole model is four lines. Each one is something you have already met:</p>
+<div class="tex d">\begin{aligned}x^{(0)}_t &amp;= E[w_t]+E_{\text{pos}}[t] &amp;&amp;\text{token and position vectors, added}\\ x^{(\ell)} &amp;= \mathrm{Block}_{\ell}\!\left(x^{(\ell-1)}\right),\ \ \ell=1,\dots,L &amp;&amp;L\text{ blocks, each refining the stream}\\ z &amp;= \mathrm{LayerNorm}\!\left(x^{(L)}\right)W_U &amp;&amp;\text{final normalisation, then vocabulary scores}\\ p &amp;= \mathrm{softmax}(z) &amp;&amp;\text{scores to probabilities}\end{aligned}</div>
+<p class="sym">The superscript <span class="tex">(\ell)</span> counts blocks: <span class="tex">x^{(0)}</span> is the input to the first block and <span class="tex">x^{(L)}</span> the output of the last. <span class="tex">E_{\text{pos}}</span> is the learned position table (or the sinusoidal <span class="tex">PE</span> of <a class="xref" data-ref="position"></a>). <span class="tex">W_U</span> has shape <code>[d_model, n_vocab]</code>, so <span class="tex">z</span> holds one logit per vocabulary entry.</p>
+<details class="why"><summary>Why does <span class="tex">W_U</span> look like that?</summary><div class="whyb">Each logit is the dot product of the final vector with one column of <span class="tex">W_U</span>, so there is one column per vocabulary entry, and the entry whose column best matches the vector scores highest. It is the embedding lookup run in reverse, from vector back to token, which is why many models reuse the embedding table <span class="tex">E</span> for it (“weight tying”).</div></details>
+<p>One detail makes training efficient: the model produces a next-token prediction at <b>every</b> position at once. Position 3’s output predicts token 4, and thanks to the causal mask it was computed without seeing token 4.</p>
+
+<details class="callout code opt"><summary>In Python: the whole decoder-only forward pass</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s08a_model.py"><code>import math
+import numpy as np
+
+
+def softmax(S, axis=-1):
+    e = np.exp(S - S.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+def layer_norm(x, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    return (x - mu) / np.sqrt(x.var(axis=-1, keepdims=True) + eps)
+
+
+def gelu(a):
+    return a * 0.5 * (1 + np.vectorize(math.erf)(a / math.sqrt(2)))
+
+
+def multi_head(x, p, h):
+    T, d_model = x.shape
+    d_k = d_model // h
+    split = lambda M: M.reshape(T, h, d_k).transpose(1, 0, 2)
+    Q, K, V = split(x @ p["W_Q"]), split(x @ p["W_K"]), split(x @ p["W_V"])
+    S = Q @ K.transpose(0, 2, 1) / np.sqrt(d_k)
+    S = np.where(np.triu(np.ones((T, T), dtype=bool), k=1), -np.inf, S)
+    return (softmax(S) @ V).transpose(1, 0, 2).reshape(T, d_model) @ p["W_O"]
+
+
+def block(x, p, h):
+    x = x + multi_head(layer_norm(x), p, h)
+    return x + gelu(layer_norm(x) @ p["W1"]) @ p["W2"]
+
+
+def gpt_forward(ids, params, h=2):
+    T = len(ids)
+    x = params["E"][ids] + params["E_pos"][:T]  # x(0) = E[w_t] + E_pos[t]
+    for p in params["blocks"]:                  # x(l) = Block_l(x(l-1))
+        x = block(x, p, h)
+    z = layer_norm(x) @ params["W_U"]           # z = LayerNorm(x(L)) W_U
+    return softmax(z)                           # p = softmax(z)
+
+
+vocab = ["the", "cat", "sat", "on", "mat", "sofa", "dog", "."]
+n_vocab, d_model, d_ff, L, T_max = len(vocab), 8, 32, 2, 16
+rng = np.random.default_rng(0)
+
+
+def init(*shape):
+    return rng.normal(0, 0.02, size=shape)
+
+
+params = {
+    "E": init(n_vocab, d_model), "E_pos": init(T_max, d_model),
+    "blocks": [{"W_Q": init(d_model, d_model), "W_K": init(d_model, d_model),
+                "W_V": init(d_model, d_model), "W_O": init(d_model, d_model),
+                "W1": init(d_model, d_ff), "W2": init(d_ff, d_model)}
+               for _ in range(L)],
+    "W_U": init(d_model, n_vocab),
+}
+
+ids = [vocab.index(w) for w in "the cat sat on the".split()]
+probs = gpt_forward(ids, params)
+print("probabilities shape:", probs.shape, "(one row per position)")
+print("each row sums to 1: ", np.allclose(probs.sum(axis=1), 1))
+# The weights are random, so this is close to uniform (1/8 = 0.125)
+print("next-token distribution after the last position:")
+print({w: round(float(p), 3) for w, p in zip(vocab, probs[-1])})
+
+# Output:
+# probabilities shape: (5, 8) (one row per position)
+# each row sums to 1:  True
+# next-token distribution after the last position:
+# {'the': 0.121, 'cat': 0.126, 'sat': 0.12, 'on': 0.132, 'mat': 0.122, 'sofa': 0.125, 'dog': 0.13, '.': 0.124}</code></pre></details>
+<div class="widget" id="w-arch">
+  <h4 class="wt">Interactive · click through the architecture</h4>
+  <p class="look"><b>The point:</b> The whole model is a short pipeline of stages you already know. <b>Do this:</b> Press Play, or click each stage in turn. <b>Watch for:</b> The shape shown under each stage, and which stages have parameters.</p>
+  <div class="controls"><button class="pri" id="ar-play">▶ Play data flow</button><small>Or click any component.</small></div>
+  <div class="arch">
+    <ol class="archlist" id="ar-list" aria-label="Model components in order"></ol>
+    <div class="detail" id="ar-detail" aria-live="polite"></div>
+  </div>
+  <div class="wjh"><b>What just happened?</b> Data flows top to bottom, and the shape <code>[B, T, d_model]</code> is preserved all the way through the blocks. Only the first step (IDs to vectors) and the last (vectors to vocabulary scores) change it. That uniformity is why scaling a Transformer up is mostly a matter of choosing bigger numbers.</div>
+</div>
+<h3>Counting parameters</h3>
+<p><b>The rule:</b> a linear layer from <span class="tex">a</span> numbers to <span class="tex">b</span> numbers has <span class="tex">a\times b</span> weights and <span class="tex">b</span> biases. Apply that to every part of the model:</p>
+<ul>
+  <li><b>Token embeddings</b>: one row of <span class="tex">d_{\text{model}}</span> numbers for each of <span class="tex">n_{\text{vocab}}</span> entries.</li>
+  <li><b>Position embeddings</b>: one row for each of <span class="tex">T</span> positions.</li>
+  <li><b>Attention</b>, per block: four <code>[d_model, d_model]</code> matrices (<span class="tex">W_Q, W_K, W_V, W_O</span>), each with a bias of length <span class="tex">d_{\text{model}}</span>.</li>
+  <li><b>MLP</b>, per block: <span class="tex">W_1</span> with its bias (<span class="tex">d_{\text{model}}d_{\text{ff}}+d_{\text{ff}}</span>) and <span class="tex">W_2</span> with its bias (<span class="tex">d_{\text{ff}}d_{\text{model}}+d_{\text{model}}</span>).</li>
+  <li><b>LayerNorm</b>: <span class="tex">\gamma</span> and <span class="tex">\beta</span>, so <span class="tex">2d_{\text{model}}</span> each time; two per block, plus the final one.</li>
+  <li><b>Output projection</b>: <span class="tex">d_{\text{model}}\times n_{\text{vocab}}</span>, or nothing extra if it is shared with the embeddings.</li>
+</ul>
+<div class="tex d">\underbrace{n_{\text{vocab}}d_{\text{model}}}_{\text{token emb.}}+\underbrace{T\,d_{\text{model}}}_{\text{position emb.}}+L\Big(\underbrace{4(d_{\text{model}}^{2}+d_{\text{model}})}_{\text{attention}}+\underbrace{2\,d_{\text{model}}d_{\text{ff}}+d_{\text{ff}}+d_{\text{model}}}_{\text{MLP}}+\underbrace{4d_{\text{model}}}_{\text{2 LayerNorms}}\Big)+\underbrace{2d_{\text{model}}}_{\text{final LayerNorm}}+\underbrace{n_{\text{vocab}}d_{\text{model}}}_{\text{output proj.}}</div>
+<p class="sym"><span class="tex">L</span> is the number of blocks, <span class="tex">T</span> the context length, <span class="tex">d_{\text{ff}}</span> the MLP’s hidden width. The number of heads <span class="tex">h</span> does not appear: heads slice the same matrices.</p>
+<div class="worked">
+  <h4>Worked example</h4>
+  <div class="x-only"><p><span class="tex">n_{\text{vocab}}=50,\ d_{\text{model}}=8,\ T=16,\ L=1,\ d_{\text{ff}}=32</span>, output projection not shared:</p>
+  <p>Token embeddings <span class="tex">50\times8=400</span>. Position embeddings <span class="tex">16\times8=128</span>. Attention <span class="tex">4\times(64+8)=288</span>. MLP <span class="tex">2\times8\times32+32+8=552</span>. Block LayerNorms <span class="tex">4\times8=32</span>. Final LayerNorm <span class="tex">16</span>. Output projection <span class="tex">400</span>.</p>
+  <p>Total: <span class="tex">400+128+288+552+32+16+400=1816</span> parameters.</p></div>
+  <p class="s-only">Two kinds of term dominate. Embeddings grow with vocabulary size × width. The blocks grow with layers × width². Doubling the width roughly quadruples the cost of the blocks.</p>
+</div>
+<details class="callout code opt"><summary>In Python: counting parameters</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s08b_params.py"><code>def count_params(n_vocab, d_model, T, L, d_ff, tied=False):
+    token_emb = n_vocab * d_model
+    pos_emb = T * d_model
+    attention = 4 * (d_model * d_model + d_model)          # W_Q, W_K, W_V, W_O
+    mlp = d_model * d_ff + d_ff + d_ff * d_model + d_model  # W1, b1, W2, b2
+    block_norms = 2 * 2 * d_model                           # two LayerNorms
+    final_norm = 2 * d_model
+    output = 0 if tied else d_model * n_vocab
+    total = token_emb + pos_emb + L * (attention + mlp + block_norms) \
+        + final_norm + output
+    return {"token emb": token_emb, "position emb": pos_emb,
+            "blocks": L * (attention + mlp + block_norms),
+            "final norm": final_norm, "output": output, "total": total}
+
+
+print(count_params(n_vocab=50, d_model=8, T=16, L=1, d_ff=32))
+
+gpt2_small = count_params(n_vocab=50257, d_model=768, T=1024, L=12,
+                          d_ff=3072, tied=True)
+print(f"GPT-2 small: {gpt2_small['total']:,} parameters")
+
+# Doubling the width roughly quadruples the cost of the blocks
+for d in (768, 1536):
+    blocks = count_params(50257, d, 1024, 12, 4 * d, tied=True)["blocks"]
+    print(f"d_model={d}: blocks hold {blocks:,} parameters")
+
+# Output:
+# {'token emb': 400, 'position emb': 128, 'blocks': 872, 'final norm': 16, 'output': 400, 'total': 1816}
+# GPT-2 small: 124,439,808 parameters
+# d_model=768: blocks hold 85,054,464 parameters
+# d_model=1536: blocks hold 339,978,240 parameters</code></pre></details>
+
+<div class="widget opt" id="w-params">
+  <h4 class="wt">Interactive · parameter-count calculator</h4>
+  <p class="look"><b>The point:</b> Where a model’s parameters are. <b>Do this:</b> Load a preset, then double <span class="tex">d_{\text{model}}</span>. <b>Watch for:</b> The share taken by the blocks, and that the number of heads changes nothing.</p>
+  <div class="controls" id="pc-presets" role="group" aria-label="Presets"></div>
+  <div class="numgrid">
+    <label><span>Vocabulary size <span class="tex">n_{\text{vocab}}</span></span><input type="number" id="pc-V" min="2" max="1000000" value="50257"></label>
+    <label><span class="tex">d_{\text{model}}</span><input type="number" id="pc-d" min="2" max="20000" value="768"></label>
+    <label>Layers L<input type="number" id="pc-L" min="1" max="400" value="12"></label>
+    <label>Attention heads h<input type="number" id="pc-h" min="1" max="256" value="12"></label>
+    <label><span>FFN hidden dim <span class="tex">d_{\text{ff}}</span></span><input type="number" id="pc-ff" min="1" max="100000" value="3072"></label>
+    <label>Context length T<input type="number" id="pc-T" min="1" max="2000000" value="1024"></label>
+  </div>
+  <label class="chk"><input type="checkbox" id="pc-tie" checked> Share the output projection with the token embeddings (weight tying)</label>
+  <p class="readout" id="pc-warn" aria-live="polite"></p>
+  <div class="stack" id="pc-bar" role="img" aria-label="Stacked bar of parameter shares"></div>
+  <div class="scroll"><table class="numt" id="pc-table"></table></div>
+  <span class="lab">Memory for the weights alone</span>
+  <div class="stats" id="pc-mem"></div>
+  <span class="lab">How the total scales with width</span>
+  <div class="scroll"><table class="numt" id="pc-scale"></table></div>
+  <small>Counts assume learned position embeddings and biases on every linear layer, as in GPT-2. The GPT-2 presets use that model family’s published sizes. Architectures that differ in these details will be off by a small percentage.</small>
+  <div class="wjh"><b>What just happened?</b> Changing the number of heads changed nothing: heads split the same matrices into slices. Changing <span class="tex">d_{\text{model}}</span> changed almost everything, because attention and MLP weights are both proportional to its square. More parameters means more memory to hold them and more arithmetic for every token processed, in both training and inference.</div>
+</div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Longer context means more parameters.”</b> Barely: only the position table grows. What grows is compute, since attention compares every token with every other one, giving <span class="tex">O(T^2)</span> work per layer.</li>
+  <li><b>“The model only predicts at the last position.”</b> It predicts at every position. Training uses all of them; generation reads only the last.</li>
+  <li><b>“Decoder-only means something is missing.”</b> It is a complete design. The prompt and the output simply share one sequence.</li>
+  <li><b>Pitfall:</b> memory for weights is the floor, not the total. Activations, the KV cache and, in training, gradients and optimizer state all add to it.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Model = embeddings + positions → <span class="tex">L</span> blocks → final LayerNorm → <span class="tex">W_U</span> → softmax.</li><li>The stream keeps the shape <code>[B, T, d_model]</code> until the output projection makes it <code>[B, T, n_vocab]</code>.</li><li>Every position produces a prediction for its own next token, all in one pass.</li><li>Parameters: embeddings grow with <span class="tex">n_{\text{vocab}}\cdot d_{\text{model}}</span>; blocks grow with <span class="tex">L\cdot d_{\text{model}}^{2}</span>.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. What is the shape of the logits for a batch of B sequences of T tokens?</legend><button type="button" class="qo"><code>[B, T, d_model]</code></button><button type="button" class="qo" data-ok="1"><code>[B, T, n_vocab]</code></button><button type="button" class="qo"><code>[B, n_vocab]</code></button><p class="qx" hidden aria-live="polite"><b></b> There is one score per vocabulary entry at every position.</p></fieldset>
+<fieldset><legend>2. You double <span class="tex">d_{\text{model}}</span> (and <span class="tex">d_{\text{ff}}</span> with it). Roughly what happens to the parameters in the blocks?</legend><button type="button" class="qo">They double</button><button type="button" class="qo" data-ok="1">They quadruple</button><button type="button" class="qo">They stay the same</button><p class="qx" hidden aria-live="polite"><b></b> The block matrices are <span class="tex">d_{\text{model}} \times d_{\text{model}}</span> or <span class="tex">d_{\text{model}} \times d_{\text{ff}}</span>, so their size grows with the square.</p></fieldset>
+<fieldset><legend>3. What does “weight tying” mean?</legend><button type="button" class="qo">All layers share weights</button><button type="button" class="qo" data-ok="1">The output projection reuses the token embedding table</button><button type="button" class="qo">Heads share projections</button><p class="qx" hidden aria-live="polite"><b></b> Mapping vectors back to tokens is the reverse of the embedding lookup, so the same matrix can serve both.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Use the calculator to reproduce the parameter count of a model you use. Which component dominates?</li><li>If you had to cut a model’s size by half, would you reduce depth, width or vocabulary? What does each cost?</li></ul></details>
+<p class="bridge">The architecture is complete, but its weights are random. <a class="xref" data-ref="training"></a> shows how they are learned.</p>
+</div>
+</section>
+<section class="view complete" id="complete" data-title="Part B complete"><div id="partDone"></div></section>
+<footer>Everything here runs locally in your browser. The only network request is for the KaTeX maths renderer.</footer>
+</main>
+</div>
+<div id="tip" role="tooltip"></div>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/shared.js"></script>
+<script src="assets/js/part-b.js"></script>
+<script src="assets/js/site.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous" onload="renderAllTex()" onerror="texFailed()"></script>
+</body>
+</html>

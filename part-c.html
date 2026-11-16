@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part C: Training and using it · Transformers and LLMs from Scratch</title>
+<meta name="description" content="An interactive, visual, from-scratch guide to decoder-only Transformers and large language models.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c2230'/%3E%3Crect x='5' y='5' width='10' height='10' rx='2' fill='%23fde725'/%3E%3Crect x='17' y='5' width='10' height='10' rx='2' fill='%2321918c'/%3E%3Crect x='5' y='17' width='10' height='10' rx='2' fill='%233b528b'/%3E%3Crect x='17' y='17' width='10' height='10' rx='2' fill='%235ec962'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/content.css">
+<link rel="stylesheet" href="assets/css/widgets.css">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body data-page="part-c">
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="Transformers and LLMs from Scratch, home"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c2230"/><rect x="5" y="5" width="10" height="10" rx="2" fill="#fde725"/><rect x="17" y="5" width="10" height="10" rx="2" fill="#21918c"/><rect x="5" y="17" width="10" height="10" rx="2" fill="#3b528b"/><rect x="17" y="17" width="10" height="10" rx="2" fill="#5ec962"/></svg><span class="lgt">Transformers &amp; LLMs from Scratch</span><span class="sm">Transformers &amp; LLMs</span></a>
+  <span class="crumb" id="crumb"></span>
+  <div class="setwrap">
+    <button type="button" class="btn icon" id="setBtn" aria-haspopup="true" aria-expanded="false" aria-controls="setMenu" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="lgt">Settings</span></button>
+    <div id="setMenu" class="setmenu" role="dialog" aria-label="Settings" hidden>
+      <div class="sgrp"><span class="slab" id="lab-path">Path</span>
+        <div class="seg full" role="group" aria-labelledby="lab-path">
+          <button type="button" class="pathBtn" data-p="quick" aria-pressed="false">Quick tour</button>
+          <button type="button" class="pathBtn" data-p="full" aria-pressed="true">Full depth</button>
+        </div>
+        <small class="shint">Quick tour simplifies the worked examples and hides optional material.</small></div>
+      <div class="sgrp"><span class="slab" id="lab-theme">Theme</span>
+        <div class="seg full" role="group" aria-labelledby="lab-theme">
+          <button type="button" class="thBtn" data-t="light" aria-pressed="false">Light</button>
+          <button type="button" class="thBtn" data-t="dark" aria-pressed="false">Dark</button>
+          <button type="button" class="thBtn" data-t="auto" aria-pressed="true">Auto</button>
+        </div></div>
+      <div class="sgrp"><span class="slab" id="lab-code">Python code</span>
+        <div class="seg full" role="group" aria-labelledby="lab-code">
+          <button type="button" class="codeBtn" data-c="closed" aria-pressed="true">Collapsed</button>
+          <button type="button" class="codeBtn" data-c="open" aria-pressed="false">Expanded</button>
+        </div></div>
+      <div class="sgrp"><span class="slab">Progress</span>
+        <button type="button" class="btn full" id="pgReset">Reset progress</button></div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"><div id="progBar"></div></div>
+</header>
+<div id="texwarn" hidden>The maths renderer (KaTeX) could not be loaded, so equations are shown as LaTeX source. Everything else works offline.</div>
+<div class="layout">
+<div id="scrim" hidden></div>
+<nav id="mbar" aria-label="Section navigation">
+  <span class="mpb" aria-hidden="true"><i id="mFill"></i></span>
+  <button type="button" id="mPrev" aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button type="button" id="mMid" aria-haspopup="true" aria-expanded="false" aria-controls="toc"><span id="mNum"></span><span id="mTxt">Contents</span><svg class="mico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>
+  <button type="button" id="mNext" aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+</nav>
+<nav id="toc" aria-label="Contents"></nav>
+<main id="main">
+<section class="view opener" id="start" data-title="Part C: Training and using it">
+<p class="kicker">Part C</p>
+<h1>Training and using it</h1>
+<p class="lede" id="partGoal"></p>
+<ol class="partlist" id="partList"></ol>
+<p id="partGo"></p>
+</section>
+<section class="ch" id="training" data-title="Training an LLM">
+<h2>Training an LLM</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Derive the cross-entropy loss from “make real text probable”.</li><li>Explain teacher forcing and why one sequence gives many training examples.</li><li>Describe one training step: forward, loss, backward, update.</li><li>Read a loss curve and recognise overfitting and divergence.</li></ul></div><p class="needs"><b>Builds on</b> The full model from <a class="xref" data-ref="architecture"></a>; the chain rule from <a class="xref" data-ref="intro"></a>; gradients and gradient descent in outline.</p></div>
+<div class="story"><p>Given the text “the cat sat on the mat”, the input is “the cat sat on the” and the targets are the same tokens shifted by one, ending in “mat”. If the model gives “mat” probability 0.44, that position contributes <span class="tex">-\ln 0.44=0.82</span> to the loss.</p></div>
+<p>An untrained model has random parameters and predicts nonsense. Training is a loop: show the model real text, measure how surprised it was by each actual next token, and nudge every parameter in the direction that would have made it slightly less surprised. Repeat billions of times.</p>
+<div class="flow" role="img" aria-label="Diagram of the training loop: batch of text, forward pass, loss, backward pass, optimizer update, repeat">
+  <div><b>Batch of text</b><small>B sequences × T tokens</small></div><i>→</i>
+  <div class="fa"><b>Forward pass</b><small>predict every next token</small></div><i>→</i>
+  <div><b>Loss</b><small>how wrong, as one number</small></div><i>→</i>
+  <div><b>Backward pass</b><small>gradient for every parameter</small></div><i>→</i>
+  <div><b>Optimizer step</b><small>adjust parameters</small></div><i>↺</i>
+</div>
+<h3>The loss: cross-entropy, derived</h3>
+<p><b>What we want:</b> a model that gives real text a high probability. From <a class="xref" data-ref="intro"></a>, the probability of a text is a product of next-token probabilities, <span class="tex">\prod_t p_\theta(w_t\mid w_{\lt t})</span>.</p>
+<p><b>Make it workable.</b> A product of thousands of numbers below 1 is astronomically small and awkward to differentiate. Taking the logarithm turns the product into a sum without changing which parameters are best.</p>
+<p><b>Turn it into something to minimise.</b> Optimizers minimise, so flip the sign. Then divide by the number of tokens so the value does not depend on how long the text is:</p>
+<div class="tex d">\mathcal{L}(\theta)=-\frac{1}{T}\sum_{t=1}^{T}\log p_{\theta}\!\left(w_t \mid w_{\lt t}\right)</div>
+<p class="sym"><span class="tex">\theta</span> stands for all the parameters; <span class="tex">p_\theta(w_t\mid w_{\lt t})</span> is the probability the model gave to the token that really came next; <span class="tex">\log</span> is the natural logarithm. In words: <span class="tex">\mathcal{L}=-\sum_t\log p(\text{target}_t\mid\text{tokens}_{\lt t})</span>, averaged over positions.</p>
+<details class="why"><summary>Why <span class="tex">-\log</span>?</summary><div class="whyb">It is 0 when the model gave the correct token probability 1, and it grows without limit as that probability approaches 0. So a confident mistake is punished far more than a hesitant one. It also has a plain reading: the loss is the model’s average <i>surprise</i> at the real text. A useful reference point: guessing uniformly gives every token probability <span class="tex">1/n_{\text{vocab}}</span>, hence a loss of <span class="tex">\ln n_{\text{vocab}}</span>. An untrained model starts near that value.</div></details>
+<h3>Teacher forcing</h3>
+<p>The targets are just the inputs shifted one place left, so a single sequence of <span class="tex">T</span> tokens provides <span class="tex">T</span> training examples. At every position the model is given the <i>true</i> previous tokens rather than its own guesses; this is called teacher forcing. Combined with the causal mask (<a class="xref" data-ref="attention"></a>), it lets all positions be trained in one parallel pass.</p>
+<table class="tf" aria-label="Teacher forcing: inputs and shifted targets for the text 'the cat'">
+  <tr><th>input</th><td>t</td><td>h</td><td>e</td><td>␣</td><td>c</td><td>a</td></tr>
+  <tr><th>target</th><td>h</td><td>e</td><td>␣</td><td>c</td><td>a</td><td>t</td></tr>
+</table>
+<h3>From loss to learning</h3>
+<ul>
+  <li><b>Batching</b>: <span class="tex">B</span> sequences are processed together so the update reflects an average over examples and the hardware is used efficiently.</li>
+  <li><b>Backpropagation</b>: the chain rule, applied mechanically from the loss back through every layer, yields the <b>gradient</b> <span class="tex">\nabla_\theta\mathcal{L}</span>: for each parameter, how much the loss would rise if that parameter increased slightly.</li>
+  <li><b>Gradient descent</b>: move every parameter a small step in the direction that lowers the loss.</li>
+</ul>
+<div class="tex d">\theta\leftarrow\theta-\eta\,\nabla_{\theta}\mathcal{L}</div>
+<p class="sym"><span class="tex">\eta</span> is the <b>learning rate</b>, the step size.</p>
+<details class="why"><summary>Why the minus sign?</summary><div class="whyb">The gradient points in the direction in which the loss increases fastest, so we step the opposite way. <span class="tex">\eta</span> controls how far: too small and training crawls, too large and each step overshoots. It usually warms up from zero, then decays. In practice the <b>optimizer</b> (Adam or AdamW) replaces the raw gradient with a running average that gives each parameter a step size suited to it. <b>One elegant fact:</b> for softmax with this loss, the gradient with respect to each logit is simply “predicted probability minus 1 for the correct token, predicted probability for every other”. The model is pushed in proportion to how wrong it was.</div></details>
+<div class="worked">
+  <h4>Worked example</h4>
+  <div class="x-only"><p>Suppose the model gave the three correct next tokens probabilities <span class="tex">0.5,\ 0.25,\ 0.9</span>.</p>
+  <p>Per-token losses: <span class="tex">-\ln0.5=0.6931,\ \ -\ln0.25=1.3863,\ \ -\ln0.9=0.1054</span>. Mean loss <span class="tex">\mathcal{L}=2.1848/3=0.7283</span>.</p>
+  <p>One gradient-descent step on a single weight: <span class="tex">\theta=2.0</span>, gradient <span class="tex">0.5</span>, learning rate <span class="tex">\eta=0.1</span> gives <span class="tex">\theta\leftarrow2.0-0.1\times0.5=1.95</span>.</p>
+  <p>The uniform baseline for the 21-character model below is <span class="tex">\ln 21=3.0445</span>.</p></div>
+  <p class="s-only">Loss measures surprise. A confident correct guess costs almost nothing, an unsure guess costs a little, and a confident wrong guess costs a lot. Training rolls downhill on that number in small steps.</p>
+</div>
+<details class="callout code opt"><summary>In Python: teacher forcing, cross-entropy and its gradient</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s09a_loss.py"><code>import numpy as np
+
+
+def softmax(z):
+    e = np.exp(z - z.max())
+    return e / e.sum()
+
+
+# Teacher forcing: the targets are the inputs shifted by one place
+tokens = "the cat sat on the mat".split()
+inputs, targets = tokens[:-1], tokens[1:]
+for i in range(len(inputs)):
+    print(f"given {' '.join(inputs[:i + 1])!r:26} predict {targets[i]!r}")
+
+# Cross-entropy: the average of -log p(correct next token)
+p_correct = np.array([0.5, 0.25, 0.9])
+per_token = -np.log(p_correct)
+print("per-token losses:", per_token.round(4))
+print("mean loss       :", round(per_token.mean(), 4))
+print("uniform baseline, 21 symbols: ln 21 =", round(np.log(21), 4))
+
+# The gradient of the loss with respect to the logits is p - onehot(target)
+rng = np.random.default_rng(0)
+z, y = rng.normal(size=5), 2
+loss = lambda z: -np.log(softmax(z)[y])
+
+analytic = softmax(z)
+analytic[y] -= 1
+h = 1e-6
+numeric = np.array([(loss(z + h * np.eye(5)[i]) - loss(z - h * np.eye(5)[i]))
+                    / (2 * h) for i in range(5)])
+print("p - onehot      :", analytic.round(4))
+print("finite diffs    :", numeric.round(4))
+
+# One gradient-descent step on a single weight
+theta, grad, eta = 2.0, 0.5, 0.1
+print("theta after one step:", theta - eta * grad)
+
+# Output:
+# given 'the'                      predict 'cat'
+# given 'the cat'                  predict 'sat'
+# given 'the cat sat'              predict 'on'
+# given 'the cat sat on'           predict 'the'
+# given 'the cat sat on the'       predict 'mat'
+# per-token losses: [0.6931 1.3863 0.1054]
+# mean loss       : 0.7283
+# uniform baseline, 21 symbols: ln 21 = 3.0445
+# p - onehot      : [ 0.2024  0.1564 -0.6614  0.1982  0.1045]
+# finite diffs    : [ 0.2024  0.1564 -0.6614  0.1982  0.1045]
+# theta after one step: 1.95</code></pre></details>
+<details class="callout code opt"><summary>In Python: a complete training loop</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s09b_train_torch.py"><code>import math
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+torch.manual_seed(0)
+
+# Training text: sentences like the toy model's, read character by character
+subjects = ["the cat", "the dog", "a bird", "the fox"]
+verbs = ["sat on", "saw", "ran to", "likes"]
+objects = ["the mat", "a box", "the tree", "the sofa"]
+text = " ".join(f"{s} {v} {o}." for s in subjects for v in verbs for o in objects)
+chars = sorted(set(text))
+stoi = {c: i for i, c in enumerate(chars)}
+data = torch.tensor([stoi[c] for c in text])
+n_vocab, T, B = len(chars), 16, 32
+
+
+class TinyGPT(nn.Module):
+    def __init__(self, d_model=48, n_head=2, n_layer=2):
+        super().__init__()
+        self.tok = nn.Embedding(n_vocab, d_model)
+        self.pos = nn.Embedding(T, d_model)
+        layer = nn.TransformerEncoderLayer(
+            d_model, n_head, 4 * d_model, dropout=0.0, activation="gelu",
+            batch_first=True, norm_first=True)          # pre-norm block
+        self.blocks = nn.TransformerEncoder(layer, n_layer,
+                                            enable_nested_tensor=False)
+        self.ln = nn.LayerNorm(d_model)
+        self.head = nn.Linear(d_model, n_vocab)        # W_U
+
+    def forward(self, idx):                            # idx: [B, T]
+        t = idx.shape[1]
+        x = self.tok(idx) + self.pos(torch.arange(t))
+        mask = nn.Transformer.generate_square_subsequent_mask(t)
+        x = self.blocks(x, mask=mask, is_causal=True)
+        return self.head(self.ln(x))                   # logits: [B, T, n_vocab]
+
+
+def get_batch():
+    starts = torch.randint(len(data) - T - 1, (B,))
+    x = torch.stack([data[s:s + T] for s in starts])
+    y = torch.stack([data[s + 1:s + T + 1] for s in starts])  # shifted by one
+    return x, y
+
+
+model = TinyGPT()
+opt = torch.optim.AdamW(model.parameters(), lr=3e-3, weight_decay=0.01)
+print(f"{sum(p.numel() for p in model.parameters()):,} parameters,",
+      f"uniform baseline ln {n_vocab} = {math.log(n_vocab):.3f}")
+
+for step in range(601):
+    x, y = get_batch()
+    logits = model(x)                                         # 1. forward
+    loss = F.cross_entropy(logits.reshape(-1, n_vocab), y.reshape(-1))  # 2. loss
+    opt.zero_grad()
+    loss.backward()                                           # 3. backward
+    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)   # cap the gradient
+    opt.step()                                                # 4. update
+    if step % 150 == 0:
+        print(f"step {step:3}  loss {loss.item():.3f}")
+
+# Greedy generation from the trained model
+idx = torch.tensor([[stoi[c] for c in "the "]])
+with torch.no_grad():
+    for _ in range(40):
+        next_id = model(idx[:, -T:])[0, -1].argmax()
+        idx = torch.cat([idx, next_id.view(1, 1)], dim=1)
+print("sample:", "".join(chars[i] for i in idx[0]))
+
+# Output (exact numbers can differ slightly between PyTorch versions):
+# 59,445 parameters, uniform baseline ln 21 = 3.045
+# step   0  loss 3.374
+# step 150  loss 0.303
+# step 300  loss 0.324
+# step 450  loss 0.256
+# step 600  loss 0.293
+# sample: the mat. the fox sat on the tree. the fox sa</code></pre></details>
+
+<div class="widget" id="w-train">
+  <h4 class="wt">Interactive · train a tiny Transformer in your browser</h4>
+  <p class="look"><b>The point:</b> Training is nothing more than repeating one small step, and you can watch it work. <b>Do this:</b> Press Train and watch the loss curve and the sample text. Then try the smallest training set. <b>Watch for:</b> Loss starts near ln 21 ≈ 3.04 and falls; the sample turns from noise into words. On the small set, validation loss turns upward.</p>
+  <p class="cap"><b>Toy educational model, not a production LLM.</b> A real decoder-only Transformer with 9,621 parameters, trained from scratch on this page by backpropagation written in plain JavaScript. It reads characters, not subwords. Its world is sentences such as “the cat sat on the mat.” built from 4 subjects, 4 verbs and 4 objects.</p>
+  <div class="controls">
+    <label class="ctl"><span class="row">Peak learning rate <output id="tr-lr-o"></output></span><input type="range" id="tr-lr" min="-4" max="-1" step="0.1" value="-2.3"></label>
+    <label class="ctl"><span class="row">Training steps <output id="tr-steps-o"></output></span><input type="range" id="tr-steps" min="100" max="3000" step="100" value="600"></label>
+    <label class="ctl"><span class="row">Sample temperature τ <output id="tr-temp-o"></output></span><input type="range" id="tr-temp" min="0.1" max="2" step="0.1" value="0.8"></label>
+    <label class="ctl">Training set<select id="tr-size"><option value="120">120 sentences (normal)</option><option value="8">8 sentences (invites overfitting)</option></select></label>
+  </div>
+  <div class="controls"><button class="pri" id="tr-go">▶ Train</button><button id="tr-reset">Reset model</button></div>
+  <div class="stats" id="tr-stats" aria-live="off"></div>
+  <svg id="tr-chart" role="img" aria-label="Training and validation loss curves"></svg>
+  <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> training loss, smoothed (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> validation loss (dashed)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln c"/></svg> uniform guessing, ln 21 (dotted)</span></div>
+  <div class="grid2" style="margin-top:14px">
+    <div><span class="lab">Next-character prediction after “the dog sa”</span><div id="tr-probe1"></div></div>
+    <div><span class="lab">Next-character prediction after “a bird ran to ”</span><div id="tr-probe2"></div></div>
+  </div>
+  <span class="lab">Text generated by the model right now (prompt: “the ”)</span>
+  <div class="sample" id="tr-sample"></div>
+  <small>Exactly what is simplified compared with a production GPT: character-level vocabulary of 21 symbols; 2 layers; 1 attention head per layer; <span class="tex">d_{\text{model}} = 24</span>; ReLU MLP with hidden width 48; context window of 16 characters; no LayerNorm, dropout or weight tying; batch of 8 sequences; Adam with gradient clipping; linear warm-up then cosine decay of the learning rate. “Epoch” is the number of characters processed divided by the size of the training text.</small>
+  <div class="wjh"><b>What just happened?</b> The loss starts near the dotted line, because random weights guess almost uniformly. It then falls in stages as the model learns which letters are common, then how words are spelled, then which word can follow which. After “the dog sa” a well-trained model splits its probability between <code>t</code> and <code>w</code>, because both “sat” and “saw” are correct continuations. That remaining uncertainty is real, and it is why the loss cannot reach zero.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>1. Reset, set the learning rate to its maximum, and train: the loss falls slowly or jumps around. 2. Reset, choose the 8-sentence training set, and train for 1,500 steps: the training loss keeps falling while the validation loss turns upward.</p></div>
+<h3>Reading loss curves</h3>
+<ul>
+  <li><b>Validation loss</b> is measured on text held out from training. It estimates how well the model handles text it has not seen, which is what you actually care about.</li>
+  <li><b>Underfitting</b>: both losses stay high. The model is too small, has trained too briefly, or the learning rate is wrong.</li>
+  <li><b>Overfitting</b>: training loss keeps dropping while validation loss stalls or rises. The model is memorising its training text instead of learning patterns that carry over.</li>
+  <li><b>Why curves matter</b>: they are the main instrument panel of training. A flat line, a sudden spike or a widening gap between the two curves each points to a different problem, long before you read any generated text.</li>
+</ul>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Loss should reach zero.”</b> Language is uncertain; many continuations are valid. A loss of zero would mean memorisation.</li>
+  <li><b>“The model is trained on its own outputs.”</b> During pretraining it always sees real text (teacher forcing). It first consumes its own outputs at inference time.</li>
+  <li><b>“A larger learning rate just trains faster.”</b> Beyond a point it destabilises training or settles on a worse result.</li>
+  <li><b>Pitfall:</b> evaluating on data that overlaps the training set makes a model look better than it is.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Loss = average of <span class="tex">-\log</span>(probability given to the correct next token).</li><li>An untrained model starts near <span class="tex">\ln n_{\text{vocab}}</span>, the loss of uniform guessing.</li><li>Targets are the inputs shifted by one; all positions are trained in one parallel pass.</li><li>One step: <span class="tex">\theta\leftarrow\theta-\eta\,\nabla_\theta\mathcal{L}</span>, in practice with Adam and a warm-up schedule.</li><li>Training loss falling while validation loss rises is overfitting.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. The model assigns probability 0.5 to the correct next token. What is the loss at that position?</legend><button type="button" class="qo">0.5</button><button type="button" class="qo" data-ok="1">0.69</button><button type="button" class="qo">2.0</button><p class="qx" hidden aria-live="polite"><b></b> −ln 0.5 = 0.693.</p></fieldset>
+<fieldset><legend>2. A character-level model has 21 possible characters. What loss should you expect before any training?</legend><button type="button" class="qo">About 0</button><button type="button" class="qo" data-ok="1">About 3.04</button><button type="button" class="qo">About 21</button><p class="qx" hidden aria-live="polite"><b></b> Uniform guessing gives ln 21 = 3.04.</p></fieldset>
+<fieldset><legend>3. During training, what does the model receive as input at position t?</legend><button type="button" class="qo">Its own earlier predictions</button><button type="button" class="qo" data-ok="1">The true earlier tokens</button><button type="button" class="qo">Random tokens</button><p class="qx" hidden aria-live="polite"><b></b> This is teacher forcing: the real text is fed in, shifted by one position.</p></fieldset>
+<fieldset><legend>4. Training loss keeps falling but validation loss starts rising. What is happening?</legend><button type="button" class="qo">The learning rate is too low</button><button type="button" class="qo" data-ok="1">The model is memorising the training set (overfitting)</button><button type="button" class="qo">The gradient check failed</button><p class="qx" hidden aria-live="polite"><b></b> It is getting better at the examples it has seen and worse at text it has not.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>The objective is only “predict the next token”. Why does that single objective produce grammar, facts and reasoning patterns?</li><li>Train the toy model on the small dataset. What do you see, and how would you detect the same thing in a real project?</li></ul></details>
+<p class="bridge">A trained model gives a distribution at every step. <a class="xref" data-ref="generation"></a> is about how to choose a token from it.</p>
+</div>
+</section>
+<section class="ch" id="generation" data-title="Generation and decoding">
+<h2>Generation and decoding</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain how temperature reshapes the distribution and why.</li><li>Describe greedy decoding, top-k and top-p and when each is useful.</li><li>Predict qualitatively what a change of settings does to the output.</li></ul></div><p class="needs"><b>Builds on</b> Softmax and the generation loop from <a class="xref" data-ref="intro"></a>; a trained model from <a class="xref" data-ref="training"></a>.</p></div>
+<div class="story"><p>The model offers “mat” 0.44, “sofa” 0.24 and a long tail. Greedy decoding always writes “mat”. Sampling writes “sofa” about one time in four. The chosen token is appended and the model runs again.</p></div>
+<p>A trained model gives a probability distribution. Turning that into text needs a rule for choosing one token, then a loop: append the chosen token to the input and ask again. This is <b>autoregressive generation</b>, and the choosing rule is the <b>decoding strategy</b>. The same model can sound cautious or wild depending on that rule alone.</p>
+<div class="flow" role="img" aria-label="Diagram of the generation loop: context, model, logits, temperature, top-k and top-p filtering, sample, append">
+  <div><b>Context</b><small>last T tokens only</small></div><i>→</i>
+  <div class="fa"><b>Model</b><small>logits for next token</small></div><i>→</i>
+  <div><b>÷ temperature</b><small>sharpen or flatten</small></div><i>→</i>
+  <div><b>top-k / top-p</b><small>drop unlikely tokens</small></div><i>→</i>
+  <div><b>Sample</b><small>pick one</small></div><i>↺</i>
+</div>
+<ul>
+  <li><b>Context window</b>: the maximum number of tokens the model can take in. Older tokens beyond it are simply not seen.</li>
+  <li><b>Greedy decoding</b>: always take the most probable token. Deterministic, but prone to dull, repetitive text.</li>
+  <li><b>Temperature</b> <span class="tex">\tau</span>: divide the logits by <span class="tex">\tau</span> before softmax. Below 1 sharpens the distribution, above 1 flattens it.</li>
+  <li><b>Top-k</b>: keep only the <span class="tex">k</span> most probable tokens, then renormalise.</li>
+  <li><b>Top-p</b> (nucleus): keep the smallest set of top tokens whose probabilities add up to at least <span class="tex">p</span>, then renormalise. The set shrinks when the model is confident and widens when it is unsure.</li>
+  <li><b>Repetition penalty</b>: lower the logits of tokens already present in the context, to discourage loops.</li>
+  <li><b>KV cache</b>: when one token is appended, the keys and values of all earlier tokens are unchanged, because the causal mask stops them seeing the new token. Storing them means each step only computes the new token’s row instead of redoing the whole sequence. The output is identical; generation is simply much faster, at the cost of memory. <a class="xref" data-ref="inference"></a> shows this pass by pass.</li>
+</ul>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>Temperature.</b> We want one dial that makes the model’s distribution sharper or flatter without retraining. Recall from <a class="xref" data-ref="intro"></a> that softmax depends only on the gaps between logits. So divide every logit by a number <span class="tex">\tau</span> before softmax:</p>
+<div class="tex d">p_v=\frac{e^{z_v/\tau}}{\sum_{v'} e^{z_{v'}/\tau}}</div>
+<p class="sym"><span class="tex">z_v</span> is the logit of vocabulary entry <span class="tex">v</span>; <span class="tex">\tau</span> is the temperature; <span class="tex">\tau=1</span> leaves the model’s distribution unchanged.</p>
+<details class="why"><summary>Why does dividing work?</summary><div class="whyb">Dividing by <span class="tex">\tau</span> multiplies every gap by <span class="tex">1/\tau</span>. A small <span class="tex">\tau</span> stretches the gaps, so the largest logit dominates; as <span class="tex">\tau\to0</span> this becomes greedy decoding. A large <span class="tex">\tau</span> shrinks the gaps, pushing the distribution towards uniform. The ranking of tokens never changes, only how much the ranking matters. That is the whole “determinism versus creativity” dial: low temperature repeats the model’s single best guess; high temperature gives lower-ranked guesses a real chance, which reads as more varied and, pushed too far, as incoherent.</div></details>
+<p><b>Top-k and top-p.</b> Even a sensible distribution has a long tail of very unlikely tokens, and over hundreds of steps an unlucky draw from that tail becomes likely. Both filters choose a set <span class="tex">S</span> of tokens to keep, discard the rest, and rescale what is left so it sums to 1 again:</p>
+<div class="tex d">p'_v=\begin{cases}\dfrac{p_v}{\sum_{u\in S}p_u}&amp; v\in S\\[2ex]0&amp; v\notin S\end{cases}</div>
+<p class="sym">For top-k, <span class="tex">S</span> is the <span class="tex">k</span> most probable tokens. For top-p, <span class="tex">S</span> is the smallest set of most-probable tokens whose probabilities total at least <span class="tex">p</span>.</p>
+<div class="worked">
+  <h4>Worked example</h4>
+  <div class="x-only"><p>Logits <span class="tex">z=[2.0,\ 1.0,\ 0.1]</span> again.</p>
+  <p><span class="tex">\tau=1</span>: <span class="tex">[0.6590,\ 0.2424,\ 0.0986]</span>. &nbsp; <span class="tex">\tau=0.5</span>: <span class="tex">[0.8638,\ 0.1169,\ 0.0193]</span>. &nbsp; <span class="tex">\tau=2</span>: <span class="tex">[0.5017,\ 0.3043,\ 0.1940]</span>.</p>
+  <p>For <span class="tex">\tau=0.5</span> the logits become <span class="tex">[4,\ 2,\ 0.2]</span>: every gap has doubled.</p>
+  <p>Top-k and top-p on probabilities <span class="tex">[0.5,\ 0.3,\ 0.15,\ 0.05]</span>: top-k with <span class="tex">k=2</span> keeps the first two and rescales to <span class="tex">[0.625,\ 0.375]</span>. Top-p with <span class="tex">p=0.9</span> keeps tokens until the running total reaches 0.9: <span class="tex">0.5,\ 0.8,\ 0.95</span>, so three tokens survive and rescale to <span class="tex">[0.5263,\ 0.3158,\ 0.1579]</span>.</p></div>
+  <p class="s-only">With scores 2.0, 1.0 and 0.1, the top token wins 66% of the time at temperature 1, 86% at temperature 0.5 and only 50% at temperature 2. Top-k and top-p then cut off the unlikely tail so that a rare unlucky draw cannot derail the text.</p>
+</div>
+<details class="callout code opt"><summary>In Python: temperature, top-k, top-p and the generation loop</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s10_generation.py"><code>from collections import Counter
+import numpy as np
+
+
+def softmax(z):
+    e = np.exp(z - z.max())
+    return e / e.sum()
+
+
+def next_token_probs(logits, tau=1.0, top_k=None, top_p=None):
+    p = softmax(np.asarray(logits, dtype=float) / tau)    # temperature
+    order = np.argsort(-p)                                # most probable first
+    keep = np.ones(p.size, dtype=bool)
+    if top_k is not None:
+        keep[order[top_k:]] = False                       # top-k
+    if top_p is not None:
+        cum = np.cumsum(p[order])
+        n = np.searchsorted(cum, top_p) + 1               # smallest set &gt;= p
+        keep[order[n:]] = False                           # top-p
+    p = np.where(keep, p, 0.0)
+    return p / p.sum()                                    # renormalise
+
+
+z = [2.0, 1.0, 0.1]
+for tau in (1, 0.5, 2):
+    print(f"tau={tau:&lt;3}", next_token_probs(z, tau).round(4))
+
+probs = np.array([0.5, 0.3, 0.15, 0.05])
+logits = np.log(probs)              # logits whose softmax is exactly `probs`
+print("top-k=2  ", next_token_probs(logits, top_k=2).round(4))
+print("top-p=0.9", next_token_probs(logits, top_p=0.9).round(4))
+
+# The generation loop. The "model" here is a table of character counts that
+# looks at the last two characters. It stands in for a trained Transformer.
+text = "the cat sat on the mat. the dog sat on the sofa. a cat saw the dog. "
+chars = sorted(set(text))
+counts = Counter((text[i:i + 2], text[i + 2]) for i in range(len(text) - 2))
+model = lambda context: np.log(                     # logits for the next char
+    np.array([counts[(context[-2:], c)] for c in chars]) + 0.01)
+
+
+def generate(prompt, n, rng, greedy=False, **settings):
+    out = prompt
+    for _ in range(n):
+        p = next_token_probs(model(out), **settings)
+        i = p.argmax() if greedy else rng.choice(len(p), p=p)
+        out += chars[i]                                   # append, repeat
+    return out
+
+
+rng = np.random.default_rng(0)
+print("greedy:   ", repr(generate("the ", 30, rng, greedy=True)))
+print("tau=0.7:  ", repr(generate("the ", 30, rng, tau=0.7, top_p=0.9)))
+print("tau=2.0:  ", repr(generate("the ", 30, rng, tau=2.0)))
+
+# Output:
+# tau=1   [0.659  0.2424 0.0986]
+# tau=0.5 [0.8638 0.1169 0.0193]
+# tau=2   [0.5017 0.3043 0.194 ]
+# top-k=2   [0.625 0.375 0.    0.   ]
+# top-p=0.9 [0.5263 0.3158 0.1579 0.    ]
+# greedy:    'the dog sat on the dog sat on the '
+# tau=0.7:   'the dog sofa. the mat on the dog. '
+# tau=2.0:   'the macngdgtwehdhe sat soet odfoc '</code></pre></details>
+
+<div class="widget" id="w-gen">
+  <h4 class="wt">Interactive · generation playground (uses the toy model from <a class="xref" data-ref="training"></a>)</h4>
+  <p class="look"><b>The point:</b> Decoding settings change the output without changing the model. <b>Do this:</b> Generate with the defaults, then with greedy, then with a high temperature. Click a step in the timeline. <b>Watch for:</b> Greedy repeats itself; high temperature produces misspellings. The bar chart shows what the model offered at that step.</p>
+  <p class="cap" id="g-status" aria-live="polite"></p>
+  <div class="controls">
+    <label class="ctl">Preset prompt<select id="g-preset"><option value="the cat ">“the cat ”</option><option value="a bird sa">“a bird sa”</option><option value="the dog ran to ">“the dog ran to ”</option><option value="the fox likes a ">“the fox likes a ”</option></select></label>
+    <label class="ctl">Or type a prompt (letters the model knows)<input type="text" id="g-prompt" value="the cat " maxlength="40" autocomplete="off"></label>
+  </div>
+  <div class="controls">
+    <label class="ctl"><span class="row">Temperature τ <output id="g-temp-o"></output></span><input type="range" id="g-temp" min="0.1" max="2.5" step="0.1" value="0.8"></label>
+    <label class="ctl"><span class="row">Top-k <output id="g-k-o"></output></span><input type="range" id="g-k" min="1" max="21" step="1" value="21"></label>
+    <label class="ctl"><span class="row">Top-p <output id="g-p-o"></output></span><input type="range" id="g-p" min="0.1" max="1" step="0.05" value="1"></label>
+    <label class="ctl"><span class="row">Maximum new tokens <output id="g-max-o"></output></span><input type="range" id="g-max" min="5" max="80" step="1" value="40"></label>
+    <label class="chk"><input type="checkbox" id="g-greedy"> Greedy (always pick the top token)</label>
+  </div>
+  <div class="controls"><button class="pri" id="g-play">▶ Generate</button><button id="g-step">Step ›</button><button id="g-reset">Reset</button><button id="g-train">Train the model now</button></div>
+  <span class="lab">Context (underlined grey = prompt, highlighted = generated, faded = outside the 16-character window)</span>
+  <div class="ctxline" id="g-context"></div>
+  <span class="lab">Generation timeline (click a step to inspect it)</span>
+  <div class="tl" id="g-timeline"></div>
+  <span class="lab" id="g-dist-lab">Distribution at the selected step</span>
+  <div id="g-dist"></div>
+  <small>Each bar is the probability after temperature. Hatched bars were removed by top-k or top-p. “→” shows the probability after renormalising over what is left. ★ marks the most probable token and ◀ the one actually chosen. ␣ is a space. A repetition penalty is not offered here because at character level it would punish ordinary spelling.</small>
+  <div class="wjh"><b>What just happened?</b> At each step the model read at most the last 16 characters, produced 21 probabilities, the filters removed the tail, and one character was drawn from what remained and appended. The next step saw a context one character longer. Where a word is half spelled the distribution is nearly one-hot; at the start of a new word it spreads over several options, and that is where temperature and the filters make a difference.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>Generate with temperature 0.1, then 2.5. Then keep 2.5 and set top-k to 2: the filter rescues the text. Finally, generate 60 or more tokens and watch the start of the context fade as it leaves the window.</p></div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Temperature 0 means the model is certain or correct.”</b> It means the top token is always chosen, even when it had 30% probability.</li>
+  <li><b>“Higher temperature makes the model more intelligent or creative.”</b> The model’s knowledge is unchanged. Only the dice are loaded differently.</li>
+  <li><b>“The KV cache changes the result.”</b> It is purely a speed optimisation; outputs are identical.</li>
+  <li><b>Pitfall:</b> text outside the context window is forgotten completely. Nothing about it remains inside the model.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Temperature <span class="tex">\tau</span> divides the logits: below 1 sharpens the distribution, above 1 flattens it.</li><li>Greedy = always the top token: deterministic and often repetitive.</li><li>Top-k keeps the <span class="tex">k</span> most probable tokens; top-p keeps the smallest set whose probabilities total at least <span class="tex">p</span>.</li><li>These are settings applied at generation time. They do not change the model.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. What happens to the distribution as the temperature approaches 0?</legend><button type="button" class="qo">It becomes uniform</button><button type="button" class="qo" data-ok="1">All probability moves to the top token</button><button type="button" class="qo">Nothing</button><p class="qx" hidden aria-live="polite"><b></b> Dividing by a very small τ stretches every gap, so the largest logit dominates. This is greedy decoding.</p></fieldset>
+<fieldset><legend>2. Probabilities are [0.5, 0.3, 0.15, 0.05] and top-p is 0.9. How many tokens are kept?</legend><button type="button" class="qo">2</button><button type="button" class="qo" data-ok="1">3</button><button type="button" class="qo">4</button><p class="qx" hidden aria-live="polite"><b></b> The running total is 0.5, 0.8, 0.95. The third token is the first to bring it to 0.9 or more.</p></fieldset>
+<fieldset><legend>3. Does a higher temperature change which token is ranked first?</legend><button type="button" class="qo">Yes</button><button type="button" class="qo" data-ok="1">No, only how much the ranking matters</button><button type="button" class="qo">Only with top-k</button><p class="qx" hidden aria-live="polite"><b></b> Dividing all logits by the same positive number preserves their order.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Which settings would you choose for code generation, and which for brainstorming? Why?</li><li>The same prompt can give different answers on each run. Where in our workflows is that acceptable and where is it not?</li></ul></details>
+<p class="bridge">Generation runs the model once per token, billions of multiply-adds each time. <a class="xref" data-ref="hardware"></a> looks at the hardware that does that work, and <a class="xref" data-ref="inference"></a> at what makes it fast enough to use.</p>
+</div>
+</section>
+<section class="ch" id="hardware" data-title="GPUs and CUDA">
+<h2>Hardware: GPUs and CUDA</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why GPUs, not CPUs, run Transformers.</li><li>Read a GPU’s specification: memory, bandwidth and tensor throughput.</li><li>Say what the CUDA driver, toolkit and libraries each do, and fix the usual version mismatch.</li><li>Work out whether a model fits on a GPU, and roughly how fast it will generate.</li></ul></div><p class="needs"><b>Builds on</b> Matrix multiplications from <a class="xref" data-ref="attention"></a> and <a class="xref" data-ref="block"></a>; parameter counts from <a class="xref" data-ref="architecture"></a>; the training loop from <a class="xref" data-ref="training"></a>.</p></div>
+<div class="story"><p>A team wants to run a model with 7 billion parameters on one 24 GB graphics card. In 16-bit numbers the weights alone take 14 GB. Is there room for a 4,096-token conversation, and how many tokens per second will the card produce?</p></div>
+<p>Almost all the work in a Transformer is matrix multiplication: billions of multiply-adds that do not depend on each other. A CPU has a few dozen powerful cores built for varied, step-by-step code. A GPU has thousands of simpler cores that apply one instruction to many numbers at once, plus <b>tensor cores</b> that multiply a small block of a matrix in one step at reduced precision.</p>
+<p>A GPU has its own memory, often called <b>VRAM</b>. The weights, the KV cache (<a class="xref" data-ref="inference"></a>) and the intermediate values must all fit in it. Two figures matter: <b>capacity</b> decides whether a model fits at all; <b>bandwidth</b>, the bytes per second the GPU can read from that memory, decides how fast it generates.</p>
+<div class="flow" role="img" aria-label="Diagram: your Python code calls PyTorch, which calls CUDA libraries such as cuBLAS and cuDNN; they launch kernels that run on the GPU through the NVIDIA driver">
+  <div><b>Your code</b><small>PyTorch: <code>model.to("cuda")</code></small></div><i>→</i>
+  <div class="fa"><b>CUDA libraries</b><small>cuBLAS, cuDNN, NCCL · shipped with PyTorch</small></div><i>→</i>
+  <div><b>Kernels</b><small>functions run by thousands of GPU threads</small></div><i>→</i>
+  <div class="fa"><b>Driver</b><small>installed in the operating system</small></div><i>→</i>
+  <div><b>GPU</b><small>cores, tensor cores, VRAM</small></div>
+</div>
+<h3>What “CUDA” means</h3>
+<p><b>CUDA</b> is NVIDIA’s platform for running general-purpose programs on its GPUs. Several separately versioned pieces share the name, and most installation problems come from mixing them up:</p>
+<ul>
+  <li><b>Driver</b>: part of the operating system. <code>nvidia-smi</code> prints its version and the newest CUDA version it supports, which is not necessarily one you have installed.</li>
+  <li><b>Toolkit and runtime</b>: the compiler (<code>nvcc</code>) and libraries for building and running GPU programs. PyTorch’s pip packages bring the runtime they need, so for PyTorch you usually need only a recent enough driver.</li>
+  <li><b>Kernels and libraries</b>: a kernel is a function that runs on the GPU across many threads at once. PyTorch calls ready-made ones from cuBLAS (matrix multiplication), cuDNN (neural-network operations) and NCCL (traffic between GPUs).</li>
+  <li><b>PyTorch’s build</b>: each package is built for one CUDA version, shown by <code>torch.version.cuda</code>, or for the CPU only (<code>None</code>).</li>
+</ul>
+<p>Two errors catch almost everyone. <code>torch.cuda.is_available()</code> returning <code>False</code> usually means a CPU-only PyTorch or a missing driver. “CUDA driver version is insufficient for CUDA runtime version” means the driver is older than the CUDA version PyTorch was built for. Either way, install the PyTorch build that matches the driver, or update the driver. AMD’s ROCm is used through the same <code>torch.cuda</code> calls; Apple’s GPUs through the <code>"mps"</code> device.</p>
+<h3>Number formats</h3>
+<p>The format of each weight sets how many bytes it takes, and so how many weights fit and how quickly they can be read; tensor cores also run faster on narrower formats.</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th>Format</th><th>Bytes per number</th><th>Range</th><th>Where it is used</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">fp32</th><td>4</td><td>up to about <span class="tex">3.4\times10^{38}</span></td><td>Master weights and optimizer state in training.</td></tr>
+    <tr><th scope="row">fp16</th><td>2</td><td>up to 65,504</td><td>Older GPUs; training needs loss scaling to avoid overflow.</td></tr>
+    <tr><th scope="row">bf16</th><td>2</td><td>up to about <span class="tex">3.4\times10^{38}</span></td><td>The usual format today: fp32’s range, less precision. A100, RTX 30-series or newer.</td></tr>
+    <tr><th scope="row">fp8</th><td>1</td><td>up to 448 or 57,344 (two variants)</td><td>Tensor cores on H100, L4 and RTX 40-series cards.</td></tr>
+    <tr><th scope="row">int8</th><td>1</td><td>−128 to 127, times a stored scale</td><td>Quantized inference weights; usually little quality loss.</td></tr>
+    <tr><th scope="row">int4</th><td>0.5</td><td>−8 to 7, times a scale per small group</td><td>Quantized weights for local models; check quality on your own task.</td></tr>
+  </tbody>
+</table></div>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>Will the model fit?</b> The weights take one number per parameter. The KV cache adds memory for every token of every request being served. The CUDA context, intermediate values and gaps between allocations come on top; a common rule of thumb allows another 20%:</p>
+<div class="tex d">M_{\text{needed}}\approx1.2\times\left(N\times\text{bytes per parameter}+M_{\text{KV}}\right)\le n_{\text{GPU}}\times M_{\text{GPU}},\qquad M_{\text{KV}}=2\times L\times T\times d_{\text{model}}\times2\times B</div>
+<p class="sym"><span class="tex">N</span> is the number of parameters, with 4, 2, 1 or 0.5 bytes each; <span class="tex">L</span> is the number of layers, <span class="tex">T</span> the context length and <span class="tex">B</span> the number of requests served at once; the cache holds a key and a value (the first 2) at 2 bytes each (the second 2); <span class="tex">n_{\text{GPU}}</span> GPUs have <span class="tex">M_{\text{GPU}}</span> bytes each. The 1.2 is an allowance, not a measured constant.</p>
+<p><b>How fast can it generate?</b> Each decode step reads every weight, and every cached key and value, from memory once. With few requests that reading takes longer than the arithmetic, so bandwidth sets the speed:</p>
+<div class="tex d">\text{tokens per second per request}\lesssim\frac{n_{\text{GPU}}\times R}{N\times\text{bytes per parameter}+M_{\text{KV}}}</div>
+<p class="sym"><span class="tex">R</span> is one GPU’s memory bandwidth in bytes per second. This is an upper bound; real systems reach a fraction of it.</p>
+<details class="why"><summary>Why bandwidth and not compute?</summary><div class="whyb">For one request, each 16-bit weight read from memory (2 bytes) takes part in one multiply and one add (2 operations): one operation per byte. An H100 can do about <span class="tex">989\times10^{12}</span> operations per second but read only <span class="tex">3.35\times10^{12}</span> bytes, so it needs about 295 operations per byte to keep its tensor cores busy. Serving <span class="tex">B</span> requests together uses each byte <span class="tex">B</span> times, which is why batching raises throughput almost for free until <span class="tex">B</span> nears that ratio.</div></details>
+<p><b>And training?</b> With the Adam optimizer in mixed precision, a common recipe keeps bf16 weights (2 bytes), bf16 gradients (2), fp32 master weights (4) and Adam’s two fp32 running averages (8), plus the activations saved for the backward pass:</p>
+<div class="tex d">M_{\text{train}}\approx16\times N\ \text{bytes, before activations}</div>
+<div class="worked">
+  <h4>Worked example</h4>
+  <div class="x-only"><p><b>Does it fit?</b> The running example: <span class="tex">N=7\times10^9</span> in bf16, with <span class="tex">L=32,\ d_{\text{model}}=4096</span>, serving one request at <span class="tex">T=4096</span>. Weights: <span class="tex">7\times10^9\times2</span> bytes = 14 GB. KV cache: <span class="tex">2\times32\times4096\times4096\times2=2{,}147{,}483{,}648</span> bytes, about 2.15 GB. Needed: <span class="tex">1.2\times(14+2.15)\approx19.4</span> GB, which fits in 24 GB.</p>
+  <p><b>How fast?</b> On an RTX 4090 (1,008 GB/s): <span class="tex">1008/16.15\approx62</span> tokens per second at most. On an L4 (300 GB/s), which has the same 24 GB: about 19.</p>
+  <p><b>A 70B model</b> (<span class="tex">L=80,\ d_{\text{model}}=8192</span>). In bf16: <span class="tex">1.2\times(140+10.7)\approx181</span> GB, so three 80 GB GPUs. In int4: <span class="tex">1.2\times(35+10.7)\approx55</span> GB, which fits on one H100 at up to <span class="tex">3350/45.7\approx73</span> tokens per second, or on one DGX Spark at up to <span class="tex">273/45.7\approx6</span>.</p>
+  <p><b>Training the 7B model</b> needs <span class="tex">16\times7\times10^9</span> bytes = 112 GB before activations: more than any single GPU below.</p></div>
+  <p class="s-only">A 7-billion-parameter model in 16-bit numbers needs about 19 GB with a long conversation and a safety margin, so it fits on a 24 GB card. How fast it writes depends on how quickly the card reads its memory: about 62 tokens a second on a fast gaming card, about 19 on a low-power data-centre card with the same memory. Training the same model needs more than 100 GB.</p>
+</div>
+<details class="callout code opt"><summary>In Python: choose a device, and compare number formats</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s11a_device.py"><code>import torch
+
+# Pick the best available device and fall back to the CPU
+if torch.cuda.is_available():              # NVIDIA, and AMD ROCm builds of PyTorch
+    device = "cuda"
+elif torch.backends.mps.is_available():    # Apple silicon
+    device = "mps"
+else:
+    device = "cpu"
+
+print("PyTorch:", torch.__version__)
+print("built for CUDA:", torch.version.cuda)   # None means a CPU-only build
+print("device:", device)
+if device == "cuda":
+    props = torch.cuda.get_device_properties(0)
+    print(f"GPU: {props.name}, {props.total_memory / 1e9:.1f} GB")
+
+# Bytes per number, largest value and precision of each floating-point format
+for dtype in (torch.float32, torch.float16, torch.bfloat16):
+    fi = torch.finfo(dtype)
+    print(f"{str(dtype):15} {fi.bits // 8} bytes  max {fi.max:9.3g}  gap after 1.0: {fi.eps:.3g}")
+
+# float16 overflows where bfloat16 does not; bfloat16 rounds more coarsely
+x = torch.tensor([70000.0, 1.001])
+print("float16: ", x.to(torch.float16).tolist())
+print("bfloat16:", x.to(torch.bfloat16).tolist())
+
+# Weights move to the device once; inputs must be on the same device
+torch.manual_seed(0)
+layer = torch.nn.Linear(4096, 4096).to(device)
+x = torch.randn(8, 4096, device=device)
+with torch.autocast(device_type=device, dtype=torch.bfloat16):   # mixed precision
+    y = layer(x)
+print("weights stored as:", layer.weight.dtype, "| matmul output:", y.dtype, "on", y.device.type)
+
+# Output on a CPU-only machine; with an NVIDIA GPU the device is cuda and the GPU is named:
+# PyTorch: 2.15.0+cpu
+# built for CUDA: None
+# device: cpu
+# torch.float32   4 bytes  max   3.4e+38  gap after 1.0: 1.19e-07
+# torch.float16   2 bytes  max  6.55e+04  gap after 1.0: 0.000977
+# torch.bfloat16  2 bytes  max  3.39e+38  gap after 1.0: 0.00781
+# float16:  [inf, 1.0009765625]
+# bfloat16: [70144.0, 1.0]
+# weights stored as: torch.float32 | matmul output: torch.bfloat16 on cpu</code></pre></details>
+<details class="callout code opt"><summary>In Python: will it fit, and how fast can it be?</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s11b_fit.py"><code>import math
+
+# Vendor figures: memory (bytes), bandwidth (bytes/s), dense BF16 tensor FLOP/s
+GPUS = {
+    "RTX 4090": (24e9, 1008e9, 165.2e12),
+    "L4": (24e9, 300e9, 121e12),
+    "A100 80GB": (80e9, 2039e9, 312e12),
+    "H100 SXM": (80e9, 3350e9, 989.5e12),
+    "DGX Spark": (128e9, 273e9, None),     # unified memory; no BF16 figure published
+}
+BYTES = {"fp32": 4, "bf16": 2, "int8": 1, "int4": 0.5}
+
+
+def memory_needed(N, fmt, L, d_model, T, B=1, allowance=1.2):
+    weights = N * BYTES[fmt]
+    kv = 2 * L * T * d_model * 2 * B       # keys and values, 16-bit, full width
+    return weights, kv, allowance * (weights + kv)
+
+
+def report(name, N, fmt, L, d_model, T):
+    w, kv, total = memory_needed(N, fmt, L, d_model, T)
+    print(f"{name} in {fmt}, T={T}: weights {w / 1e9:.1f} GB + KV cache "
+          f"{kv / 1e9:.2f} GB, x1.2 -&gt; {total / 1e9:.1f} GB")
+    for gpu, (mem, bw, _) in GPUS.items():
+        n = math.ceil(total / mem)           # GPUs needed, split evenly
+        speed = n * bw / (w + kv)            # every step reads weights and cache
+        print(f"   {gpu:9} x{n}: at most {speed:4.0f} tokens/s for one request")
+
+
+report("7B", 7e9, "bf16", 32, 4096, 4096)
+report("70B", 70e9, "bf16", 80, 8192, 4096)
+report("70B", 70e9, "int4", 80, 8192, 4096)
+
+# Decode reads 2 bytes per bf16 weight and does 2 FLOPs with it per request,
+# so it only becomes compute-bound once the batch passes F / R
+for gpu, (_, bw, flops) in GPUS.items():
+    if flops:
+        print(f"{gpu:9}: compute-bound beyond a batch of about {flops / bw:.0f}")
+
+# Training with Adam in mixed precision: 2 (bf16 weights) + 2 (gradients)
+# + 4 (fp32 master weights) + 8 (two Adam moments) = 16 bytes per parameter
+print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
+
+# Output:
+# 7B in bf16, T=4096: weights 14.0 GB + KV cache 2.15 GB, x1.2 -&gt; 19.4 GB
+#    RTX 4090  x1: at most   62 tokens/s for one request
+#    L4        x1: at most   19 tokens/s for one request
+#    A100 80GB x1: at most  126 tokens/s for one request
+#    H100 SXM  x1: at most  207 tokens/s for one request
+#    DGX Spark x1: at most   17 tokens/s for one request
+# 70B in bf16, T=4096: weights 140.0 GB + KV cache 10.74 GB, x1.2 -&gt; 180.9 GB
+#    RTX 4090  x8: at most   53 tokens/s for one request
+#    L4        x8: at most   16 tokens/s for one request
+#    A100 80GB x3: at most   41 tokens/s for one request
+#    H100 SXM  x3: at most   67 tokens/s for one request
+#    DGX Spark x2: at most    4 tokens/s for one request
+# 70B in int4, T=4096: weights 35.0 GB + KV cache 10.74 GB, x1.2 -&gt; 54.9 GB
+#    RTX 4090  x3: at most   66 tokens/s for one request
+#    L4        x3: at most   20 tokens/s for one request
+#    A100 80GB x1: at most   45 tokens/s for one request
+#    H100 SXM  x1: at most   73 tokens/s for one request
+#    DGX Spark x1: at most    6 tokens/s for one request
+# RTX 4090 : compute-bound beyond a batch of about 164
+# L4       : compute-bound beyond a batch of about 403
+# A100 80GB: compute-bound beyond a batch of about 153
+# H100 SXM : compute-bound beyond a batch of about 295
+# training a 7B model: 112 GB before activations</code></pre></details>
+<h3>Real GPUs, by the numbers</h3>
+<p>From NVIDIA’s published specifications. NVIDIA quotes data-centre tensor throughput “with sparsity”, which assumes half the weights are zero in a fixed pattern; the dense figure, shown here, is half of that.</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th>GPU</th><th>Memory</th><th>Bandwidth</th><th>BF16 tensor, dense</th><th>Operations per byte</th><th>Typical use</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">GeForce RTX 4090</th><td>24 GB</td><td>1,008 GB/s</td><td>165 TFLOP/s</td><td>164</td><td>Desktop: local inference and small fine-tuning jobs.</td></tr>
+    <tr><th scope="row">L4</th><td>24 GB</td><td>300 GB/s</td><td>121 TFLOP/s</td><td>403</td><td>Cloud inference on a small, low-power card.</td></tr>
+    <tr><th scope="row">A100 80GB (SXM)</th><td>80 GB</td><td>2,039 GB/s</td><td>312 TFLOP/s</td><td>153</td><td>Data-centre training and inference.</td></tr>
+    <tr><th scope="row">H100 (SXM)</th><td>80 GB</td><td>3,350 GB/s</td><td>989 TFLOP/s</td><td>295</td><td>Data-centre training and inference.</td></tr>
+    <tr><th scope="row">DGX Spark (GB10)</th><td>128 GB, shared with the CPU</td><td>273 GB/s</td><td>not published; up to 1 PFLOP/s in FP4 with sparsity</td><td>–</td><td>Desktop: prototyping, fine-tuning, and running large models slowly.</td></tr>
+  </tbody>
+</table></div>
+<small>Sources: NVIDIA’s product pages for H100, A100, L4 and DGX Spark, and Appendix A of the NVIDIA Ada GPU Architecture whitepaper for the RTX 4090 (dense rate with FP32 accumulation); checked in November 2026. “Operations per byte” is throughput divided by bandwidth: the batch size above which decoding stops being limited by bandwidth.</small>
+<div class="callout note"><b>Unified memory: NVIDIA DGX Spark</b><p>DGX Spark is a small desktop computer built around NVIDIA’s GB10 Grace Blackwell chip, whose CPU and GPU share one pool of 128 GB. That is over five times the memory of an RTX 4090 at about a quarter of its bandwidth. So it loads models no consumer card can hold, but generates from them slowly: NVIDIA rates it for models of up to 200 billion parameters, which needs 4-bit weights, and two linked units for up to 400 billion. It suits prototyping and fine-tuning on a desk more than serving many users. Apple’s M-series machines follow the same unified-memory design.</p></div>
+<div class="widget" id="w-hw">
+  <h4 class="wt">Interactive · will this model fit on this GPU?</h4>
+  <p class="look"><b>The point:</b> Memory decides whether a model runs at all; bandwidth decides how fast. <b>Do this:</b> Start with the 7B model on one RTX 4090, then raise the context length, switch to the 70B model and try 4-bit weights. <b>Watch for:</b> Which part of the bar grows, and how the speed changes between devices with the same memory.</p>
+  <div class="controls">
+    <label class="ctl">Model<select id="hw-model"></select></label>
+    <label class="ctl">Weight format<select id="hw-prec"><option value="4">fp32 · 4 bytes</option><option value="2" selected>bf16 · 2 bytes</option><option value="1">int8 · 1 byte</option><option value="0.5">int4 · half a byte</option></select></label>
+    <label class="ctl">GPU<select id="hw-gpu"><option value="0" selected>RTX 4090 · 24 GB · 1,008 GB/s</option><option value="1">L4 · 24 GB · 300 GB/s</option><option value="2">A100 · 80 GB · 2,039 GB/s</option><option value="3">H100 SXM · 80 GB · 3,350 GB/s</option><option value="4">DGX Spark · 128 GB · 273 GB/s</option></select></label>
+    <label class="ctl">Number of GPUs<select id="hw-n"><option value="1" selected>1</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label>
+    <label class="ctl"><span class="row">Context length T <output id="hw-T-o"></output></span><input type="range" id="hw-T" min="9" max="17" step="1" value="12"></label>
+    <label class="ctl"><span class="row">Requests at once B <output id="hw-B-o"></output></span><input type="range" id="hw-B" min="0" max="6" step="1" value="0"></label>
+  </div>
+  <span class="lab">GPU memory</span>
+  <div class="stack" id="hw-bar" role="img" aria-label="Stacked bar of GPU memory: weights, KV cache, allowance and free space"></div>
+  <p class="readout" id="hw-fit" aria-live="polite"></p>
+  <div class="stats" id="hw-stats" aria-live="polite"></div>
+  <small>What is simplified: the KV cache is stored at 16 bits with keys and values of full width <span class="tex">d_{\text{model}}</span>, so models that use grouped-query attention need several times less; the 20% allowance stands in for overheads that vary with the software; several GPUs are assumed to split the model evenly with no time lost to communication; speeds are upper bounds from the published peak figures, ignoring attention’s own cost. DGX Spark has no published BF16 figure, so its compute limit is left out, and its memory is also used by the operating system. Model shapes are typical for each size class, not a particular released model.</small>
+  <div class="wjh"><b>What just happened?</b> The weights are fixed by the parameter count and the format, so changing the format moves the blue bar most. The KV cache grows with context length and with every extra request, and at long contexts it overtakes the weights. Devices with the same memory give the same verdict but different speeds, because speed follows bandwidth: the DGX Spark holds what an H100 cannot, yet generates more slowly than any card here. Adding GPUs adds memory and bandwidth together.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>1. 7B model in bf16 on an RTX 4090: raise the context to 131,072 tokens and watch the KV cache overtake the weights. 2. Switch the GPU to the L4: same verdict, under a third of the speed. 3. 70B model in int4: compare one H100 with one DGX Spark.</p></div>
+<h3>One GPU or several; local or cloud</h3>
+<ul>
+  <li><b>Fit first.</b> If the model fits on one GPU, use one. Otherwise it is split: <b>tensor parallelism</b> divides every weight matrix across GPUs that exchange results in every layer, over a fast link such as NVLink; <b>pipeline parallelism</b> puts consecutive layers on different GPUs. <b>Data parallelism</b>, a full copy per GPU, raises throughput but does not help a model that does not fit.</li>
+  <li><b>Local hardware</b>: a one-off cost, and the data stays with you. Consumer cards top out at around 24 to 32 GB; unified-memory machines hold more, at lower bandwidth.</li>
+  <li><b>Cloud GPUs</b>: rented by the hour, with data-centre memory and bandwidth; you pay while they sit idle.</li>
+  <li><b>Hosted APIs</b>: no hardware at all. You pay per token and accept the provider’s models and data terms.</li>
+</ul>
+<div class="callout note"><b>Beginner note</b><p>You do not need a GPU to follow this guide: every interactive runs in the browser and every Python box runs on a CPU.</p></div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“More TFLOPS means faster generation.”</b> For a few users at a time, memory bandwidth sets the speed. The L4 and the RTX 4090 have the same memory, and the 4090 generates over three times faster.</li>
+  <li><b>“<code>nvidia-smi</code> shows the CUDA version I have installed.”</b> It shows the newest CUDA version the driver supports.</li>
+  <li><b>“Two 24 GB cards are the same as one 48 GB card.”</b> The model has to be split between them, and every layer then waits for data to cross between the cards.</li>
+  <li><b>Pitfall:</b> choosing hardware by its compute figure alone. For serving, check memory first and bandwidth second.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Transformers are mostly matrix multiplication, which GPUs and their tensor cores run massively in parallel.</li><li>Memory capacity decides whether a model fits: weights (parameters × bytes) plus the KV cache plus a margin.</li><li>Memory bandwidth decides how fast a single request generates; compute matters only for large batches.</li><li>bf16 halves fp32’s memory with the same range; int8 and int4 shrink it further at some cost in quality.</li><li>For PyTorch, the driver must support the CUDA version your PyTorch build uses; the rest of CUDA comes with PyTorch.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. A model with 7 billion parameters is stored in bf16. How much memory do its weights take?</legend><button type="button" class="qo">7 GB</button><button type="button" class="qo" data-ok="1">14 GB</button><button type="button" class="qo">28 GB</button><p class="qx" hidden aria-live="polite"><b></b> 7 × 10⁹ parameters × 2 bytes. In fp32 it would be 28 GB; in int8, 7 GB.</p></fieldset>
+<fieldset><legend>2. One person is chatting with a model on a single GPU. What mostly limits the tokens per second?</legend><button type="button" class="qo">The tensor cores’ TFLOPS</button><button type="button" class="qo" data-ok="1">The memory bandwidth</button><button type="button" class="qo">The CPU’s clock speed</button><p class="qx" hidden aria-live="polite"><b></b> Every step reads all the weights to do only one token’s worth of arithmetic, so the tensor cores wait for memory.</p></fieldset>
+<fieldset><legend>3. <code>nvidia-smi</code> reports “CUDA Version: 12.4”. What does that tell you?</legend><button type="button" class="qo">Which CUDA toolkit is installed</button><button type="button" class="qo" data-ok="1">The newest CUDA version the driver supports</button><button type="button" class="qo">Which CUDA version PyTorch was built for</button><p class="qx" hidden aria-live="polite"><b></b> PyTorch’s own CUDA version is <code>torch.version.cuda</code>. When PyTorch cannot use the GPU, compare the two numbers first.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>We want to run an open 70B model for 50 internal users. Would you buy GPUs, buy a DGX Spark, rent cloud GPUs or use a hosted API, and what would change your answer?</li><li>Our 7B model fits on a 24 GB card in testing but runs out of memory in production. What grew, and what are the options?</li></ul></details>
+<p class="bridge"><a class="xref" data-ref="inference"></a> uses these memory and bandwidth figures to explain the KV cache, batching and response time.</p>
+</div>
+</section>
+<section class="ch" id="inference" data-title="Inference in practice">
+<h2>Inference in practice</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain what the KV cache stores and why it is valid to reuse it.</li><li>Count the work with and without a cache.</li><li>Estimate KV-cache memory and response time from a model’s configuration.</li><li>Distinguish time to first token from tokens per second.</li></ul></div><p class="needs"><b>Builds on</b> The generation loop from <a class="xref" data-ref="generation"></a>; keys and values from <a class="xref" data-ref="attention"></a>; parameter counts from <a class="xref" data-ref="architecture"></a>; memory and bandwidth from <a class="xref" data-ref="hardware"></a>.</p></div>
+<div class="story"><p>After writing “mat”, the model needs the next token. The keys and values of “the cat sat on the” cannot have changed, because the causal mask stops earlier positions from seeing later ones. They are read from the cache; only “mat” is processed.</p></div>
+<p><a class="xref" data-ref="generation"></a> covered <i>what</i> a model generates. This section covers what it costs to run one: how long a response takes, how much memory it needs, and why serving many users at once changes both. Training happens once; inference happens on every request, so these numbers decide whether a model is practical to use.</p>
+<p>A request has two phases with very different behaviour:</p>
+<ul>
+  <li><b>Prefill</b>: the whole prompt is processed in a single parallel pass, exactly as in training. Its keys and values are stored in the KV cache. The time this takes is, roughly, the <b>time to first token</b> (TTFT).</li>
+  <li><b>Decode</b>: output tokens are produced one at a time. Each step processes only the newest token and reads the cache for everything earlier. This phase is sequential and cannot be parallelised across the tokens of one response.</li>
+</ul>
+<div class="flow" role="img" aria-label="Diagram: prompt, prefill pass that builds the KV cache, first token, decode loop producing one token per step, tokens streamed to the user">
+  <div><b>Prompt</b><small>P tokens</small></div><i>→</i>
+  <div class="fa"><b>Prefill</b><small>one parallel pass · builds the KV cache</small></div><i>→</i>
+  <div><b>First token</b><small>time to first token</small></div><i>→</i>
+  <div class="fa"><b>Decode loop</b><small>one token per step · cache grows</small></div><i>→</i>
+  <div><b>Streamed output</b><small>tokens shown as they arrive</small></div>
+</div>
+<h3>The vocabulary of serving</h3>
+<ul>
+  <li><b>Latency</b>: how long one request takes. Usually split into time to first token and the generation speed after it, in tokens per second.</li>
+  <li><b>Streaming</b>: sending each token to the user as soon as it is produced. It does not make generation faster, but the wait people feel becomes the time to first token and not the full response time.</li>
+  <li><b>Throughput</b>: tokens per second summed over all requests being served. This is what determines cost.</li>
+  <li><b>Batching</b>: running several requests through the model in the same step. One pass over the weights serves all of them, so throughput rises; past a point each request slows down. Throughput and latency pull in opposite directions.</li>
+  <li><b>Memory</b>: the weights, plus one KV cache per active request, plus working space. The cache grows with every token of context.</li>
+  <li><b>Prompt caching</b>: keeping the KV cache of a prefix that many requests share, such as a long system prompt, so its prefill is paid once.</li>
+  <li><b>Beam search</b>: keeping several candidate continuations alive and choosing the most probable overall. Common in translation; rare in chat models, where sampling gives more natural text.</li>
+  <li><b>Speculative decoding</b>: a small, fast model drafts a few tokens and the large model checks them in one parallel pass, keeping those it agrees with. Done correctly, the output distribution is unchanged and only the speed improves.</li>
+</ul>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>How much work does the cache save?</b> Write <span class="tex">P</span> for the number of prompt tokens and <span class="tex">n</span> for the number of tokens to generate. To predict the first new token the model must process all <span class="tex">P</span> prompt positions; for the second, <span class="tex">P+1</span> positions; and so on. Without a cache every pass starts from scratch, so the totals add up. With a cache, each pass after the first processes only the one position that is new:</p>
+<div class="tex d">\text{without cache: }\sum_{j=0}^{n-1}(P+j)=nP+\frac{n(n-1)}{2}\qquad\qquad\text{with cache: }P+(n-1)</div>
+<p class="sym"><span class="tex">j</span> counts the passes from 0. The first total grows with <span class="tex">n^2</span>, the second with <span class="tex">n</span>.</p>
+<p><b>What does the cache cost?</b> For every layer and every token it stores one key vector and one value vector. Summed over the heads, each has <span class="tex">d_{\text{model}}</span> numbers:</p>
+<div class="tex d">M_{\text{KV}}=2\times L\times T\times d_{\text{model}}\times \text{bytes per number}\times B,\qquad M_{\text{weights}}=N\times\text{bytes per parameter}</div>
+<p class="sym">The 2 is for keys and values; <span class="tex">L</span> is the number of layers; <span class="tex">T=P+n</span> is the context length in use; <span class="tex">B</span> is the number of requests in the batch; <span class="tex">N</span> is the number of parameters.</p>
+<p><b>How long does a response take?</b> The two phases simply add:</p>
+<div class="tex d">t_{\text{response}}\approx t_{\text{first token}}+\frac{n}{\text{tokens per second}}</div>
+<details class="callout math opt"><summary>Math detail: the rough speed model used by the estimator below</summary>
+<p>Processing one token costs about <span class="tex">2N</span> floating-point operations (one multiply and one add per parameter), so hardware delivering <span class="tex">F</span> operations per second can do at most <span class="tex">F/2N</span> tokens per second in total. There is a second limit: every decode step has to read all the weights from memory once, however many requests share that step. With a memory bandwidth of <span class="tex">R</span> bytes per second, that allows <span class="tex">R/M_{\text{weights}}</span> steps per second, or <span class="tex">B\cdot R/M_{\text{weights}}</span> tokens per second for a batch of <span class="tex">B</span>. Whichever limit is lower wins:</p>
+<div class="tex d">\text{throughput}\approx\min\!\left(\frac{F}{2N},\ \frac{B\,R}{M_{\text{weights}}}\right),\qquad \text{speed per request}=\frac{\text{throughput}}{B},\qquad t_{\text{first token}}\approx\max\!\left(\frac{2N\,P\,B}{F},\ \frac{M_{\text{weights}}}{R}\right)</div>
+<p>These are order-of-magnitude bounds. They ignore attention’s extra cost at long contexts, software overhead and hardware details, all of which make real systems slower.</p></details>
+<div class="worked">
+  <h4>Worked example</h4>
+  <div class="x-only"><p><b>Work saved.</b> Prompt of <span class="tex">P=3</span> tokens, generate <span class="tex">n=5</span>. Without a cache the passes process <span class="tex">3+4+5+6+7=25</span> token positions. With a cache: <span class="tex">3</span> in prefill, then <span class="tex">1</span> for each of the 4 later steps, <span class="tex">7</span> in all.</p>
+  <p><b>Cache memory.</b> A GPT-2-small-sized model, <span class="tex">L=12,\ d_{\text{model}}=768</span>, with <span class="tex">T=1024</span> tokens of context at 2 bytes per number: <span class="tex">2\times12\times1024\times768\times2=37{,}748{,}736</span> bytes, about 37.7 MB, next to 248.9 MB of weights. A larger model with <span class="tex">L=32,\ d_{\text{model}}=4096</span> and <span class="tex">T=8192</span>: <span class="tex">2\times32\times8192\times4096\times2=4{,}294{,}967{,}296</span> bytes, about 4.29 GB, for one request.</p>
+  <p><b>Response time.</b> Time to first token 0.4 s, then 50 tokens per second, for a 200-token answer: <span class="tex">0.4+200/50=4.4</span> seconds.</p></div>
+  <p class="s-only">Generating 5 tokens after a 3-token prompt takes 25 units of work if the model starts over each time, and 7 if it remembers its earlier work. The memory for that remembering is modest for a small model and several gigabytes per conversation for a large model with a long context.</p>
+</div>
+<details class="callout code opt"><summary>In Python: a KV cache gives identical outputs with less work</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s11a_kvcache.py"><code>import numpy as np
+
+
+def softmax(s):
+    e = np.exp(s - s.max())
+    return e / e.sum()
+
+
+rng = np.random.default_rng(0)
+d_model, P, n = 8, 3, 5               # prompt of 3 tokens, generate 5
+W_Q, W_K, W_V = (rng.normal(size=(d_model, d_model)) for _ in range(3))
+X = rng.normal(size=(P + n - 1, d_model))  # token vectors that will be processed
+
+
+def attend(q, K, V):
+    return softmax(K @ q / np.sqrt(d_model)) @ V
+
+
+# Without a cache: every pass recomputes keys and values for all positions
+no_cache, work_no_cache = [], 0
+for t in range(P - 1, P + n - 1):     # one pass per generated token
+    seen = X[:t + 1]
+    K, V = seen @ W_K, seen @ W_V     # recomputed every time
+    work_no_cache += len(seen)
+    no_cache.append(attend(X[t] @ W_Q, K, V))
+
+# With a cache: prefill the prompt once, then add one row per step
+K_cache, V_cache = X[:P] @ W_K, X[:P] @ W_V
+work_cache = P
+with_cache = [attend(X[P - 1] @ W_Q, K_cache, V_cache)]
+for t in range(P, P + n - 1):
+    K_cache = np.vstack([K_cache, X[t] @ W_K])        # append the new key
+    V_cache = np.vstack([V_cache, X[t] @ W_V])        # append the new value
+    work_cache += 1
+    with_cache.append(attend(X[t] @ W_Q, K_cache, V_cache))
+
+print("identical outputs:", np.allclose(no_cache, with_cache))
+print("positions computed without cache:", work_no_cache,
+      "=", P * n + n * (n - 1) // 2)
+print("positions computed with cache:   ", work_cache, "=", P + n - 1)
+
+# Output:
+# identical outputs: True
+# positions computed without cache: 25 = 25
+# positions computed with cache:    7 = 7</code></pre></details>
+<details class="callout code opt"><summary>In Python: memory and speed estimates</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s11b_memory.py"><code>def kv_cache_bytes(L, T, d_model, bytes_per_number=2, B=1):
+    return 2 * L * T * d_model * bytes_per_number * B  # 2 = keys and values
+
+
+def weight_bytes(N, bytes_per_param=2):
+    return N * bytes_per_param
+
+
+def response_seconds(t_first_token, n_tokens, tokens_per_second):
+    return t_first_token + n_tokens / tokens_per_second
+
+
+def rough_speed(N, P, B, F, R, bytes_per_param=2):
+    """Order-of-magnitude bounds; real systems are slower."""
+    m_weights = weight_bytes(N, bytes_per_param)
+    throughput = min(F / (2 * N), B * R / m_weights)    # tokens/s, all requests
+    t_first = max(2 * N * P * B / F, m_weights / R)     # seconds
+    return throughput, throughput / B, t_first
+
+
+print(f"KV cache, GPT-2 small, T=1024: {kv_cache_bytes(12, 1024, 768):,} bytes")
+print(f"weights, GPT-2 small:          {weight_bytes(124_439_808):,} bytes")
+print(f"KV cache, L=32, d=4096, T=8192: {kv_cache_bytes(32, 8192, 4096):,} bytes")
+print("response time:", response_seconds(0.4, 200, 50), "s")
+
+# Generic hardware numbers, not a specific product
+F, R = 100e12, 1e12            # 100 TFLOP/s of compute, 1 TB/s of bandwidth
+for B in (1, 16, 256):
+    total, per_request, ttft = rough_speed(N=7e9, P=1000, B=B, F=F, R=R)
+    print(f"7B model, batch {B:3}: {total:7.0f} tok/s total, "
+          f"{per_request:5.1f} tok/s per request, first token ~{ttft:.2f} s")
+
+# Output:
+# KV cache, GPT-2 small, T=1024: 37,748,736 bytes
+# weights, GPT-2 small:          248,879,616 bytes
+# KV cache, L=32, d=4096, T=8192: 4,294,967,296 bytes
+# response time: 4.4 s
+# 7B model, batch   1:      71 tok/s total,  71.4 tok/s per request, first token ~0.14 s
+# 7B model, batch  16:    1143 tok/s total,  71.4 tok/s per request, first token ~2.24 s
+# 7B model, batch 256:    7143 tok/s total,  27.9 tok/s per request, first token ~35.84 s</code></pre></details>
+
+<div class="widget" id="w-kc">
+  <h4 class="wt">Interactive · the KV cache, pass by pass</h4>
+  <p class="look"><b>The point:</b> The KV cache replaces repeated work with a lookup. <b>Do this:</b> Press Play with the cache on, reset, then untick the cache and play again. <b>Watch for:</b> How many cells are freshly computed (●) in each pass, and the two totals at the bottom.</p>
+  <div class="controls">
+    <label class="ctl"><span class="row">Prompt length P <output id="kc-P-o"></output></span><input type="range" id="kc-P" min="1" max="8" step="1" value="5"></label>
+    <label class="ctl"><span class="row">Tokens to generate n <output id="kc-n-o"></output></span><input type="range" id="kc-n" min="1" max="12" step="1" value="6"></label>
+    <label class="chk"><input type="checkbox" id="kc-cache" checked> Use the KV cache</label>
+  </div>
+  <div class="controls"><button class="pri" id="kc-play">▶ Play</button><button id="kc-step">Step ›</button><button id="kc-reset">Reset</button></div>
+  <p class="cap" id="kc-cap" aria-live="polite"></p>
+  <div class="scroll" id="kc-grid"></div>
+  <div class="lg"><span><b>●</b> computed in this pass</span><span><b>↺</b> reused from the cache</span><span><b>★</b> token predicted by this pass</span><span>underlined = prompt</span></div>
+  <div class="stats" id="kc-stats"></div>
+  <span class="lab">Token positions computed over the whole run</span>
+  <div id="kc-bars"></div>
+  <small>Each row is one pass through the model; each column is one token position. The words are a fixed script, since no model is running in this widget: it counts work, and the counts are exact for the formulas above.</small>
+  <div class="wjh"><b>What just happened?</b> With the cache on, the prefill row computes the whole prompt and every later row computes a single new position, reading the rest from the cache: the work forms a thin diagonal. With the cache off, every row recomputes everything to its left, and the work fills a triangle. The predicted tokens are the same in both cases; only the amount of work differs, and the difference grows with the square of the output length.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>Set P to 8 and n to 12, then tick and untick the cache. Now drop n to 1: with a single output token there is nothing to reuse, and the cache makes no difference.</p></div>
+<h3>Estimating memory and speed</h3>
+<p>A handful of numbers explains most of what you observe when running a model: its size, how many bits each weight uses, how long the context is, how many requests share the hardware, and how quickly that hardware can move and multiply numbers.</p>
+<div class="widget opt" id="w-ie">
+  <h4 class="wt">Interactive · latency and memory estimator (conceptual)</h4>
+  <p class="look"><b>The point:</b> Memory and speed follow from a few numbers about the model and the hardware. <b>Do this:</b> Choose a model, then raise the batch size and the prompt length. <b>Watch for:</b> Which bar grows (the KV cache, not the weights) and when the bottleneck label changes.</p>
+  <p class="cap"><b>Order-of-magnitude illustration, not a benchmark.</b> It applies the simple bounds from the “Math detail” box above. Real systems are slower, and the hardware sliders are generic quantities, not specific products; <a class="xref" data-ref="hardware"></a> lists the figures for real GPUs.</p>
+  <div class="controls">
+    <label class="ctl">Model<select id="ie-model"></select></label>
+    <label class="ctl">Weight precision<select id="ie-prec"><option value="4">32-bit floats</option><option value="2" selected>16-bit floats</option><option value="1">8-bit quantized</option><option value="0.5">4-bit quantized</option></select></label>
+    <label class="ctl"><span class="row">Prompt tokens P <output id="ie-P-o"></output></span><input type="range" id="ie-P" min="1" max="5" step="0.1" value="3"></label>
+    <label class="ctl"><span class="row">Output tokens n <output id="ie-n-o"></output></span><input type="range" id="ie-n" min="1" max="3.6" step="0.1" value="2.5"></label>
+    <label class="ctl"><span class="row">Requests in the batch B <output id="ie-B-o"></output></span><input type="range" id="ie-B" min="0" max="6" step="1" value="0"></label>
+    <label class="ctl"><span class="row">Memory bandwidth R <output id="ie-bw-o"></output></span><input type="range" id="ie-bw" min="1" max="3.5" step="0.1" value="2.7"></label>
+    <label class="ctl"><span class="row">Usable compute F <output id="ie-fl-o"></output></span><input type="range" id="ie-fl" min="-1" max="3" step="0.1" value="2"></label>
+    <label class="ctl"><span class="row">Device memory <output id="ie-mem-o"></output></span><input type="range" id="ie-mem" min="2" max="10" step="0.5" value="4.5"></label>
+  </div>
+  <span class="lab">Memory</span>
+  <div class="stack" id="ie-bar" role="img" aria-label="Stacked bar of memory use"></div>
+  <p class="readout" id="ie-fit" aria-live="polite"></p>
+  <div class="stats" id="ie-stats" aria-live="polite"></div>
+  <span class="lab">Batch size: total throughput versus speed per request (log scale)</span>
+  <svg id="ie-chart" role="img" aria-label="Line chart of total throughput and per-request speed as batch size grows"></svg>
+  <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> total throughput (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> speed per request (dashed)</span><span>● current batch size</span></div>
+  <small>What is simplified: the KV cache is assumed to be stored at 16 bits with keys and values of full width <span class="tex">d_{\text{model}}</span>; attention’s own cost, which grows with context length, is ignored; so are software overhead, activations and the fact that real hardware rarely reaches its nominal figures. Model shapes are typical for each size class, not a particular released model.</small>
+  <div class="wjh"><b>What just happened?</b> At batch size 1 the limit is usually how fast the weights can be read from memory, which is why halving the bits per weight roughly doubles the speed. Raising the batch size lets one read of the weights serve many requests, so total throughput climbs while each request keeps its speed. Once the compute limit is reached, the solid line goes flat and the dashed line starts to fall: more users are now sharing a fixed amount of work. Meanwhile every extra request adds its own KV cache to the memory bar.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>1. Switch the precision from 16-bit to 4-bit and watch both the memory bar and the tokens per second. 2. Push the prompt to 100,000 tokens and the batch to 16: the cache overtakes the weights. 3. Lower the compute slider until the bottleneck changes from memory bandwidth to compute.</p></div>
+<div class="callout note"><b>Beginner note</b><p>This is why a model that “fits” on a device can still feel slow, and why a long conversation can run out of memory even though the model itself has not changed: the weights are fixed, but the cache grows with every token.</p></div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“The KV cache saves memory.”</b> It spends memory to save computation.</li>
+  <li><b>“Generation can be parallelised like training.”</b> A prompt is processed in parallel, but each output token depends on the one before it, so decoding is sequential.</li>
+  <li><b>“Tokens per second is a property of the model.”</b> It depends on hardware, precision, batch size and context length together.</li>
+  <li><b>“Streaming makes the model faster.”</b> The total time is unchanged. Only the wait before the first visible word shrinks.</li>
+  <li><b>“Quantization only matters for fitting in memory.”</b> Fewer bytes per weight also means fewer bytes to read on every step, which is often the real speed limit.</li>
+  <li><b>Pitfall:</b> sizing hardware for the weights alone. Leave room for one KV cache per concurrent request at the longest context you intend to allow.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Because of the causal mask, earlier positions’ keys and values never change, so they can be cached.</li><li>Without a cache the work grows with <span class="tex">n^2</span>; with it, with <span class="tex">n</span>.</li><li>Cache memory = 2 × layers × tokens × <span class="tex">d_{\text{model}}</span> × bytes, per request.</li><li>Response time ≈ time to first token + output tokens ÷ tokens per second.</li><li>Batching raises total throughput but not the speed of a single request.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. Prompt of 3 tokens, 5 tokens generated, with a KV cache. How many token positions are processed in total?</legend><button type="button" class="qo">25</button><button type="button" class="qo" data-ok="1">7</button><button type="button" class="qo">15</button><p class="qx" hidden aria-live="polite"><b></b> 3 in prefill, then 1 for each of the 4 later passes.</p></fieldset>
+<fieldset><legend>2. Why is it valid to reuse the keys and values of earlier tokens?</legend><button type="button" class="qo">They are approximately the same</button><button type="button" class="qo" data-ok="1">The causal mask means earlier positions never depend on later tokens</button><button type="button" class="qo">The model is deterministic</button><p class="qx" hidden aria-live="polite"><b></b> Appending a token cannot change anything computed at earlier positions, so the reuse is exact.</p></fieldset>
+<fieldset><legend>3. Which grows with the length of the conversation?</legend><button type="button" class="qo">The weights</button><button type="button" class="qo" data-ok="1">The KV cache</button><button type="button" class="qo">Neither</button><p class="qx" hidden aria-live="polite"><b></b> The weights are fixed. The cache holds a key and a value for every token, in every layer.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>A long system prompt is sent with every request. What does that do to time to first token, and what could reduce it?</li><li>Our users care about a streaming answer feeling fast. Which of the two speed figures matters most for that?</li></ul></details>
+<p class="bridge">You can now build, train, sample from and serve a model. <a class="xref" data-ref="openmodels"></a> shows how to run real models that others have trained.</p>
+</div>
+</section>
+<section class="ch" id="openmodels" data-title="Open-weight models">
+<h2>Open-weight models: running them yourself</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Say what “open-weight” means, and what it does not.</li><li>Name the main open-weight model families and read their size, context length and licence.</li><li>Work out which models fit on your GPU, and why mixture-of-experts models decode quickly.</li><li>Run a model with Ollama or serve it with vLLM, and call either through the same API.</li></ul></div><p class="needs"><b>Builds on</b> Memory and bandwidth from <a class="xref" data-ref="hardware"></a>; the KV cache and batching from <a class="xref" data-ref="inference"></a>.</p></div>
+<div class="story"><p>The team from <a class="xref" data-ref="hardware"></a> still has its 24 GB card. Which model could it download today, will it fit, how fast will it answer, and how would the rest of the company reach it?</p></div>
+<p>An <b>open-weight model</b> is one whose trained weights anyone can download and run on their own hardware. Once downloaded it works offline: prompts never leave the machine, there is no bill per token, and the model only changes when you change it. In return, you provide the hardware and keep it running.</p>
+<p>Open weights are not the same as open source. A release usually includes the weights and the code to run them, but not the training data or the full training code. Each release comes with a licence that says what you may do with it.</p>
+<div class="flow" role="img" aria-label="Diagram: download weights, load into GPU memory, serve an API with Ollama or vLLM, call it from your application">
+  <div><b>Download weights</b><small>Ollama library or Hugging Face</small></div><i>→</i>
+  <div><b>Load into memory</b><small>usually quantized to about 4 bits</small></div><i>→</i>
+  <div class="fa"><b>Serve an API</b><small>Ollama or vLLM</small></div><i>→</i>
+  <div><b>Your application</b><small>an OpenAI-style client</small></div>
+</div>
+
+<h3>Popular families</h3>
+<p>These families are widely downloaded and run on a single machine. The sizes are the ones offered in the Ollama library; the context lengths and licences come from the model cards. New versions appear every few months, so check the model card before you choose.</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th>Family (maker)</th><th>Sizes</th><th>Context</th><th>Licence</th><th>Notes</th></tr></thead>
+  <tbody>
+  <tr><th scope="row">Llama 3.1 (Meta)</th><td>8B, 70B, 405B</td><td>128K</td><td>Llama 3.1 Community Licence</td><td>The most downloaded family on Ollama, with many fine-tunes. Llama 3.2 adds 1B and 3B models.</td></tr>
+  <tr><th scope="row">Qwen3.6 and Qwen3.8 (Alibaba)</th><td>Qwen3.8: 27B. Qwen3.6: 27B, and 35B mixture-of-experts with 3B active</td><td>256K, extensible to about 1M</td><td>Apache 2.0</td><td>Aimed at coding and agent tasks; text and image input.</td></tr>
+  <tr><th scope="row">Gemma 4 (Google)</th><td>E2B, E4B, 12B, 26B mixture-of-experts with 3.8B active, 31B</td><td>128K (E2B, E4B), 256K (larger sizes)</td><td>Apache 2.0</td><td>Text and image input. “E” sizes are small models with 2.3B and 4.5B effective parameters.</td></tr>
+  <tr><th scope="row">gpt-oss (OpenAI)</th><td>20B (21B total, 3.6B active), 120B (117B total, 5.1B active)</td><td>128K</td><td>Apache 2.0</td><td>Reasoning models. The expert weights ship in a 4-bit format (MXFP4), so the 20B runs in 16 GB and the 120B on one 80 GB GPU.</td></tr>
+  <tr><th scope="row">DeepSeek-R1 (DeepSeek)</th><td>671B mixture-of-experts; distilled 1.5B to 70B</td><td>160K (671B), 128K (distilled)</td><td>MIT; distilled sizes also follow their Qwen or Llama base</td><td>Reasoning model. The distilled sizes are Qwen 2.5 and Llama models trained on R1’s outputs.</td></tr>
+  <tr><th scope="row">Mistral Small 3.2 (Mistral AI)</th><td>24B</td><td>128K</td><td>Apache 2.0</td><td>Text and image input; a good fit for one 24 GB card at 4 bits.</td></tr>
+  <tr><th scope="row">Phi-4 (Microsoft)</th><td>14B</td><td>16K</td><td>MIT</td><td>A small model with a short context.</td></tr>
+  </tbody>
+</table></div>
+<p>A RAG system also needs an embedding model (see <a class="xref" data-ref="iv-rag"></a>). On Ollama the most downloaded are <code>nomic-embed-text</code> and <code>bge-m3</code>.</p>
+<div class="callout note"><b>Choosing</b><p>Public leaderboards change monthly and rarely match your task. Shortlist two or three models that fit your hardware and licence, then compare them on your own evaluation set (see <a class="xref" data-ref="iv-prod"></a>).</p></div>
+
+<h3>Will it fit, and how fast will it be?</h3>
+<p><b>The question:</b> will a given model fit, and how many tokens per second can it produce? Memory follows the rule from <a class="xref" data-ref="hardware"></a>: about 1.2 × (weights + KV cache). An Ollama download is the weights, already quantized (usually to about 4 bits), so its size is a good first estimate of the weights term.</p>
+<p>Speed needs one more idea. In a <b>mixture-of-experts</b> model each block has many expert MLPs, and a router sends each token through only a few of them. Every expert must be in memory, so memory follows the <i>total</i> parameter count. But decoding is limited by the bytes read per token (see <a class="xref" data-ref="hardware"></a>), and each token reads only the <i>active</i> parameters:</p>
+<div class="tex d">\text{tokens per second per request}\lesssim\frac{R}{N_{\text{active}}\times\text{bytes per parameter}+M_{\text{KV}}}</div>
+<p class="sym"><span class="tex">R</span> is the GPU’s memory bandwidth in bytes per second, <span class="tex">N_{\text{active}}</span> the number of parameters each token passes through (all of them, for a dense model) and <span class="tex">M_{\text{KV}}</span> the KV cache read at each step. As before, this is an upper bound.</p>
+<details class="why"><summary>Why is a mixture-of-experts model not simply a small model?</summary><div class="whyb"><p>Its 21 billion parameters store more knowledge and skills than a dense 3.6-billion-parameter model can, while each token pays the reading cost of only 3.6 billion. The price is memory: a dense model with the same speed would need about a sixth of the space.</p></div></details>
+<div class="worked">
+<div class="x-only"><p><b>Does it fit?</b> On the 24 GB card, apply the 1.2 margin to the Ollama download sizes:</p>
+<ul><li><code>gpt-oss:20b</code>, 14 GB: <span class="tex">1.2\times14=16.8</span> GB. Fits, with room for a long cache.</li>
+<li><code>qwen3.8:27b</code>, 18 GB: <span class="tex">1.2\times18=21.6</span> GB. Fits, with a moderate context.</li>
+<li><code>llama3.1:70b</code>, 43 GB: <span class="tex">1.2\times43\approx52</span> GB. Does not fit; it needs more than two 24 GB cards, one 80 GB GPU, or a DGX Spark.</li></ul>
+<p><b>How fast?</b> gpt-oss-20b reads <span class="tex">3.6\times10^9</span> active parameters at 4.25 bits, about 0.53 bytes each: roughly 1.9 GB per token. (This treats every active parameter as 4-bit; the attention weights are in fact stored in 16 bits, so the true figure is somewhat higher and the bound somewhat lower.) With the RTX 4090’s <span class="tex">R=1{,}008</span> GB/s the bound is <span class="tex">1008/1.9\approx530</span> tokens per second. A dense 21B model at the same precision reads about 11 GB per token and is bounded near 90.</p></div>
+<div class="s-only"><p><b>Does it fit?</b> Multiply the download size by 1.2. <code>gpt-oss:20b</code> (14 GB) needs about 17 GB and fits on a 24 GB card; <code>llama3.1:70b</code> (43 GB) needs about 52 GB and does not.</p>
+<p><b>How fast?</b> gpt-oss-20b reads only its 3.6 billion active parameters per token, about 1.9 GB, so its speed bound is about six times that of a dense model of the same total size.</p></div>
+</div>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th>Ollama tag</th><th>Download</th><th>On one 24 GB card</th></tr></thead>
+  <tbody>
+  <tr><th scope="row"><code>llama3.1:8b</code></th><td>4.9 GB</td><td>Fits, with room for long contexts</td></tr>
+  <tr><th scope="row"><code>phi4:14b</code></th><td>9.1 GB</td><td>Fits</td></tr>
+  <tr><th scope="row"><code>gpt-oss:20b</code></th><td>14 GB</td><td>Fits</td></tr>
+  <tr><th scope="row"><code>mistral-small3.2:24b</code></th><td>15 GB</td><td>Fits</td></tr>
+  <tr><th scope="row"><code>qwen3.8:27b</code></th><td>18 GB</td><td>Fits, with a moderate context</td></tr>
+  <tr><th scope="row"><code>gemma4:31b</code></th><td>19 to 20 GB</td><td>Only with a short context</td></tr>
+  <tr><th scope="row"><code>llama3.1:70b</code></th><td>43 GB</td><td>No</td></tr>
+  <tr><th scope="row"><code>gpt-oss:120b</code></th><td>65 GB</td><td>No: one 80 GB GPU, or a DGX Spark</td></tr>
+  </tbody>
+</table></div>
+<div class="callout mistake"><b>Pitfall: Ollama’s default context</b><p>Ollama runs every model with a 4,096-token context unless you raise it, whatever the model supports. A longer prompt is cut to fit, and the model never sees the start of it. Raise the limit with <code>OLLAMA_CONTEXT_LENGTH</code> when starting the server, or <code>num_ctx</code> per request, and remember that a longer context means a larger KV cache.</p></div>
+
+<h3>Ollama or vLLM?</h3>
+<p><b>Ollama</b> is an app for Windows, macOS and Linux. It downloads quantized models from its library by name, runs them on the GPU, the CPU or both (splitting a model that does not fit), and serves an API on port 11434. It is the quickest way to try a model on a laptop or workstation.</p>
+<p><b>vLLM</b> is a Python serving engine for Linux; on Windows it runs under WSL. On NVIDIA it needs a GPU of compute capability 7.5 or newer. It loads models from Hugging Face and is built for many users at once: continuous batching, paged KV-cache memory and tensor parallelism across GPUs (see <a class="xref" data-ref="inference"></a>). It serves an API on port 8000.</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th></th><th>Ollama</th><th>vLLM</th></tr></thead>
+  <tbody>
+  <tr><th scope="row">Best for</th><td>One person, development, laptops and workstations</td><td>Many users on a GPU server</td></tr>
+  <tr><th scope="row">Platforms</th><td>Windows, macOS, Linux; GPU, CPU or both</td><td>Linux (Windows through WSL); GPUs</td></tr>
+  <tr><th scope="row">Models</th><td>Ollama library, mostly 4-bit GGUF files</td><td>Hugging Face weights, 16-bit or GPU quantization formats</td></tr>
+  <tr><th scope="row">Requests at once</th><td>One per model by default (<code>OLLAMA_NUM_PARALLEL</code>); others queue</td><td>Many, batched continuously</td></tr>
+  <tr><th scope="row">API</th><td><code>http://localhost:11434/v1</code></td><td><code>http://localhost:8000/v1</code></td></tr>
+  </tbody>
+</table></div>
+<p>The commands, in a terminal:</p>
+<pre class="sh"><code># Ollama: install from ollama.com, then
+ollama pull gpt-oss:20b                     # download the weights (14 GB)
+ollama run gpt-oss:20b "Explain the KV cache in one sentence."
+ollama ps                                   # what is loaded, and how much is on the GPU
+
+# vLLM: on Linux with an NVIDIA GPU
+uv pip install vllm --torch-backend=auto
+vllm download-kernels
+vllm serve openai/gpt-oss-20b --max-model-len 32768
+vllm serve openai/gpt-oss-120b --tensor-parallel-size 2   # 65 GB of weights over two 48 GB GPUs</code></pre>
+<p>Both speak the OpenAI chat-completions API, so application code switches between them, or to a hosted API, by changing the base URL and the model name.</p>
+<details class="callout code opt"><summary>In Python: one client for Ollama and vLLM</summary>
+<div class="cbar"><small>Needs a running Ollama or vLLM server · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s13_local_api.py" data-run="no"><code>import json
+import time
+import urllib.request
+
+# Ollama and vLLM both serve the OpenAI chat-completions API, so one client works
+# with either: only the base URL and the model name change.
+SERVERS = {
+    "ollama": ("http://localhost:11434/v1", "gpt-oss:20b"),      # ollama pull gpt-oss:20b
+    "vllm": ("http://localhost:8000/v1", "openai/gpt-oss-20b"),  # vllm serve openai/gpt-oss-20b
+}
+BASE_URL, MODEL = SERVERS["ollama"]
+
+
+def call(path, body=None):
+    data = json.dumps(body).encode() if body is not None else None
+    request = urllib.request.Request(BASE_URL + path, data=data,
+                                     headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(request, timeout=600) as response:
+        return json.load(response)
+
+
+try:
+    models = [m["id"] for m in call("/models")["data"]]
+except OSError as error:
+    raise SystemExit(f"No server at {BASE_URL}: start Ollama or vLLM first ({error})")
+print("models on the server:", ", ".join(models))
+
+start = time.perf_counter()
+reply = call("/chat/completions", {
+    "model": MODEL,
+    "messages": [{"role": "user", "content": "Explain the KV cache in one sentence."}],
+    "temperature": 0.2,
+    "max_tokens": 1000,     # reasoning models spend tokens thinking before they answer
+})
+seconds = time.perf_counter() - start
+used = reply["usage"]
+print("reply:", reply["choices"][0]["message"]["content"])
+print(f"{used['prompt_tokens']} prompt tokens, {used['completion_tokens']} output tokens "
+      f"in {seconds:.1f} s, {used['completion_tokens'] / seconds:.0f} tokens/s including prefill")
+
+# Example output (needs a running server, so it is not run with the other snippets;
+# the reply, the token counts and the speed depend on your model and hardware):
+# models on the server: gpt-oss:20b
+# reply: &lt;the model's one-sentence answer&gt;
+# &lt;p&gt; prompt tokens, &lt;n&gt; output tokens in &lt;t&gt; s, &lt;r&gt; tokens/s including prefill</code></pre></details>
+
+<h3>Licences</h3>
+<ul>
+  <li><b>Apache 2.0 and MIT</b> (Qwen, Gemma 4, gpt-oss, Mistral Small, DeepSeek-R1, Phi-4): commercial use is allowed; keep the licence and copyright notices.</li>
+  <li><b>Llama 3.1 Community Licence</b>: free for most uses, with conditions. Products with more than 700 million monthly active users need Meta’s permission; you must show “Built with Llama”, follow Meta’s acceptable-use policy, and start the name of any model trained with Llama’s outputs with “Llama”.</li>
+  <li><b>Fine-tunes and distilled models</b> carry their base model’s licence as well as their own.</li>
+</ul>
+<p>This is a summary, not legal advice: read the licence file that comes with the weights.</p>
+
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Open-weight means open source.”</b> Usually only the weights and the code to run them are published, not the training data.</li>
+  <li><b>“If the download fits in GPU memory, the model runs well.”</b> The KV cache and the runtime need room too, and it grows with context length and concurrent users.</li>
+  <li><b>“A 26B mixture-of-experts model with 3.8B active needs memory for only 3.8B.”</b> Every expert must be loaded. Only the work and the bytes read per token shrink.</li>
+  <li><b>“Ollama and vLLM are models.”</b> They are runtimes. The same model can run in either.</li>
+</ul>
+
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Open-weight models run on your own hardware: data stays local and there is no per-token bill, but you run the hardware.</li><li>Memory follows the total parameter count and the precision; decoding speed follows the bytes read per token, which for a mixture-of-experts model means the active parameters.</li><li>Ollama is the quick start for one user on almost any machine; vLLM serves many users from Linux GPU servers.</li><li>Both expose the OpenAI chat-completions API, so client code switches by changing the base URL.</li><li>Check the licence: Apache 2.0 and MIT are permissive; Llama’s licence adds conditions.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. gpt-oss-20b has 21B parameters, 3.6B of them active per token. What sets the memory it needs?</legend><button type="button" class="qo">The 3.6B active parameters</button><button type="button" class="qo" data-ok="1">All 21B parameters, plus the KV cache</button><button type="button" class="qo">Only the context length</button><p class="qx" hidden aria-live="polite"><b></b> Every expert must be in memory. The active count sets the work and the bytes read per token, so it sets the speed.</p></fieldset>
+<fieldset><legend>2. Twenty colleagues will use one model at the same time from a Linux server with an NVIDIA GPU. Which runtime fits best?</legend><button type="button" class="qo">Ollama with its default settings</button><button type="button" class="qo" data-ok="1">vLLM</button><button type="button" class="qo">It makes no difference</button><p class="qx" hidden aria-live="polite"><b></b> vLLM batches many requests continuously. Ollama processes one request per model at a time by default and queues the rest.</p></fieldset>
+<fieldset><legend>3. You send a 6,000-token document to a model in Ollama, and the answers ignore its first part. What is the likely cause?</legend><button type="button" class="qo">The model is too small</button><button type="button" class="qo" data-ok="1">The 4,096-token default context cut the prompt</button><button type="button" class="qo">The temperature is too high</button><p class="qx" hidden aria-live="polite"><b></b> Ollama uses a 4,096-token context unless you raise it, so the start of a longer prompt is dropped.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Which of our workloads must not leave our network? Could a 20B to 30B open model handle them, and how would we measure that?</li><li>Who would look after a GPU server: updates, monitoring, model upgrades? How does that cost compare with an API bill?</li></ul></details>
+<p class="bridge">Open models range from 1B to 671B parameters. <a class="xref" data-ref="scaling"></a> asks what all that size buys.</p>
+</div>
+</section>
+<section class="ch" id="scaling" data-title="Scaling and practicalities">
+<h2>Scaling laws and LLM practicalities</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Estimate training compute from parameters and tokens.</li><li>Explain why parameters and data must grow together.</li><li>Relate model size to memory and to the effect of quantization.</li></ul></div><p class="needs"><b>Builds on</b> Parameter counts from <a class="xref" data-ref="architecture"></a> and the loss from <a class="xref" data-ref="training"></a>.</p></div>
+<div class="story"><p>The toy model in this guide has under 10,000 parameters and has seen a few hundred sentences. Predicting “mat” well in general, for any prompt, is what billions of parameters and trillions of tokens buy.</p></div>
+<p>The toy model above and a frontier LLM share the same architecture. The difference is scale: parameters, data and compute, each larger by many orders of magnitude. A striking empirical finding is that performance improves smoothly and predictably as these grow together, following what are called <b>scaling laws</b>.</p>
+<div class="flow" role="img" aria-label="Diagram of a typical model lifecycle: pretraining, instruction tuning, RLHF, compression, deployment">
+  <div><b>Pretraining</b><small>next-token prediction on vast text</small></div><i>→</i>
+  <div><b>Instruction tuning</b><small>fine-tune on prompt–response pairs</small></div><i>→</i>
+  <div><b>RLHF</b><small>shape behaviour with human preferences</small></div><i>→</i>
+  <div><b>Quantize / distill</b><small>make it cheaper to run</small></div><i>→</i>
+  <div class="fa"><b>Deployment</b><small>inference at scale</small></div>
+</div>
+<ul>
+  <li><b>Model size</b> (parameters, <span class="tex">N</span>): capacity to store patterns. More parameters help only if there is enough data to fill them.</li>
+  <li><b>Dataset size</b> (tokens, <span class="tex">D</span>): how much text the model learns from.</li>
+  <li><b>Compute</b>: training cost grows with both. A standard rule of thumb is about 6 floating-point operations per parameter per training token.</li>
+  <li><b>Context length</b>: longer contexts let the model use more information at once, but attention cost grows roughly with the square of the length.</li>
+  <li><b>Inference cost</b>: about 2 operations per parameter per token generated, paid on every request for as long as the model is in service.</li>
+  <li><b>Quantization</b>: store weights with fewer bits (8 or 4 instead of 16 or 32). Much less memory, usually a small loss in quality.</li>
+  <li><b>Distillation</b>: train a small “student” model to imitate a large “teacher”, keeping much of the quality at lower cost.</li>
+  <li><b>Fine-tuning</b>: continue training a pretrained model on a narrower dataset to specialise it.</li>
+  <li><b>Instruction tuning</b>: fine-tuning on examples of instructions and good responses, so the model follows requests instead of merely continuing text.</li>
+  <li><b>RLHF</b> (reinforcement learning from human feedback): people compare outputs, a reward model learns their preferences, and the LLM is optimised towards responses that the reward model scores highly.</li>
+</ul>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>Training compute.</b> One forward pass costs about 2 floating-point operations per parameter per token: each weight is used in one multiplication and one addition. The backward pass costs about twice the forward pass. Together that is roughly 6 operations per parameter per token, so for <span class="tex">N</span> parameters and <span class="tex">D</span> training tokens:</p>
+<div class="tex d">C_{\text{train}}\approx 6\,N\,D\ \ \text{FLOPs}</div>
+<p><b>Loss as a function of scale.</b> Think of the loss as having three sources: a part no model can remove because language is uncertain, a part caused by having too few parameters, and a part caused by having seen too little data. Measured curves are close to straight lines on logarithmic axes, which is the signature of a power law, so each removable part is modelled as one:</p>
+<div class="tex d">\mathcal{L}(N,D)\approx \mathcal{L}_{\infty}+\frac{a}{N^{r}}+\frac{b}{D^{s}}</div>
+<p class="sym"><span class="tex">\mathcal{L}_\infty</span> is the irreducible loss; <span class="tex">a</span>, <span class="tex">b</span> are constants; <span class="tex">r</span>, <span class="tex">s</span> are exponents between 0 and 1. This is the form fitted by Hoffmann et al. (2022).</p>
+<details class="why"><summary>What the form tells you.</summary><div class="whyb">The two fractions shrink independently. Make <span class="tex">N</span> enormous and the second term vanishes, but the third is untouched: you are left with <span class="tex">\mathcal{L}_\infty+b/D^{s}</span> however large the model. Whichever of parameters or data is scarce sets the floor, which is why the two must grow together.</div></details>
+<div class="worked">
+  <h4>Worked example</h4>
+  <p class="x-only">A model with <span class="tex">N=10^{9}</span> parameters trained on <span class="tex">D=2\times10^{10}</span> tokens needs about <span class="tex">6\times10^{9}\times2\times10^{10}=1.2\times10^{20}</span> FLOPs. Stored at 16 bits (2 bytes) per weight, it occupies <span class="tex">2\times10^{9}</span> bytes, or 2 GB; quantized to 4 bits, 0.5 GB.</p>
+  <p class="s-only">A 1-billion-parameter model reading 20 billion tokens costs on the order of a hundred billion billion arithmetic operations to train. Its weights take about 2 GB, or a quarter of that after 4-bit quantization.</p>
+</div>
+<details class="callout code opt"><summary>In Python: compute, memory and the scaling-law curve</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s12_scaling.py"><code>N = 1e9        # parameters
+D = 2e10       # training tokens
+
+print(f"training compute ~ 6ND = {6 * N * D:.1e} FLOPs")
+print(f"weights at 16 bits: {N * 2 / 1e9:.1f} GB, at 4 bits: {N * 0.5 / 1e9:.1f} GB")
+print(f"inference ~ 2N = {2 * N:.0e} FLOPs per generated token")
+print(f"tokens per parameter: {D / N:.0f} (the Chinchilla rule of thumb is ~20)")
+
+
+def loss(N, D, L_inf=1.69, a=406.4, r=0.34, b=410.7, s=0.28):
+    # Hoffmann et al. (2022), Appendix D.2, Eq. 10: their fitted constants
+    return L_inf + a / N ** r + b / D ** s
+
+
+# Growing only N leaves the data term untouched, so the loss stops improving
+for n in (1e8, 1e9, 1e10, 1e11, 1e12):
+    print(f"N={n:.0e}, D=2e10: loss {loss(n, 2e10):.3f}")
+print(f"floor with D=2e10 however large N is: {loss(float('inf'), 2e10):.3f}")
+
+# Output:
+# training compute ~ 6ND = 1.2e+20 FLOPs
+# weights at 16 bits: 2.0 GB, at 4 bits: 0.5 GB
+# inference ~ 2N = 2e+09 FLOPs per generated token
+# tokens per parameter: 20 (the Chinchilla rule of thumb is ~20)
+# N=1e+08, D=2e10: loss 3.000
+# N=1e+09, D=2e10: loss 2.580
+# N=1e+10, D=2e10: loss 2.388
+# N=1e+11, D=2e10: loss 2.300
+# N=1e+12, D=2e10: loss 2.260
+# floor with D=2e10 however large N is: 2.226</code></pre></details>
+
+<div class="widget" id="w-scale">
+  <h4 class="wt">Interactive · model size, data and compute (conceptual)</h4>
+  <p class="look"><b>The point:</b> Parameters and data must grow together. <b>Do this:</b> Fix the data slider and raise the model size; then do the reverse. <b>Watch for:</b> The curve flattens when one of the two runs out, and the “Bottleneck” reading says which.</p>
+  <p class="cap"><b>Conceptual illustration, not a prediction.</b> The curve uses the functional form above with constants in the neighbourhood of one published fit. Real results depend on data quality, architecture, training recipe and what you measure. The “capability” gauge is an arbitrary rescaling of the illustrative loss.</p>
+  <div class="controls">
+    <label class="ctl"><span class="row">Model size N <output id="sc-n-o"></output></span><input type="range" id="sc-n" min="6" max="12" step="0.1" value="9"></label>
+    <label class="ctl"><span class="row">Training tokens D <output id="sc-d-o"></output></span><input type="range" id="sc-d" min="8" max="13.5" step="0.1" value="10.3"></label>
+  </div>
+  <svg id="sc-chart" role="img" aria-label="Illustrative loss as a function of model size for the chosen dataset size"></svg>
+  <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> with your dataset (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> with unlimited data (dashed)</span><span>● your model</span></div>
+  <div class="stats" id="sc-read" aria-live="polite"></div>
+  <div class="wjh"><b>What just happened?</b> Moving the model-size slider slides the dot along the solid curve. The curve flattens: past a certain size, extra parameters stop helping because the data has run out, and the gap to the dashed line shows how much is being left on the table. Raising the data slider lowers the whole solid curve. Compute is the product of the two, so balanced growth is expensive, and growing only one of them is wasteful.</div>
+</div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Bigger is always better.”</b> Only when data and compute grow too. An oversized model on too little data wastes compute and overfits.</li>
+  <li><b>“Scaling laws are laws of nature.”</b> They are empirical fits over the ranges tested, for particular setups.</li>
+  <li><b>“Fine-tuning teaches a model from scratch.”</b> It adjusts an already capable model; the broad knowledge comes from pretraining.</li>
+  <li><b>“Quantization is free.”</b> It trades a little accuracy for a lot of memory, and the trade gets worse at very low bit widths.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Training compute ≈ <span class="tex">6ND</span> floating-point operations.</li><li>Loss falls as a power law in both <span class="tex">N</span> and <span class="tex">D</span>; whichever is scarce sets the floor.</li><li>Weight memory = parameters × bytes per parameter; quantization shrinks the second factor.</li><li>The curves in this section are illustrative fits, not a prediction for any particular model.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. You make the model 10 times larger but keep the dataset fixed. What limits the improvement?</legend><button type="button" class="qo" data-ok="1">The data term of the loss, which does not shrink</button><button type="button" class="qo">The vocabulary</button><button type="button" class="qo">Nothing; loss keeps falling at the same rate</button><p class="qx" hidden aria-live="polite"><b></b> Only the parameter term shrinks. The data term stays where it was.</p></fieldset>
+<fieldset><legend>2. Roughly how much compute to train 1 billion parameters on 20 billion tokens?</legend><button type="button" class="qo" data-ok="1">1.2 × 10²⁰ FLOPs</button><button type="button" class="qo">2 × 10¹⁹ FLOPs</button><button type="button" class="qo">6 × 10⁹ FLOPs</button><p class="qx" hidden aria-live="polite"><b></b> 6 × 10⁹ × 2 × 10¹⁰ = 1.2 × 10²⁰.</p></fieldset>
+<fieldset><legend>3. A 7-billion-parameter model stored at 16 bits per weight needs about how much memory for weights?</legend><button type="button" class="qo">7 GB</button><button type="button" class="qo" data-ok="1">14 GB</button><button type="button" class="qo">56 GB</button><p class="qx" hidden aria-live="polite"><b></b> 7 × 10⁹ parameters × 2 bytes = 14 GB.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Given a fixed budget, when would you choose a smaller model trained on more data over a larger one?</li><li>Quantization trades precision for memory. How would you check that a quantized model is still good enough for our use?</li></ul></details>
+<p class="bridge">Everything so far concerned decoder-only models. <a class="xref" data-ref="encdec"></a> covers the other branch of the family.</p>
+</div>
+</section>
+<section class="view complete" id="complete" data-title="Part C complete"><div id="partDone"></div></section>
+<footer>Everything here runs locally in your browser. The only network request is for the KaTeX maths renderer.</footer>
+</main>
+</div>
+<div id="tip" role="tooltip"></div>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/shared.js"></script>
+<script src="assets/js/toy-model.js"></script>
+<script src="assets/js/part-c.js"></script>
+<script src="assets/js/site.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous" onload="renderAllTex()" onerror="texFailed()"></script>
+</body>
+</html>
