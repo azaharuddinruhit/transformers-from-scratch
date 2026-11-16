@@ -181,4 +181,36 @@ function renderScale(){
 }
 function initScale(){slider('sc-n',v=>big(Math.pow(10,v))+' params',v=>{s10.n=v;renderScale();});slider('sc-d',v=>big(Math.pow(10,v))+' tokens',v=>{s10.d=v;renderScale();});reg(renderScale);}
 
-PAGE_INITS.push(initTrain,initGen,initHW,initInfer,initScale);
+/* ================= Post-training: chat template and loss mask ================= */
+const CT_MSGS=[['system','You are a helpful assistant.'],['user','What did the cat sit on?'],['assistant','The cat sat on the mat.'],['user','And the dog?'],['assistant','The text does not mention a dog.']];
+const sct={turns:1};
+function renderChat(){
+  const sys=$('#ct-sys').checked,all=$('#ct-all').checked,msgs=CT_MSGS.filter((m,i)=>(i>0||sys)&&i<=2*sct.turns);
+  let h='',n=0,tr=0;
+  const tok=(t,cls)=>{n++;if(cls==='tk-tr')tr++;h+='<span class="'+cls+'">'+esc(t)+'</span>';};
+  msgs.forEach(([role,text])=>{const reply=role==='assistant',cx=all||reply?'tk-tr':'tk-cx',sp=all?'tk-tr':'tk-sp';
+    tok('<|im_start|>',sp);tok(role,sp);tok('↵',sp);h+='<i class="nl"></i>';
+    (text.match(/\w+|[^\w\s]/g)||[]).forEach(w=>tok(w,cx));tok('<|im_end|>',reply||all?'tk-tr':'tk-sp');tok('↵',sp);h+='<i class="nl"></i>';});
+  $('#ct-seq').innerHTML=h;
+  $('#ct-turns').innerHTML=[1,2].map(t=>'<button class="chip'+(t===sct.turns?' on':'')+'" data-t="'+t+'" aria-pressed="'+(t===sct.turns)+'">'+t+'</button>').join('');
+  $('#ct-stats').innerHTML='<div><b>'+n+'</b><span>tokens in the sequence</span></div><div><b>'+tr+'</b><span>tokens with loss</span></div><div><b>'+Math.round(100*tr/n)+'%</b><span>of the sequence trained</span></div>';
+}
+function initChat(){$('#ct-turns').addEventListener('click',e=>{const b=e.target.closest('button');if(b){sct.turns=+b.dataset.t;renderChat();$('#ct-turns button[data-t="'+sct.turns+'"]').focus();}});['ct-sys','ct-all'].forEach(id=>$('#'+id).addEventListener('change',renderChat));reg(renderChat);}
+/* ================= Post-training: preference tuning on three answers ================= */
+const PF_ANS=['A · “The mat.”','B · long, flattering','C · “The sofa.”'],PF_REF=[0.5,0.3,0.2],PF_RM={careful:['Careful',[2,1,-2]],flawed:['Flawed: likes length',[1,3,-2]]};
+const spf={rm:'careful',lam:1};
+function renderPref(){
+  const r=PF_RM[spf.rm][1],w=PF_REF.map((p,i)=>p*Math.exp(r[i]/spf.lam)),Z=w.reduce((a,b)=>a+b),pi=w.map(x=>x/Z);
+  const kl=pi.reduce((a,p,i)=>a+(p>0?p*Math.log(p/PF_REF[i]):0),0),er=pi.reduce((a,p,i)=>a+p*r[i],0),best=pi.indexOf(Math.max.apply(null,pi));
+  const rows=[];PF_ANS.forEach((a,i)=>{rows.push({label:a+' before',p:PF_REF[i],cls:'cut',right:fmt(PF_REF[i],3)});rows.push({label:a+' tuned',p:pi[i],cls:i===best?'hit':'',right:fmt(pi[i],3)});});
+  $('#pf-bars').innerHTML=bars(rows,1);
+  $('#pf-rm').innerHTML=Object.keys(PF_RM).map(k=>'<button class="chip'+(k===spf.rm?' on':'')+'" data-k="'+k+'" aria-pressed="'+(k===spf.rm)+'">'+PF_RM[k][0]+'</button>').join('');
+  $('#pf-stats').innerHTML='<div><b>'+r.join(', ')+'</b><span>rewards for A, B, C</span></div><div><b>'+fmt(er,2)+'</b><span>expected reward (before: '+fmt(PF_REF.reduce((a,p,i)=>a+p*r[i],0),2)+')</span></div><div><b>'+fmt(kl,3)+'</b><span>KL from the reference, nats</span></div>';
+}
+function initPref(){
+  slider('pf-lam',v=>'λ = '+fmt(Math.pow(10,v),2),v=>{spf.lam=Math.pow(10,v);renderPref();});
+  $('#pf-rm').addEventListener('click',e=>{const b=e.target.closest('button');if(b){spf.rm=b.dataset.k;renderPref();$('#pf-rm button[data-k="'+spf.rm+'"]').focus();}});
+  reg(renderPref);
+}
+
+PAGE_INITS.push(initTrain,initGen,initHW,initInfer,initScale,initChat,initPref);

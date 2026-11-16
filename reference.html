@@ -55,6 +55,7 @@
 <h2>Glossary</h2>
 <label class="ctl" style="max-width:420px">Filter the glossary<input type="text" id="gl-q" placeholder="e.g. soft, cache, top" autocomplete="off"></label>
 <dl id="gloss">
+  <div class="term"><dt>Byte-pair encoding (BPE)</dt><dd>The usual way to learn a subword vocabulary: start from characters or bytes and repeatedly merge the most frequent adjacent pair into a new token.</dd></div>
   <div class="term"><dt>Token</dt><dd>The unit of text a model reads and writes: a word, part of a word, a character or a symbol.</dd></div>
   <div class="term"><dt>Embedding</dt><dd>A learned vector that represents a token (or a position) as numbers the network can compute with.</dd></div>
   <div class="term"><dt>Attention</dt><dd>The operation that lets each token build a weighted blend of information from other tokens.</dd></div>
@@ -78,6 +79,9 @@
   <div class="term"><dt>Parameter</dt><dd>One learned number in the model: an entry of a weight matrix, bias or embedding.</dd></div>
   <div class="term"><dt>Checkpoint</dt><dd>A saved snapshot of all parameters (and often optimizer state) at some point in training.</dd></div>
   <div class="term"><dt>Fine-tuning</dt><dd>Further training of a pretrained model on a smaller, more specific dataset.</dd></div>
+  <div class="term"><dt>Base model</dt><dd>A model after pretraining only: it continues text rather than following instructions.</dd></div>
+  <div class="term"><dt>Chat template</dt><dd>The special tokens and layout that turn a list of messages into the single sequence a chat model was trained on.</dd></div>
+  <div class="term"><dt>Reasoning model</dt><dd>A model trained with reinforcement learning on checkable tasks to write out intermediate steps before answering; better on hard problems, slower and costlier per answer.</dd></div>
   <div class="term"><dt>RLHF</dt><dd>Reinforcement learning from human feedback: optimising a model towards outputs people prefer.</dd></div>
   <div class="term"><dt>Encoder</dt><dd>A Transformer stack with unmasked self-attention that reads a whole input sequence and outputs one vector per token.</dd></div>
   <div class="term"><dt>Decoder</dt><dd>A Transformer stack with causal self-attention that generates a sequence one token at a time.</dd></div>
@@ -110,6 +114,8 @@
   <div class="term"><dt>LLM-as-judge</dt><dd>Using a language model with a rubric to score or compare outputs.</dd></div>
   <div class="term"><dt>Perplexity</dt><dd>The exponential of the cross-entropy loss: the effective number of choices the model is unsure between.</dd></div>
   <div class="term"><dt>RoPE</dt><dd>Rotary position embedding: encodes position by rotating query and key vectors.</dd></div>
+  <div class="term"><dt>RMSNorm</dt><dd>LayerNorm without the mean subtraction and the shift: divides a vector by its root mean square, then applies a learned gain.</dd></div>
+  <div class="term"><dt>SwiGLU</dt><dd>A gated feed-forward network: one projection, passed through SiLU, multiplies another element by element.</dd></div>
   <div class="term"><dt>GQA</dt><dd>Grouped-query attention: several query heads share one key/value head, shrinking the KV cache.</dd></div>
   <div class="term"><dt>FlashAttention</dt><dd>An exact attention algorithm that works tile by tile in fast memory, avoiding the full T × T matrix.</dd></div>
   <div class="term"><dt>Mixture of experts</dt><dd>A layer with many expert MLPs and a router that sends each token to only a few of them.</dd></div>
@@ -152,6 +158,11 @@
     <tr><th scope="row"><span class="tex">\tau</span></th><td>sampling temperature</td><td>positive number</td></tr>
     <tr><th scope="row"><span class="tex">\theta,\ N</span></th><td>all the parameters; how many there are</td><td>—</td></tr>
     <tr><th scope="row"><span class="tex">\mathcal{L},\ \eta</span></th><td>loss; learning rate</td><td>numbers</td></tr>
+    <tr><th scope="row"><span class="tex">n_{\text{kv}}</span></th><td>key and value heads per layer, shared by groups of query heads (grouped-query attention)</td><td>integer, divides <span class="tex">h</span></td></tr>
+    <tr><th scope="row"><span class="tex">\omega</span></th><td>rotation speed of one pair of dimensions in RoPE</td><td>positive number</td></tr>
+    <tr><th scope="row"><span class="tex">n_{\text{experts}},\ g_e</span></th><td>experts in a mixture-of-experts layer; the gate of expert <span class="tex">e</span></td><td>integer; 0 … 1</td></tr>
+    <tr><th scope="row"><span class="tex">\pi_{\theta},\ \pi_{\text{ref}}</span></th><td>the model being tuned, as a distribution over answers; the model it started from</td><td>probabilities</td></tr>
+    <tr><th scope="row"><span class="tex">y,\ \lambda</span></th><td>a whole answer in preference tuning; strength of the pull back to <span class="tex">\pi_{\text{ref}}</span></td><td>text; positive number</td></tr>
     <tr><th scope="row"><span class="tex">B</span></th><td>batch size: sequences processed together</td><td>integer</td></tr>
     <tr><th scope="row"><span class="tex">P,\ n</span></th><td>prompt length; number of tokens generated</td><td>integers</td></tr>
     <tr><th scope="row"><span class="tex">D</span></th><td>number of training tokens</td><td>integer</td></tr>

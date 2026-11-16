@@ -10,8 +10,8 @@ An interactive visual guide to how GPT-style language models work, from tokens t
 | --- | --- | --- |
 | Part A · The big picture | 2 | What an LLM computes, and why Transformers replaced recurrent networks |
 | Part B · Building the model | 6 | Tokens, positions, self-attention, multi-head attention, the Transformer block, the full model |
-| Part C · Training and using it | 6 | Cross-entropy training, decoding, GPUs and CUDA, inference in practice, open-weight models with Ollama and vLLM, scaling laws |
-| Part D · The wider picture | 2 | Encoder–decoder models and the 2017 paper in detail |
+| Part C · Training and using it | 7 | Cross-entropy training, scaling laws, post-training (SFT, RLHF and DPO, reasoning models), decoding, GPUs and CUDA, inference in practice, open-weight models with Ollama and vLLM |
+| Part D · The wider picture | 3 | Encoder–decoder models, the 2017 paper in detail, and what modern LLMs change (RoPE, RMSNorm, SwiGLU, GQA, mixture of experts) |
 | Interview drill | 6 topics | 65 questions, each with a short sample answer and bullet points: fundamentals, RAG, fine-tuning, agents, production, hardware |
 | Reference | 3 | Glossary, notation and further learning |
 
@@ -19,14 +19,14 @@ Each section in Parts A to D has learning objectives, a running example, equatio
 
 Highlights:
 
-- Two paths: **Full depth** (about 3 h 45 min) and **Quick tour** (about 3 h 10 min, simplified worked examples, optional material hidden). You can switch at any time.
+- Two paths: **Full depth** (about 4 h 25 min) and **Quick tour** (about 3 h 50 min, simplified worked examples, optional material hidden). You can switch at any time.
 - A tiny Transformer (about 9,600 parameters) that trains in your browser, plus a generation playground with temperature, top-k and top-p.
 - Step-by-step attention, KV-cache, GPU-memory, parameter-count and inference-cost calculators.
 - "In Python" boxes with runnable NumPy and PyTorch code and its real output, collapsed by default.
 - The interview drill hides each answer behind "Show answer"; mark questions "Got it" or "Review again" and filter by topic or status.
 - Progress (sections done, quiz answers, drill marks, where you left off) is saved in your browser only, so it does not sync between devices. Settings has a progress reset, the path, a Light, Dark or Auto theme, and whether code boxes start expanded.
 - On phones, a floating bar with previous and next buttons, the current section and a progress line; tapping it opens the contents as a bottom sheet.
-- A five-session plan on the home page for teaching the material to a team.
+- A six-session plan on the home page for teaching the material to a team.
 
 All numbers are computed in the browser. No pretrained model is used; where a demonstration is simplified (hand-picked attention weights, illustrative scaling curves), the page says so.
 

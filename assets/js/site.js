@@ -3,15 +3,15 @@
 const PARTS=[
   {id:'a',name:'The big picture',goal:'What an LLM computes, and why the Transformer replaced recurrent networks.',secs:['intro','why']},
   {id:'b',name:'Building the model',goal:'Every layer of a decoder-only Transformer, from text to the probabilities of the next token.',secs:['tokens','position','attention','multihead','block','architecture']},
-  {id:'c',name:'Training and using it',goal:'How the model learns, how it generates text, and what it takes to run it.',secs:['training','generation','hardware','inference','openmodels','scaling']},
-  {id:'d',name:'The wider picture',goal:'The original encoder–decoder Transformer and the 2017 paper that introduced it.',secs:['encdec','paper']}];
+  {id:'c',name:'Training and using it',goal:'How the model learns, how it generates text, and what it takes to run it.',secs:['training','scaling','posttrain','generation','hardware','inference','openmodels']},
+  {id:'d',name:'The wider picture',goal:'The original encoder–decoder Transformer, the 2017 paper that introduced it, and what today’s models change.',secs:['encdec','paper','modern']}];
 /* title, study minutes for Full depth and Quick tour, then the level (an index into LEVELS).
    Minutes: words / 110 + 3 per interactive, rounded to 5, code boxes left out (Full depth drops .s-only; Quick tour
    drops .opt and .x-only). Recount when a section changes a lot. */
 const SECS={intro:['What is an LLM?',10,10,0],why:['Why Transformers?',10,10,0],tokens:['Tokenization and embeddings',15,10,0],position:['Positional information',15,15,1],
   attention:['Self-attention from scratch',15,15,1],multihead:['Multi-head attention',10,10,1],block:['FFN, residuals and normalization',20,15,1],architecture:['Full decoder-only architecture',15,10,1],
-  training:['Training an LLM',15,10,1],generation:['Generation and decoding',10,10,0],hardware:['GPUs and CUDA',20,20,1],inference:['Inference in practice',20,10,2],openmodels:['Open-weight models',15,15,0],scaling:['Scaling and practicalities',10,10,2],
-  encdec:['Encoder–decoder and cross-attention',15,10,1],paper:['The 2017 paper in detail',10,10,2]};
+  training:['Training an LLM',15,15,1],generation:['Generation and decoding',10,10,0],hardware:['GPUs and CUDA',20,15,1],inference:['Inference in practice',20,15,2],openmodels:['Open-weight models',15,15,0],scaling:['Scaling laws',10,10,2],posttrain:['From base model to assistant',20,20,1],
+  encdec:['Encoder–decoder and cross-attention',15,10,1],paper:['The 2017 paper in detail',10,10,2],modern:['What modern LLMs change',20,15,2]};
 const LEVELS=['Foundation','Core','Deep dive'];
 const TOPICS={'iv-core':'Transformer fundamentals','iv-rag':'RAG and embeddings','iv-ft':'Fine-tuning and alignment','iv-agents':'Agents and tool use','iv-prod':'Evaluation and production','iv-hw':'Hardware'};
 const PATHS={full:{name:'Full depth',desc:'Exact worked examples, every interactive, the maths detail and the Python code.'},
