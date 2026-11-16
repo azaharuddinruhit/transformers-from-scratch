@@ -4,7 +4,7 @@ An interactive guide used to learn Transformers and LLMs, train an engineering t
 
 ## Files
 
-- `index.html`: home. Path choice, "Continue" button, the journey map of Parts A to D, links to the drill and the reference, and the five-session team plan.
+- `index.html`: home. Path choice, "Continue" button, the journey map of Parts A to D, links to the drill and the reference, and the six-session team plan.
 - `part-a.html` to `part-d.html`: one page per part. Each holds a `section.view#start` opener, the part's `section.ch` sections, and a `section.view#complete` milestone screen.
 - `interview.html`: the interview drill, one `section.topic` per topic. `reference.html`: glossary, notation, further learning.
 - `assets/css/`: `base.css` (theme variables, typography, controls, header, Settings menu), `content.css` (section content, code boxes, quizzes, Q&A cards), `widgets.css` (widget visuals; part pages only), `site.css` (layout and navigation; always loaded last).
@@ -15,15 +15,15 @@ An interactive guide used to learn Transformers and LLMs, train an engineering t
 ## Audience and purpose
 
 - Readers: software engineers with some ML background who have not studied Transformers.
-- Uses: self-study, live team sessions (the five-session plan on the home page), and interview drilling.
+- Uses: self-study, live team sessions (the six-session plan on the home page), and interview drilling.
 - Rules from the original spec: never fabricate pretrained weights or pretend to run a real large LLM; whenever a simulation is simplified, say exactly what is simplified.
 
 ## Structure
 
 - **Part A, the big picture**: `intro`, `why`
 - **Part B, building the model**: `tokens`, `position`, `attention`, `multihead`, `block`, `architecture`
-- **Part C, training and using it**: `training`, `generation`, `hardware`, `inference`, `openmodels`, `scaling`
-- **Part D, the wider picture**: `encdec`, `paper`
+- **Part C, training and using it**: `training`, `scaling`, `posttrain`, `generation`, `hardware`, `inference`, `openmodels`
+- **Part D, the wider picture**: `encdec`, `paper`, `modern`
 - **Interview drill** topics: `iv-core`, `iv-rag`, `iv-ft`, `iv-agents`, `iv-prod`, `iv-hw`
 - **Reference**: `glossary`, `notation`, `further`
 
@@ -63,4 +63,5 @@ Drill questions are `div.qa` blocks: `h4.q` with a `span.qn` number, `p.sample` 
 - Paper facts in "The 2017 paper in detail" (BLEU scores, model sizes, training times) were written from memory; verify them against the paper before presenting.
 - GPU figures in "GPUs and CUDA" (the table, `HW_GPUS` in `part-c.js` and the `s11b` snippet) come from NVIDIA's H100, A100, L4 and DGX Spark product pages and Appendix A of the Ada architecture whitepaper (RTX 4090), checked November 2026. NVIDIA quotes data-centre tensor throughput with sparsity; the guide shows the dense figure (half). DGX Spark has no published BF16 figure, so the guide gives none and the widget leaves out its compute limit. Keep the three copies in step.
 - Open-weight model facts in "Open-weight models" (sizes, download sizes, context lengths, licences, Ollama and vLLM behaviour) come from the ollama.com library pages, the Hugging Face model cards and docs.ollama.com / docs.vllm.ai, checked November 2026. New versions appear every few months; re-check before presenting.
+- Model configurations in "What modern LLMs change" (Llama 3.1 8B: 32 layers, 32 query heads, 8 KV heads, width 14,336; Mixtral 8x7B: 46.7B total, 12.9B active) and the Llama 3 pretraining figure (over 15 trillion tokens) in "Training an LLM" and "Scaling laws" were written from the published model cards and papers from memory; verify before presenting.
 - LangChain and LangGraph facts in the agents drill questions (Q7 to Q9) were checked against docs.langchain.com in November 2026. These APIs change often; re-check before presenting. The snippet imitates the ideas in plain Python and does not use either library.

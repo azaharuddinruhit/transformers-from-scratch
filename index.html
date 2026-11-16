@@ -67,16 +67,17 @@
 <a class="card" href="interview.html"><b>Interview drill</b><span id="drillStat">Questions with answers to reveal and mark</span></a>
 <a class="card" href="reference.html"><b>Reference</b><span>Glossary, notation and further learning</span></a>
 </div>
-<details class="callout note" id="plan"><summary>Teaching this to a team: a five-session plan</summary>
+<details class="callout note" id="plan"><summary>Teaching this to a team: a six-session plan</summary>
 <div class="scroll"><table class="numt cmp">
 <thead><tr><th>Session (60 to 75 min)</th><th>Sections</th><th>The one thing people should leave with</th></tr></thead>
 <tbody>
 <tr><th scope="row">1. What and why</th><td><a class="xref" data-ref="intro"></a>, <a class="xref" data-ref="why"></a>, <a class="xref" data-ref="tokens"></a></td><td>An LLM maps text to a probability for every next token, and text enters as vectors.</td></tr>
 <tr><th scope="row">2. Attention</th><td><a class="xref" data-ref="position"></a>, <a class="xref" data-ref="attention"></a></td><td>Attention is a weighted average, with weights from query–key dot products.</td></tr>
 <tr><th scope="row">3. The model</th><td><a class="xref" data-ref="multihead"></a>, <a class="xref" data-ref="block"></a>, <a class="xref" data-ref="architecture"></a></td><td>A Transformer is one block repeated: attention, MLP, residuals, normalisation.</td></tr>
-<tr><th scope="row">4. Training and use</th><td><a class="xref" data-ref="training"></a>, <a class="xref" data-ref="generation"></a>, <a class="xref" data-ref="hardware"></a>, <a class="xref" data-ref="inference"></a>, <a class="xref" data-ref="openmodels"></a></td><td>Training lowers surprise at real text; generation samples one token at a time; memory and bandwidth set the cost, including for the open models you can run yourself.</td></tr>
-<tr><th scope="row">5. The wider picture</th><td><a class="xref" data-ref="scaling"></a>, <a class="xref" data-ref="encdec"></a>, <a class="xref" data-ref="paper"></a></td><td>What scale buys, and how the original paper relates to today’s models.</td></tr>
-<tr><th scope="row">6. Interview practice (optional)</th><td><a href="interview.html">The interview drill</a></td><td>Pairs ask each other questions and give feedback on structure: define, why, how, trade-off, example.</td></tr>
+<tr><th scope="row">4. Training</th><td><a class="xref" data-ref="training"></a>, <a class="xref" data-ref="scaling"></a>, <a class="xref" data-ref="posttrain"></a>, <a class="xref" data-ref="generation"></a></td><td>Training lowers surprise at real text, scale sets how far it can go, post-training turns the result into an assistant, and decoding settings shape what it writes.</td></tr>
+<tr><th scope="row">5. Running models</th><td><a class="xref" data-ref="hardware"></a>, <a class="xref" data-ref="inference"></a>, <a class="xref" data-ref="openmodels"></a></td><td>Memory decides whether a model fits and bandwidth how fast it runs, including for the open models you can run yourself.</td></tr>
+<tr><th scope="row">6. The wider picture</th><td><a class="xref" data-ref="encdec"></a>, <a class="xref" data-ref="paper"></a>, <a class="xref" data-ref="modern"></a></td><td>How the original paper relates to today’s models, and what they changed.</td></tr>
+<tr><th scope="row">7. Interview practice (optional)</th><td><a href="interview.html">The interview drill</a></td><td>Pairs ask each other questions and give feedback on structure: define, why, how, trade-off, example.</td></tr>
 </tbody>
 </table></div>
 <p>A format that works: people read the sections and do the checks beforehand; the session opens with the running example, walks through one interactive together on a shared screen, and spends the rest on the “For team discussion” questions.</p></details>

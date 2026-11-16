@@ -68,4 +68,41 @@ function initLR(){
   reg(renderLR);
 }
 
-PAGE_INITS.push(initCross,initCrossKeys,initLR);
+/* ================= Modern LLMs: RoPE rotation ================= */
+const RP_PAIRS=[['fast pair · ω = 1',1],['middle pair · ω = 0.1',0.1],['slow pair · ω = 0.01',0.01]],RP_Q=[0.9,0.35],RP_K=[0.75,-0.45];
+const srp={i:5,j:1,f:0};
+function rot(v,a){return [v[0]*Math.cos(a)-v[1]*Math.sin(a),v[0]*Math.sin(a)+v[1]*Math.cos(a)];}
+function renderRope(){
+  const w=RP_PAIRS[srp.f][1],q=rot(RP_Q,srp.i*w),k=rot(RP_K,srp.j*w),score=q[0]*k[0]+q[1]*k[1],c=120,R=100;
+  const arrow=(v,cls,lab)=>{const x=c+R*v[0],y=c-R*v[1];return '<line x1="'+c+'" y1="'+c+'" x2="'+x.toFixed(1)+'" y2="'+y.toFixed(1)+'" class="rpv '+cls+'"/><circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="4" class="rpd '+cls+'"/><text x="'+(c+(R+14)*v[0]).toFixed(1)+'" y="'+(c-(R+14)*v[1]+4).toFixed(1)+'" class="rpt '+cls+'" text-anchor="middle">'+lab+'</text>';};
+  $('#rp-svg').innerHTML='<circle cx="'+c+'" cy="'+c+'" r="'+R+'" class="rpc"/><line x1="'+(c-R)+'" y1="'+c+'" x2="'+(c+R)+'" y2="'+c+'" class="rpa"/><line x1="'+c+'" y1="'+(c-R)+'" x2="'+c+'" y2="'+(c+R)+'" class="rpa"/>'+arrow(q,'q','q')+arrow(k,'k','k');
+  $('#rp-f').innerHTML=RP_PAIRS.map((p,i)=>'<button class="chip'+(i===srp.f?' on':'')+'" data-f="'+i+'" aria-pressed="'+(i===srp.f)+'">'+p[0]+'</button>').join('');
+  const deg=x=>(((x*180/Math.PI)%360)+360)%360;
+  $('#rp-stats').innerHTML='<div><b>'+(srp.i-srp.j)+'</b><span>distance i − j</span></div><div><b>'+deg(srp.i*w).toFixed(0)+'° / '+deg(srp.j*w).toFixed(0)+'°</b><span>query / key turned by</span></div><div><b>'+fmt(score,3)+'</b><span>score for this pair</span></div>';
+}
+function initRope(){
+  const set=(id,v)=>{const e=$('#'+id);e.value=v;e.dispatchEvent(new Event('input'));};
+  slider('rp-i',v=>String(v),v=>{srp.i=v;renderRope();});slider('rp-j',v=>String(v),v=>{srp.j=v;renderRope();});
+  $('#rp-f').addEventListener('click',e=>{const b=e.target.closest('button');if(b){srp.f=+b.dataset.f;renderRope();$('#rp-f button[data-f="'+srp.f+'"]').focus();}});
+  $('#rp-shift').addEventListener('click',()=>{if(srp.i>55||srp.j>55){set('rp-i',srp.i-srp.j>=0?srp.i-srp.j:0);set('rp-j',srp.i-srp.j>=0?0:srp.j-srp.i);}else{set('rp-i',srp.i+5);set('rp-j',srp.j+5);}});
+  reg(renderRope);
+}
+/* ================= Modern LLMs: grouped-query attention and the KV cache ================= */
+const sgq={kv:8,T:8192,B:1},GQ_W=8.03e9*2;
+function renderGqa(){
+  const per=2*32*sgq.kv*128*2,kv=per*sgq.T*sgq.B,mha=2*32*32*128*2*sgq.T*sgq.B,span=GQ_W+kv;
+  $('#gq-kv').innerHTML=[32,16,8,4,2,1].map(n=>'<button class="chip'+(n===sgq.kv?' on':'')+'" data-n="'+n+'" aria-pressed="'+(n===sgq.kv)+'">'+n+(n===32?' (multi-head)':n===1?' (multi-query)':'')+'</button>').join('');
+  const g=32/sgq.kv;let h='';for(let i=0;i<32;i++){const grp=Math.floor(i/g);h+='<span style="background:'+viridis(sgq.kv>1?grp/(sgq.kv-1):0.5)+'" tabindex="0" data-tip="Query head '+(i+1)+' reads key and value head '+(grp+1)+'"></span>';}
+  $('#gq-heads').innerHTML=h;
+  const seg=(cls,v,label)=>'<span class="'+cls+'" style="width:'+100*v/span+'%" tabindex="0" data-tip="'+esc(label+': '+bytes(v))+'">'+(v/span>0.14?label:'')+'</span>';
+  $('#gq-bar').innerHTML=seg('p0',GQ_W,'weights')+seg('p2',kv,'KV cache');
+  $('#gq-stats').innerHTML='<div><b>'+(per/1024).toFixed(0)+' KiB</b><span>cache per token</span></div><div><b>'+bytes(kv)+'</b><span>cache in total</span></div><div><b>'+bytes(GQ_W+kv)+'</b><span>weights + cache</span></div><div><b>'+(mha/kv).toFixed(0)+'×</b><span>smaller than multi-head</span></div>';
+}
+function initGqa(){
+  slider('gq-T',v=>Math.pow(2,v).toLocaleString('en-US')+' tokens',v=>{sgq.T=Math.pow(2,v);renderGqa();});
+  slider('gq-B',v=>String(Math.pow(2,v)),v=>{sgq.B=Math.pow(2,v);renderGqa();});
+  $('#gq-kv').addEventListener('click',e=>{const b=e.target.closest('button');if(b){sgq.kv=+b.dataset.n;renderGqa();$('#gq-kv button[data-n="'+sgq.kv+'"]').focus();}});
+  reg(renderGqa);
+}
+
+PAGE_INITS.push(initCross,initCrossKeys,initLR,initRope,initGqa);

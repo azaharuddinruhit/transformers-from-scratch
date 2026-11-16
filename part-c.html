@@ -287,12 +287,269 @@ print("sample:", "".join(chars[i] for i in idx[0]))
 <fieldset><legend>4. Training loss keeps falling but validation loss starts rising. What is happening?</legend><button type="button" class="qo">The learning rate is too low</button><button type="button" class="qo" data-ok="1">The model is memorising the training set (overfitting)</button><button type="button" class="qo">The gradient check failed</button><p class="qx" hidden aria-live="polite"><b></b> It is getting better at the examples it has seen and worse at text it has not.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>The objective is only “predict the next token”. Why does that single objective produce grammar, facts and reasoning patterns?</li><li>Train the toy model on the small dataset. What do you see, and how would you detect the same thing in a real project?</li></ul></details>
-<p class="bridge">A trained model gives a distribution at every step. <a class="xref" data-ref="generation"></a> is about how to choose a token from it.</p>
+<p class="bridge">How good a trained model gets depends on how large it is and how much it reads. <a class="xref" data-ref="scaling"></a> shows how the two trade off.</p>
+</div>
+</section>
+<section class="ch" id="scaling" data-title="Scaling laws">
+<h2>Scaling laws: model size, data and compute</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Estimate training compute from parameters and tokens.</li><li>Explain why parameters and data must grow together.</li><li>Judge from tokens per parameter whether a model was trained to the compute-optimal point or well beyond it.</li></ul></div><p class="needs"><b>Builds on</b> Parameter counts from <a class="xref" data-ref="architecture"></a> and the loss from <a class="xref" data-ref="training"></a>.</p></div>
+<div class="story"><p>The toy model in this guide has under 10,000 parameters and has seen a few hundred sentences. Predicting “mat” well in general, for any prompt, is what billions of parameters and trillions of tokens buy.</p></div>
+<p>The toy model above and a frontier LLM share the same architecture. The difference is scale: parameters, data and compute, each larger by many orders of magnitude. A striking empirical finding is that performance improves smoothly and predictably as these grow together, following what are called <b>scaling laws</b>.</p>
+<div class="flow" role="img" aria-label="Diagram: a compute budget is split between model size and training tokens, and the split sets the final loss">
+  <div><b>Compute budget</b><small>FLOPs you can afford</small></div><i>→</i>
+  <div class="fa"><b>Split it</b><small>compute ≈ 6 × N × D</small></div><i>→</i>
+  <div><b>Model size N</b><small>parameters</small></div><i>+</i>
+  <div><b>Data D</b><small>training tokens</small></div><i>→</i>
+  <div class="fa"><b>Final loss</b><small>predicted by a scaling law</small></div>
+</div>
+<ul>
+  <li><b>Model size</b> (parameters, <span class="tex">N</span>): capacity to store patterns. More parameters help only if there is enough data to fill them.</li>
+  <li><b>Dataset size</b> (tokens, <span class="tex">D</span>): how much text the model learns from.</li>
+  <li><b>Compute</b>: training cost grows with both. A standard rule of thumb is about 6 floating-point operations per parameter per training token.</li>
+  <li><b>Inference cost</b>: about 2 operations per parameter for every token generated, paid on every request for as long as the model is in service. This is why many released models are smaller than compute-optimal and trained on far more data: a smaller model is cheaper to serve.</li>
+</ul>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>Training compute.</b> One forward pass costs about 2 floating-point operations per parameter per token: each weight is used in one multiplication and one addition. The backward pass costs about twice the forward pass. Together that is roughly 6 operations per parameter per token, so for <span class="tex">N</span> parameters and <span class="tex">D</span> training tokens:</p>
+<div class="tex d">C_{\text{train}}\approx 6\,N\,D\ \ \text{FLOPs}</div>
+<p><b>Loss as a function of scale.</b> Think of the loss as having three sources: a part no model can remove because language is uncertain, a part caused by having too few parameters, and a part caused by having seen too little data. Measured curves are close to straight lines on logarithmic axes, which is the signature of a power law, so each removable part is modelled as one:</p>
+<div class="tex d">\mathcal{L}(N,D)\approx \mathcal{L}_{\infty}+\frac{a}{N^{r}}+\frac{b}{D^{s}}</div>
+<p class="sym"><span class="tex">\mathcal{L}_\infty</span> is the irreducible loss; <span class="tex">a</span>, <span class="tex">b</span> are constants; <span class="tex">r</span>, <span class="tex">s</span> are exponents between 0 and 1. This is the form fitted by Hoffmann et al. (2022).</p>
+<details class="why"><summary>What the form tells you.</summary><div class="whyb">The two fractions shrink independently. Make <span class="tex">N</span> enormous and the second term vanishes, but the third is untouched: you are left with <span class="tex">\mathcal{L}_\infty+b/D^{s}</span> however large the model. Whichever of parameters or data is scarce sets the floor, which is why the two must grow together.</div></details>
+<div class="worked">
+  <h4>Worked example</h4>
+  <p class="x-only">A model with <span class="tex">N=10^{9}</span> parameters trained on <span class="tex">D=2\times10^{10}</span> tokens needs about <span class="tex">6\times10^{9}\times2\times10^{10}=1.2\times10^{20}</span> FLOPs. That is <span class="tex">D/N=20</span> tokens per parameter, close to the compute-optimal ratio of about 20 found by Hoffmann et al. (2022). Llama 3 8B was trained on over <span class="tex">15\times10^{12}</span> tokens: about 1,900 per parameter, far past that point, because it was built to be cheap to run.</p>
+  <p class="s-only">A 1-billion-parameter model reading 20 billion tokens costs on the order of a hundred billion billion arithmetic operations to train. That is 20 tokens per parameter, about the compute-optimal ratio. Models built to be cheap to run are trained on far more: Llama 3 8B saw about 1,900 tokens per parameter.</p>
+</div>
+<details class="callout code opt"><summary>In Python: compute, memory and the scaling-law curve</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s12_scaling.py"><code>N = 1e9        # parameters
+D = 2e10       # training tokens
+
+print(f"training compute ~ 6ND = {6 * N * D:.1e} FLOPs")
+print(f"inference ~ 2N = {2 * N:.0e} FLOPs per generated token")
+print(f"tokens per parameter: {D / N:.0f} (the compute-optimal rule of thumb is ~20)")
+print(f"Llama 3 8B, over 15e12 tokens: {15e12 / 8e9:.0f} tokens per parameter")
+
+
+def loss(N, D, L_inf=1.69, a=406.4, r=0.34, b=410.7, s=0.28):
+    # Hoffmann et al. (2022), Appendix D.2, Eq. 10: their fitted constants
+    return L_inf + a / N ** r + b / D ** s
+
+
+# Growing only N leaves the data term untouched, so the loss stops improving
+for n in (1e8, 1e9, 1e10, 1e11, 1e12):
+    print(f"N={n:.0e}, D=2e10: loss {loss(n, 2e10):.3f}")
+print(f"floor with D=2e10 however large N is: {loss(float('inf'), 2e10):.3f}")
+
+# Output:
+# training compute ~ 6ND = 1.2e+20 FLOPs
+# inference ~ 2N = 2e+09 FLOPs per generated token
+# tokens per parameter: 20 (the compute-optimal rule of thumb is ~20)
+# Llama 3 8B, over 15e12 tokens: 1875 tokens per parameter
+# N=1e+08, D=2e10: loss 3.000
+# N=1e+09, D=2e10: loss 2.580
+# N=1e+10, D=2e10: loss 2.388
+# N=1e+11, D=2e10: loss 2.300
+# N=1e+12, D=2e10: loss 2.260
+# floor with D=2e10 however large N is: 2.226</code></pre></details>
+
+<div class="widget" id="w-scale">
+  <h4 class="wt">Interactive · model size, data and compute (conceptual)</h4>
+  <p class="look"><b>The point:</b> Parameters and data must grow together. <b>Do this:</b> Fix the data slider and raise the model size; then do the reverse. <b>Watch for:</b> The curve flattens when one of the two runs out, and the “Bottleneck” reading says which.</p>
+  <p class="cap"><b>Conceptual illustration, not a prediction.</b> The curve uses the functional form above with constants in the neighbourhood of one published fit. Real results depend on data quality, architecture, training recipe and what you measure. The “capability” gauge is an arbitrary rescaling of the illustrative loss.</p>
+  <div class="controls">
+    <label class="ctl"><span class="row">Model size N <output id="sc-n-o"></output></span><input type="range" id="sc-n" min="6" max="12" step="0.1" value="9"></label>
+    <label class="ctl"><span class="row">Training tokens D <output id="sc-d-o"></output></span><input type="range" id="sc-d" min="8" max="13.5" step="0.1" value="10.3"></label>
+  </div>
+  <svg id="sc-chart" role="img" aria-label="Illustrative loss as a function of model size for the chosen dataset size"></svg>
+  <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> with your dataset (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> with unlimited data (dashed)</span><span>● your model</span></div>
+  <div class="stats" id="sc-read" aria-live="polite"></div>
+  <div class="wjh"><b>What just happened?</b> Moving the model-size slider slides the dot along the solid curve. The curve flattens: past a certain size, extra parameters stop helping because the data has run out, and the gap to the dashed line shows how much is being left on the table. Raising the data slider lowers the whole solid curve. Compute is the product of the two, so balanced growth is expensive, and growing only one of them is wasteful.</div>
+</div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Bigger is always better.”</b> Only when data and compute grow too. An oversized model on too little data wastes compute and overfits.</li>
+  <li><b>“Scaling laws are laws of nature.”</b> They are empirical fits over the ranges tested, for particular setups.</li>
+  <li><b>“Compute-optimal is how every model is trained.”</b> It gives the lowest loss for a fixed training budget. A model that will answer many requests is often trained far past it, because a smaller model is cheaper to serve.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Training compute ≈ <span class="tex">6ND</span> floating-point operations.</li><li>Loss falls as a power law in both <span class="tex">N</span> and <span class="tex">D</span>; whichever is scarce sets the floor.</li><li>About 20 training tokens per parameter is compute-optimal; models built for heavy use are often trained on far more.</li><li>The curves in this section are illustrative fits, not a prediction for any particular model.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. You make the model 10 times larger but keep the dataset fixed. What limits the improvement?</legend><button type="button" class="qo" data-ok="1">The data term of the loss, which does not shrink</button><button type="button" class="qo">The vocabulary</button><button type="button" class="qo">Nothing; loss keeps falling at the same rate</button><p class="qx" hidden aria-live="polite"><b></b> Only the parameter term shrinks. The data term stays where it was.</p></fieldset>
+<fieldset><legend>2. Roughly how much compute to train 1 billion parameters on 20 billion tokens?</legend><button type="button" class="qo" data-ok="1">1.2 × 10²⁰ FLOPs</button><button type="button" class="qo">2 × 10¹⁹ FLOPs</button><button type="button" class="qo">6 × 10⁹ FLOPs</button><p class="qx" hidden aria-live="polite"><b></b> 6 × 10⁹ × 2 × 10¹⁰ = 1.2 × 10²⁰.</p></fieldset>
+<fieldset><legend>3. An 8-billion-parameter model is trained on 15 trillion tokens. Compared with the compute-optimal ratio of about 20 tokens per parameter, it is:</legend><button type="button" class="qo">Under-trained</button><button type="button" class="qo">About compute-optimal</button><button type="button" class="qo" data-ok="1">Trained far past it, to be cheaper to serve at a given quality</button><p class="qx" hidden aria-live="polite"><b></b> 15 × 10¹² ÷ 8 × 10⁹ ≈ 1,900 tokens per parameter, almost 100 times the ratio.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Given a fixed budget, when would you choose a smaller model trained on more data over a larger one?</li><li>Our model will answer millions of requests a month. Would you spend extra training compute to make it smaller, and how would you decide?</li></ul></details>
+<p class="bridge">Pretraining at any scale produces a model that continues text. <a class="xref" data-ref="posttrain"></a> turns it into an assistant that answers.</p>
+</div>
+</section>
+<section class="ch" id="posttrain" data-title="From base model to assistant">
+<h2>Post-training: from base model to assistant</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why a pretrained (base) model continues text instead of answering.</li><li>Describe supervised fine-tuning and the chat template, including which tokens carry the loss.</li><li>Explain preference tuning (RLHF and DPO) as a trade-off between reward and staying close to the starting model.</li><li>Say what a reasoning model does differently, and what it costs at inference time.</li></ul></div><p class="needs"><b>Builds on</b> The loss and teacher forcing from <a class="xref" data-ref="training"></a>; pretraining at scale from <a class="xref" data-ref="scaling"></a>.</p></div>
+<div class="story"><p>Give a base model “the cat sat on the” and it continues with “mat”. Give it “What did the cat sit on?” and it may continue with another question, as quiz pages on the web do. After post-training, the same question is followed by an answer: “The cat sat on the mat.”</p></div>
+<p>Pretraining produces a <b>base model</b>. It has absorbed a great deal of language and knowledge, but its only skill is continuing text the way the internet would. <b>Post-training</b> turns it into an assistant that follows instructions, answers in a useful format and declines harmful requests. It uses far less data than pretraining, thousands to millions of examples against trillions of tokens, because it shapes behaviour that the base model can already produce rather than teaching new knowledge.</p>
+<div class="flow" role="img" aria-label="Diagram: base model, then supervised fine-tuning on demonstrations, then preference tuning, then reinforcement learning on checkable tasks for reasoning models, giving an assistant">
+  <div><b>Base model</b><small>next-token prediction on web text</small></div><i>→</i>
+  <div class="fa"><b>Supervised fine-tuning</b><small>demonstrations in chat format</small></div><i>→</i>
+  <div class="fa"><b>Preference tuning</b><small>RLHF or DPO: prefer better answers</small></div><i>→</i>
+  <div><b>RL on checkable tasks</b><small>maths and code; makes reasoning models</small></div><i>→</i>
+  <div><b>Assistant</b><small>what you chat with</small></div>
+</div>
+
+<h3>Supervised fine-tuning and the chat template</h3>
+<p><b>Supervised fine-tuning</b> (SFT) continues training on example conversations written or checked by people. A conversation has roles (system, user, assistant), but the model reads one sequence of tokens, so a <b>chat template</b> writes the roles into the text with special tokens. Qwen and several other families use this ChatML style:</p>
+<pre class="sh"><code>&lt;|im_start|&gt;system
+You are a helpful assistant.&lt;|im_end|&gt;
+&lt;|im_start|&gt;user
+What did the cat sit on?&lt;|im_end|&gt;
+&lt;|im_start|&gt;assistant
+The cat sat on the mat.&lt;|im_end|&gt;</code></pre>
+<p><b>The question:</b> what should the model learn from this? Not to write questions like the user’s, only to answer them. So the loss from <a class="xref" data-ref="training"></a> is kept only at the positions inside assistant replies, including the end marker, so that the model also learns when to stop:</p>
+<div class="tex d">\mathcal{L}_{\text{SFT}}=-\frac{1}{|A|}\sum_{t\in A}\log p_{\theta}\!\left(w_t\mid w_{\lt t}\right)</div>
+<p class="sym"><span class="tex">A</span> is the set of positions inside assistant replies and <span class="tex">|A|</span> their number; everything else is as in pretraining. The other tokens are still read as context; they simply contribute no loss.</p>
+<div class="widget" id="w-chat">
+  <h4 class="wt">Interactive · the chat template and the loss mask</h4>
+  <p class="look"><b>The point:</b> A conversation becomes one token sequence, and only the assistant’s tokens are trained. <b>Do this:</b> Switch the system prompt off and on, add a second turn, then tick “Train on the prompt too”. <b>Watch for:</b> Which tokens are highlighted, and what share of the sequence carries the loss.</p>
+  <div class="controls">
+    <div class="ctl"><span>Turns</span><div class="chips" id="ct-turns" role="group" aria-label="Number of conversation turns"></div></div>
+    <label class="chk"><input type="checkbox" id="ct-sys" checked> System prompt</label>
+    <label class="chk"><input type="checkbox" id="ct-all"> Train on the prompt too</label>
+  </div>
+  <div class="chatseq" id="ct-seq" aria-live="polite"></div>
+  <div class="lg"><span><span class="tkkey tk-sp"></span> special token or role</span><span><span class="tkkey tk-cx"></span> context: read, no loss</span><span><span class="tkkey tk-tr"></span> trained: carries the loss</span></div>
+  <div class="stats" id="ct-stats" aria-live="polite"></div>
+  <small>What is simplified: words and punctuation stand in for tokens; a real tokenizer splits text differently, and each model family has its own template.</small>
+  <div class="wjh"><b>What just happened?</b> The template wraps every message in start and end markers with its role, and the reply begins after “assistant”. Only the reply and its end marker are highlighted, so the model is trained to produce answers, not questions; the system prompt and the user’s words shape those answers as context. With “Train on the prompt too” ticked, the model would also learn to imitate users, which is not what an assistant is for.</div>
+</div>
+<div class="callout mistake"><b>Pitfall: the wrong template</b><p>A model only behaves as trained when it sees its own template. Sending raw text, or another family’s markers, quietly degrades its answers. Ollama, vLLM and Hugging Face’s tokenizers apply the template stored with the model, so let them build the prompt from a list of messages instead of assembling the string yourself.</p></div>
+
+<h3>Preference tuning: RLHF and DPO</h3>
+<p>Demonstrations show one good answer. It is often easier to say which of two answers is better, and those judgements capture things that are hard to write down: tone, helpfulness, honesty. <b>Preference tuning</b> learns from pairs: a prompt, a preferred answer and a rejected one, judged by people or by a strong model.</p>
+<ul>
+  <li><b>RLHF</b> (reinforcement learning from human feedback) first trains a <b>reward model</b> that scores an answer, then adjusts the language model with reinforcement learning to earn higher scores.</li>
+  <li><b>DPO</b> (direct preference optimisation) skips the reward model and the reinforcement learning, and trains directly on the pairs with a loss much like classification.</li>
+</ul>
+<p><b>The question:</b> why not simply maximise the reward? Because a reward model is an imperfect judge, and a model pushed only towards its score finds the judge’s blind spots: answers that score well without being better. This is <b>reward hacking</b>. So both methods also penalise drifting away from the starting model, measured by the KL divergence, and a strength <span class="tex">\lambda</span> sets the balance. The best model for that objective has a simple form: start from the reference probabilities and reweight each answer by its reward.</p>
+<div class="tex d">\pi^{*}(y\mid\text{prompt})=\frac{1}{Z}\,\pi_{\text{ref}}(y\mid\text{prompt})\,\exp\!\left(\frac{\text{reward}(y)}{\lambda}\right)</div>
+<p class="sym"><span class="tex">y</span> is a whole answer; <span class="tex">\pi_{\text{ref}}</span> is the model before preference tuning (after SFT) and <span class="tex">\pi^{*}</span> the tuned one; <span class="tex">\lambda</span> is how strongly the tuned model is held to the reference; <span class="tex">Z</span> rescales the probabilities to add up to 1. A large <span class="tex">\lambda</span> barely moves the model; a small one chases the reward.</p>
+<div class="opt">
+<p><b>DPO’s loss.</b> For a pair with preferred answer <span class="tex">y_{+}</span> and rejected answer <span class="tex">y_{-}</span>, DPO raises the preferred answer’s probability relative to the reference and lowers the rejected one’s:</p>
+<div class="tex d">\mathcal{L}_{\text{DPO}}=-\log\operatorname{sigmoid}\!\left(\lambda\log\frac{\pi_{\theta}(y_{+}\mid\text{prompt})}{\pi_{\text{ref}}(y_{+}\mid\text{prompt})}-\lambda\log\frac{\pi_{\theta}(y_{-}\mid\text{prompt})}{\pi_{\text{ref}}(y_{-}\mid\text{prompt})}\right)</div>
+<p class="sym"><span class="tex">\pi_{\theta}</span> is the model being trained. Before training it equals the reference, both ratios are 1, and the loss is <span class="tex">\log 2\approx0.693</span>.</p>
+</div>
+<details class="why"><summary>Why does DPO not need a reward model?</summary><div class="whyb"><p>Rearranging the formula for <span class="tex">\pi^{*}</span> gives the reward in terms of the two models: <span class="tex">\text{reward}(y)=\lambda\log\frac{\pi^{*}(y)}{\pi_{\text{ref}}(y)}+\lambda\log Z</span>. The <span class="tex">\log Z</span> term cancels when two answers to the same prompt are compared, so a loss on pairs can train the policy directly, with the reward model implicit in it.</p></div></details>
+<div class="worked">
+<h4>Worked example</h4>
+<div class="x-only"><p>Three answers to “What did the cat sit on?”: A “The mat.”, B a long, flattering answer, and C “The sofa.”, which is wrong. The SFT model gives them <span class="tex">\pi_{\text{ref}}=[0.5,\ 0.3,\ 0.2]</span> and a careful reward model scores them <span class="tex">[2,\ 1,\ -2]</span>. With <span class="tex">\lambda=1</span> the weights are <span class="tex">0.5e^{2}=3.69</span>, <span class="tex">0.3e^{1}=0.82</span> and <span class="tex">0.2e^{-2}=0.027</span>; dividing by their sum, 4.54, gives <span class="tex">\pi^{*}=[0.814,\ 0.180,\ 0.006]</span>. The wrong answer almost disappears, at a KL cost of 0.284 nats. With <span class="tex">\lambda=4</span> the model moves less: <span class="tex">[0.619,\ 0.289,\ 0.091]</span>.</p></div>
+<div class="s-only"><p>Three answers: a short right one, a long flattering one and a wrong one, with probabilities 0.5, 0.3 and 0.2 before tuning. A careful reward model scores them 2, 1 and −2. After tuning with a moderate pull back to the original, the short right answer rises to about 0.81 and the wrong one falls to under 0.01.</p></div>
+</div>
+<div class="widget" id="w-pref">
+  <h4 class="wt">Interactive · preference tuning on three answers</h4>
+  <p class="look"><b>The point:</b> Preference tuning reweights the starting model towards higher reward, held back by <span class="tex">\lambda</span>. <b>Do this:</b> Lower <span class="tex">\lambda</span> with the careful reward model, then switch to the flawed one that likes long answers and lower it again. <b>Watch for:</b> How far the tuned bars move from the reference, and which answer wins when the judge is flawed.</p>
+  <div class="controls">
+    <div class="ctl"><span>Reward model</span><div class="chips" id="pf-rm" role="group" aria-label="Reward model"></div></div>
+    <label class="ctl"><span class="row">Strength of the pull back <output id="pf-lam-o"></output></span><input type="range" id="pf-lam" min="-1.5" max="1.2" step="0.05" value="0"></label>
+  </div>
+  <div id="pf-bars"></div>
+  <div class="stats" id="pf-stats" aria-live="polite"></div>
+  <small>What is simplified: a real model chooses among countless possible answers; here three whole answers stand in for them, and the rewards are hand-picked. The tuned probabilities are the exact optimum of the objective above, which RLHF approaches by gradient steps and DPO through its loss.</small>
+  <div class="wjh"><b>What just happened?</b> Each answer’s probability is multiplied by <span class="tex">e^{\text{reward}/\lambda}</span> and the three are rescaled to add up to 1. A large <span class="tex">\lambda</span> keeps the model close to where it started; a small one hands almost everything to the highest-scoring answer. With the careful judge that is the short, right answer. With the flawed judge, a small <span class="tex">\lambda</span> makes the long, flattering answer win: reward hacking. The KL figure measures how far the model has moved.</div>
+</div>
+
+<h3>Reasoning models and test-time compute</h3>
+<p>A <b>reasoning model</b> is trained further with reinforcement learning on tasks whose answers can be checked automatically, such as maths problems and code with tests. The model makes many attempts, attempts that reach the right answer are rewarded, and it learns to write out intermediate steps, often called <b>thinking</b>, before its final answer. Many problems that it fails to answer directly, it solves after a few hundred or thousand tokens of working.</p>
+<p>This moves cost from training to use. Every thinking token is a decode step (see <a class="xref" data-ref="inference"></a>), so a reasoning model answers more slowly and costs more per question; many APIs and open models such as gpt-oss offer a low, medium or high reasoning effort to choose the trade. Spending more computation per question is called <b>test-time compute</b>. Another form needs no special training: sample several answers and keep the most common one. If each attempt were right with probability 0.6 independently, a majority of 5 would be right with probability 0.68 and of 9 with probability 0.73; real attempts are correlated, so the gain is smaller.</p>
+<details class="callout code opt"><summary>In Python: chat template, preference tuning and majority voting</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s12b_posttrain.py"><code>import math
+import re
+
+# 1. A chat template turns a conversation into one token sequence (ChatML-style markers,
+#    as Qwen uses). Supervised fine-tuning puts the loss only on the assistant's reply.
+conversation = [("system", "You are a helpful assistant."),
+                ("user", "What did the cat sit on?"),
+                ("assistant", "The cat sat on the mat.")]
+tokens, trained = [], []
+for role, text in conversation:
+    words = re.findall(r"\w+|[^\w\s]", text)          # stand-in for a real tokenizer
+    is_reply = role == "assistant"
+    for piece, learn in ([("&lt;|im_start|&gt;", False), (role, False), ("\n", False)]
+                         + [(w, is_reply) for w in words]
+                         + [("&lt;|im_end|&gt;", is_reply), ("\n", False)]):
+        tokens.append(piece)
+        trained.append(learn)
+print(f"{len(tokens)} tokens, loss on {sum(trained)}:",
+      " ".join(t for t, k in zip(tokens, trained) if k))
+
+# 2. Preference tuning: the best policy for "reward minus lambda x KL from the reference"
+#    reweights the reference by exp(reward / lambda).
+answers = ["The mat.", "Great question! ... a soft woven mat ...", "The sofa."]
+ref = [0.5, 0.3, 0.2]                                  # the SFT model's probabilities
+reward = [2.0, 1.0, -2.0]                              # a careful reward model
+
+
+def tune(ref, reward, lam):
+    w = [p * math.exp(r / lam) for p, r in zip(ref, reward)]
+    return [x / sum(w) for x in w]
+
+
+for lam in (4, 1, 0.25):
+    pi = tune(ref, reward, lam)
+    kl = sum(p * math.log(p / q) for p, q in zip(pi, ref))
+    print(f"lambda={lam:&lt;4} probabilities {[round(p, 3) for p in pi]}  KL {kl:.3f} nats")
+
+# 3. DPO trains on a pair (chosen, rejected). At the start the policy equals the
+#    reference and the loss is log 2; at the optimum above the margin is the reward gap.
+def dpo_loss(pi, ref, lam, chosen, rejected):
+    margin = lam * (math.log(pi[chosen] / ref[chosen]) - math.log(pi[rejected] / ref[rejected]))
+    return -math.log(1 / (1 + math.exp(-margin)))
+
+
+lam = 1.0
+print(f"DPO loss before tuning {dpo_loss(ref, ref, lam, 0, 2):.3f}, "
+      f"at the optimum {dpo_loss(tune(ref, reward, lam), ref, lam, 0, 2):.3f}")
+
+# 4. Test-time compute: sample several attempts and take the majority answer.
+q = 0.6                                                # chance one attempt is right
+for n in (1, 5, 9):
+    p = sum(math.comb(n, k) * q**k * (1 - q)**(n - k) for k in range(n // 2 + 1, n + 1))
+    print(f"majority of {n} independent attempts is right with probability {p:.3f}")
+
+# Output:
+# 35 tokens, loss on 8: The cat sat on the mat . &lt;|im_end|&gt;
+# lambda=4    probabilities [0.619, 0.289, 0.091]  KL 0.051 nats
+# lambda=1    probabilities [0.814, 0.18, 0.006]  KL 0.284 nats
+# lambda=0.25 probabilities [0.989, 0.011, 0.0]  KL 0.639 nats
+# DPO loss before tuning 0.693, at the optimum 0.018
+# majority of 1 independent attempts is right with probability 0.600
+# majority of 5 independent attempts is right with probability 0.683
+# majority of 9 independent attempts is right with probability 0.733</code></pre></details>
+<div class="callout note"><b>Base, instruct and reasoning versions</b><p>Model cards often list several versions of one model: <i>base</i> (pretrained only, for further training), <i>instruct</i> or <i>it</i> (post-trained for chat), and sometimes a <i>thinking</i> version. For an application you almost always want the instruct or thinking version; a base model is a starting point for your own fine-tuning.</p></div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Fine-tuning is how you teach a model new facts.”</b> Post-training mostly shapes behaviour and format; the broad knowledge comes from pretraining. For facts that change, retrieval (see <a class="xref" data-ref="iv-rag"></a>) usually works better.</li>
+  <li><b>“RLHF makes a model truthful.”</b> It optimises what the judges prefer, which can include confident or flattering answers.</li>
+  <li><b>“A reasoning model’s thinking shows exactly how it reached the answer.”</b> The written steps help it, but they are generated text, not a trace of the computation.</li>
+  <li><b>Pitfall:</b> using a base model for chat. It continues your text instead of answering it.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>A base model continues text; post-training turns it into an assistant with far less data than pretraining.</li><li>SFT is the pretraining loss applied only to the assistant’s tokens, in the model’s chat template.</li><li>Preference tuning reweights the model towards higher reward while a KL penalty, strength <span class="tex">\lambda</span>, keeps it close to where it started.</li><li>Too weak a penalty with an imperfect reward model leads to reward hacking.</li><li>Reasoning models spend extra output tokens thinking: better answers on hard problems, at higher latency and cost.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. In supervised fine-tuning on a chat, which tokens contribute to the loss?</legend><button type="button" class="qo">Every token in the conversation</button><button type="button" class="qo" data-ok="1">The assistant’s reply and its end marker</button><button type="button" class="qo">Only the user’s question</button><p class="qx" hidden aria-live="polite"><b></b> The rest is context. Training on it would teach the model to write prompts as well as answers.</p></fieldset>
+<fieldset><legend>2. During preference tuning, the KL penalty strength <span class="tex">\lambda</span> is made very small. What is the main risk?</legend><button type="button" class="qo">The model barely changes</button><button type="button" class="qo" data-ok="1">The model chases the reward model’s blind spots (reward hacking)</button><button type="button" class="qo">Training becomes slower</button><p class="qx" hidden aria-live="polite"><b></b> With little pull back to the reference, any flaw in the judge is exploited fully.</p></fieldset>
+<fieldset><legend>3. Why does a reasoning model usually take longer to answer?</legend><button type="button" class="qo">It has more parameters</button><button type="button" class="qo" data-ok="1">It generates many thinking tokens before the answer</button><button type="button" class="qo">It runs at a higher temperature</button><p class="qx" hidden aria-live="polite"><b></b> Each thinking token is a decode step, so latency and cost grow with the length of the working.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Which of our tasks would we fine-tune for, and which are better served by a good prompt and retrieval?</li><li>If we used a model to judge answers for preference tuning or evaluation, what blind spots might it have, and how would we notice reward hacking?</li></ul></details>
+<p class="bridge">Base or assistant, the model still gives one distribution per step. <a class="xref" data-ref="generation"></a> is about how to choose a token from it.</p>
 </div>
 </section>
 <section class="ch" id="generation" data-title="Generation and decoding">
 <h2>Generation and decoding</h2>
-<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain how temperature reshapes the distribution and why.</li><li>Describe greedy decoding, top-k and top-p and when each is useful.</li><li>Predict qualitatively what a change of settings does to the output.</li></ul></div><p class="needs"><b>Builds on</b> Softmax and the generation loop from <a class="xref" data-ref="intro"></a>; a trained model from <a class="xref" data-ref="training"></a>.</p></div>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain how temperature reshapes the distribution and why.</li><li>Describe greedy decoding, top-k and top-p and when each is useful.</li><li>Predict qualitatively what a change of settings does to the output.</li></ul></div><p class="needs"><b>Builds on</b> Softmax and the generation loop from <a class="xref" data-ref="intro"></a>; a trained model from <a class="xref" data-ref="training"></a>, made into an assistant in <a class="xref" data-ref="posttrain"></a>.</p></div>
 <div class="story"><p>The model offers “mat” 0.44, “sofa” 0.24 and a long tail. Greedy decoding always writes “mat”. Sampling writes “sofa” about one time in four. The chosen token is appended and the model runs again.</p></div>
 <p>A trained model gives a probability distribution. Turning that into text needs a rule for choosing one token, then a loop: append the chosen token to the input and ask again. This is <b>autoregressive generation</b>, and the choosing rule is the <b>decoding strategy</b>. The same model can sound cautious or wild depending on that rule alone.</p>
 <div class="flow" role="img" aria-label="Diagram of the generation loop: context, model, logits, temperature, top-k and top-p filtering, sample, append">
@@ -639,7 +896,7 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
   <div class="stack" id="hw-bar" role="img" aria-label="Stacked bar of GPU memory: weights, KV cache, allowance and free space"></div>
   <p class="readout" id="hw-fit" aria-live="polite"></p>
   <div class="stats" id="hw-stats" aria-live="polite"></div>
-  <small>What is simplified: the KV cache is stored at 16 bits with keys and values of full width <span class="tex">d_{\text{model}}</span>, so models that use grouped-query attention need several times less; the 20% allowance stands in for overheads that vary with the software; several GPUs are assumed to split the model evenly with no time lost to communication; speeds are upper bounds from the published peak figures, ignoring attention’s own cost. DGX Spark has no published BF16 figure, so its compute limit is left out, and its memory is also used by the operating system. Model shapes are typical for each size class, not a particular released model.</small>
+  <small>What is simplified: the KV cache is stored at 16 bits with keys and values of full width <span class="tex">d_{\text{model}}</span>, so models that use grouped-query attention (see <a class="xref" data-ref="modern"></a>) need several times less; the 20% allowance stands in for overheads that vary with the software; several GPUs are assumed to split the model evenly with no time lost to communication; speeds are upper bounds from the published peak figures, ignoring attention’s own cost. DGX Spark has no published BF16 figure, so its compute limit is left out, and its memory is also used by the operating system. Model shapes are typical for each size class, not a particular released model.</small>
   <div class="wjh"><b>What just happened?</b> The weights are fixed by the parameter count and the format, so changing the format moves the blue bar most. The KV cache grows with context length and with every extra request, and at long contexts it overtakes the weights. Devices with the same memory give the same verdict but different speeds, because speed follows bandwidth: the DGX Spark holds what an H100 cannot, yet generates more slowly than any card here. Adding GPUs adds memory and bandwidth together.</div>
 </div>
 <div class="callout try opt"><b>Try this</b><p>1. 7B model in bf16 on an RTX 4090: raise the context to 131,072 tokens and watch the KV cache overtake the weights. 2. Switch the GPU to the L4: same verdict, under a third of the speed. 3. 70B model in int4: compare one H100 with one DGX Spark.</p></div>
@@ -698,7 +955,7 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
   <li><b>Prompt caching</b>: keeping the KV cache of a prefix that many requests share, such as a long system prompt, so its prefill is paid once.</li>
   <li><b>Beam search</b>: keeping several candidate continuations alive and choosing the most probable overall. Common in translation; rare in chat models, where sampling gives more natural text.</li>
   <li><b>FlashAttention</b>: computes attention in tiles that fit in the GPU’s fast on-chip memory, so the full <span class="tex">T\times T</span> score matrix is never written out. The result is exact; it saves memory traffic, which is what makes long contexts affordable. Some long-context models also use <b>sliding-window attention</b> in some layers, where each token attends only to the most recent few thousand tokens.</li>
-  <li><b>A smaller cache</b>: most current models share each key and value head between several query heads (grouped-query attention), which divides the cache by the same factor.</li>
+  <li><b>A smaller cache</b>: most current models share each key and value head between several query heads (grouped-query attention, see <a class="xref" data-ref="modern"></a>), which divides the cache by the same factor.</li>
   <li><b>Speculative decoding</b>: a small, fast model drafts a few tokens and the large model checks them in one parallel pass, keeping those it agrees with. Done correctly, the output distribution is unchanged and only the speed improves.</li>
 </ul>
 <h3>The equations, and the reasoning behind them</h3>
@@ -912,7 +1169,7 @@ for B in (1, 16, 256):
 
 <h3>Will it fit, and how fast will it be?</h3>
 <p><b>The question:</b> will a given model fit, and how many tokens per second can it produce? Memory follows the rule from <a class="xref" data-ref="hardware"></a>: about 1.2 × (weights + KV cache). An Ollama download is the weights, already quantized (usually to about 4 bits), so its size is a good first estimate of the weights term.</p>
-<p>Speed follows the bound from <a class="xref" data-ref="hardware"></a>: bandwidth divided by the bytes read per token. One twist matters here. In a <b>mixture-of-experts</b> model a router sends each token through only a few of each block’s expert MLPs. Every expert must be in memory, so memory follows the <i>total</i> parameter count; but each token reads only the <i>active</i> parameters, so in the speed bound <span class="tex">N</span> becomes the active count.</p>
+<p>Speed follows the bound from <a class="xref" data-ref="hardware"></a>: bandwidth divided by the bytes read per token. One twist matters here. In a <b>mixture-of-experts</b> model (see <a class="xref" data-ref="modern"></a>) a router sends each token through only a few of each block’s expert MLPs. Every expert must be in memory, so memory follows the <i>total</i> parameter count; but each token reads only the <i>active</i> parameters, so in the speed bound <span class="tex">N</span> becomes the active count.</p>
 <details class="why"><summary>Why is a mixture-of-experts model not simply a small model?</summary><div class="whyb"><p>Its 21 billion parameters store more knowledge and skills than a dense 3.6-billion-parameter model can, while each token pays the reading cost of only 3.6 billion. The price is memory: a dense model with the same speed would need about a sixth of the space.</p></div></details>
 <div class="worked">
 <div class="x-only"><p><b>Does it fit?</b> On the 24 GB card, apply the 1.2 margin to the Ollama download sizes:</p>
@@ -1037,102 +1294,7 @@ print(f"{used['prompt_tokens']} prompt tokens, {used['completion_tokens']} outpu
 <fieldset><legend>3. You send a 6,000-token document to a model in Ollama, and the answers ignore its first part. What is the likely cause?</legend><button type="button" class="qo">The model is too small</button><button type="button" class="qo" data-ok="1">The 4,096-token default context cut the prompt</button><button type="button" class="qo">The temperature is too high</button><p class="qx" hidden aria-live="polite"><b></b> Ollama uses a 4,096-token context unless you raise it, so the start of a longer prompt is dropped.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>Which of our workloads must not leave our network? Could a 20B to 30B open model handle them, and how would we measure that?</li><li>Who would look after a GPU server: updates, monitoring, model upgrades? How does that cost compare with an API bill?</li></ul></details>
-<p class="bridge">Open models range from 1B to 671B parameters. <a class="xref" data-ref="scaling"></a> asks what all that size buys.</p>
-</div>
-</section>
-<section class="ch" id="scaling" data-title="Scaling and practicalities">
-<h2>Scaling laws and LLM practicalities</h2>
-<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Estimate training compute from parameters and tokens.</li><li>Explain why parameters and data must grow together.</li><li>Judge from tokens per parameter whether a model was trained to the compute-optimal point or well beyond it.</li></ul></div><p class="needs"><b>Builds on</b> Parameter counts from <a class="xref" data-ref="architecture"></a> and the loss from <a class="xref" data-ref="training"></a>.</p></div>
-<div class="story"><p>The toy model in this guide has under 10,000 parameters and has seen a few hundred sentences. Predicting “mat” well in general, for any prompt, is what billions of parameters and trillions of tokens buy.</p></div>
-<p>The toy model above and a frontier LLM share the same architecture. The difference is scale: parameters, data and compute, each larger by many orders of magnitude. A striking empirical finding is that performance improves smoothly and predictably as these grow together, following what are called <b>scaling laws</b>.</p>
-<div class="flow" role="img" aria-label="Diagram: a compute budget is split between model size and training tokens, and the split sets the final loss">
-  <div><b>Compute budget</b><small>FLOPs you can afford</small></div><i>→</i>
-  <div class="fa"><b>Split it</b><small>compute ≈ 6 × N × D</small></div><i>→</i>
-  <div><b>Model size N</b><small>parameters</small></div><i>+</i>
-  <div><b>Data D</b><small>training tokens</small></div><i>→</i>
-  <div class="fa"><b>Final loss</b><small>predicted by a scaling law</small></div>
-</div>
-<ul>
-  <li><b>Model size</b> (parameters, <span class="tex">N</span>): capacity to store patterns. More parameters help only if there is enough data to fill them.</li>
-  <li><b>Dataset size</b> (tokens, <span class="tex">D</span>): how much text the model learns from.</li>
-  <li><b>Compute</b>: training cost grows with both. A standard rule of thumb is about 6 floating-point operations per parameter per training token.</li>
-  <li><b>Inference cost</b>: about 2 operations per parameter for every token generated, paid on every request for as long as the model is in service. This is why many released models are smaller than compute-optimal and trained on far more data: a smaller model is cheaper to serve.</li>
-</ul>
-<h3>The equations, and the reasoning behind them</h3>
-<p><b>Training compute.</b> One forward pass costs about 2 floating-point operations per parameter per token: each weight is used in one multiplication and one addition. The backward pass costs about twice the forward pass. Together that is roughly 6 operations per parameter per token, so for <span class="tex">N</span> parameters and <span class="tex">D</span> training tokens:</p>
-<div class="tex d">C_{\text{train}}\approx 6\,N\,D\ \ \text{FLOPs}</div>
-<p><b>Loss as a function of scale.</b> Think of the loss as having three sources: a part no model can remove because language is uncertain, a part caused by having too few parameters, and a part caused by having seen too little data. Measured curves are close to straight lines on logarithmic axes, which is the signature of a power law, so each removable part is modelled as one:</p>
-<div class="tex d">\mathcal{L}(N,D)\approx \mathcal{L}_{\infty}+\frac{a}{N^{r}}+\frac{b}{D^{s}}</div>
-<p class="sym"><span class="tex">\mathcal{L}_\infty</span> is the irreducible loss; <span class="tex">a</span>, <span class="tex">b</span> are constants; <span class="tex">r</span>, <span class="tex">s</span> are exponents between 0 and 1. This is the form fitted by Hoffmann et al. (2022).</p>
-<details class="why"><summary>What the form tells you.</summary><div class="whyb">The two fractions shrink independently. Make <span class="tex">N</span> enormous and the second term vanishes, but the third is untouched: you are left with <span class="tex">\mathcal{L}_\infty+b/D^{s}</span> however large the model. Whichever of parameters or data is scarce sets the floor, which is why the two must grow together.</div></details>
-<div class="worked">
-  <h4>Worked example</h4>
-  <p class="x-only">A model with <span class="tex">N=10^{9}</span> parameters trained on <span class="tex">D=2\times10^{10}</span> tokens needs about <span class="tex">6\times10^{9}\times2\times10^{10}=1.2\times10^{20}</span> FLOPs. That is <span class="tex">D/N=20</span> tokens per parameter, close to the compute-optimal ratio of about 20 found by Hoffmann et al. (2022). Llama 3 8B was trained on over <span class="tex">15\times10^{12}</span> tokens: about 1,900 per parameter, far past that point, because it was built to be cheap to run.</p>
-  <p class="s-only">A 1-billion-parameter model reading 20 billion tokens costs on the order of a hundred billion billion arithmetic operations to train. That is 20 tokens per parameter, about the compute-optimal ratio. Models built to be cheap to run are trained on far more: Llama 3 8B saw about 1,900 tokens per parameter.</p>
-</div>
-<details class="callout code opt"><summary>In Python: compute, memory and the scaling-law curve</summary>
-<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
-<pre class="py" data-src="s12_scaling.py"><code>N = 1e9        # parameters
-D = 2e10       # training tokens
-
-print(f"training compute ~ 6ND = {6 * N * D:.1e} FLOPs")
-print(f"inference ~ 2N = {2 * N:.0e} FLOPs per generated token")
-print(f"tokens per parameter: {D / N:.0f} (the compute-optimal rule of thumb is ~20)")
-print(f"Llama 3 8B, over 15e12 tokens: {15e12 / 8e9:.0f} tokens per parameter")
-
-
-def loss(N, D, L_inf=1.69, a=406.4, r=0.34, b=410.7, s=0.28):
-    # Hoffmann et al. (2022), Appendix D.2, Eq. 10: their fitted constants
-    return L_inf + a / N ** r + b / D ** s
-
-
-# Growing only N leaves the data term untouched, so the loss stops improving
-for n in (1e8, 1e9, 1e10, 1e11, 1e12):
-    print(f"N={n:.0e}, D=2e10: loss {loss(n, 2e10):.3f}")
-print(f"floor with D=2e10 however large N is: {loss(float('inf'), 2e10):.3f}")
-
-# Output:
-# training compute ~ 6ND = 1.2e+20 FLOPs
-# inference ~ 2N = 2e+09 FLOPs per generated token
-# tokens per parameter: 20 (the compute-optimal rule of thumb is ~20)
-# Llama 3 8B, over 15e12 tokens: 1875 tokens per parameter
-# N=1e+08, D=2e10: loss 3.000
-# N=1e+09, D=2e10: loss 2.580
-# N=1e+10, D=2e10: loss 2.388
-# N=1e+11, D=2e10: loss 2.300
-# N=1e+12, D=2e10: loss 2.260
-# floor with D=2e10 however large N is: 2.226</code></pre></details>
-
-<div class="widget" id="w-scale">
-  <h4 class="wt">Interactive · model size, data and compute (conceptual)</h4>
-  <p class="look"><b>The point:</b> Parameters and data must grow together. <b>Do this:</b> Fix the data slider and raise the model size; then do the reverse. <b>Watch for:</b> The curve flattens when one of the two runs out, and the “Bottleneck” reading says which.</p>
-  <p class="cap"><b>Conceptual illustration, not a prediction.</b> The curve uses the functional form above with constants in the neighbourhood of one published fit. Real results depend on data quality, architecture, training recipe and what you measure. The “capability” gauge is an arbitrary rescaling of the illustrative loss.</p>
-  <div class="controls">
-    <label class="ctl"><span class="row">Model size N <output id="sc-n-o"></output></span><input type="range" id="sc-n" min="6" max="12" step="0.1" value="9"></label>
-    <label class="ctl"><span class="row">Training tokens D <output id="sc-d-o"></output></span><input type="range" id="sc-d" min="8" max="13.5" step="0.1" value="10.3"></label>
-  </div>
-  <svg id="sc-chart" role="img" aria-label="Illustrative loss as a function of model size for the chosen dataset size"></svg>
-  <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> with your dataset (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> with unlimited data (dashed)</span><span>● your model</span></div>
-  <div class="stats" id="sc-read" aria-live="polite"></div>
-  <div class="wjh"><b>What just happened?</b> Moving the model-size slider slides the dot along the solid curve. The curve flattens: past a certain size, extra parameters stop helping because the data has run out, and the gap to the dashed line shows how much is being left on the table. Raising the data slider lowers the whole solid curve. Compute is the product of the two, so balanced growth is expensive, and growing only one of them is wasteful.</div>
-</div>
-<h3 class="opt">Common misconceptions</h3>
-<ul class="pit opt">
-  <li><b>“Bigger is always better.”</b> Only when data and compute grow too. An oversized model on too little data wastes compute and overfits.</li>
-  <li><b>“Scaling laws are laws of nature.”</b> They are empirical fits over the ranges tested, for particular setups.</li>
-  <li><b>“Compute-optimal is how every model is trained.”</b> It gives the lowest loss for a fixed training budget. A model that will answer many requests is often trained far past it, because a smaller model is cheaper to serve.</li>
-</ul>
-<div class="wrapup">
-<h3>Key takeaways</h3>
-<ul class="take"><li>Training compute ≈ <span class="tex">6ND</span> floating-point operations.</li><li>Loss falls as a power law in both <span class="tex">N</span> and <span class="tex">D</span>; whichever is scarce sets the floor.</li><li>About 20 training tokens per parameter is compute-optimal; models built for heavy use are often trained on far more.</li><li>The curves in this section are illustrative fits, not a prediction for any particular model.</li></ul>
-<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
-<div class="quiz">
-<fieldset><legend>1. You make the model 10 times larger but keep the dataset fixed. What limits the improvement?</legend><button type="button" class="qo" data-ok="1">The data term of the loss, which does not shrink</button><button type="button" class="qo">The vocabulary</button><button type="button" class="qo">Nothing; loss keeps falling at the same rate</button><p class="qx" hidden aria-live="polite"><b></b> Only the parameter term shrinks. The data term stays where it was.</p></fieldset>
-<fieldset><legend>2. Roughly how much compute to train 1 billion parameters on 20 billion tokens?</legend><button type="button" class="qo" data-ok="1">1.2 × 10²⁰ FLOPs</button><button type="button" class="qo">2 × 10¹⁹ FLOPs</button><button type="button" class="qo">6 × 10⁹ FLOPs</button><p class="qx" hidden aria-live="polite"><b></b> 6 × 10⁹ × 2 × 10¹⁰ = 1.2 × 10²⁰.</p></fieldset>
-<fieldset><legend>3. An 8-billion-parameter model is trained on 15 trillion tokens. Compared with the compute-optimal ratio of about 20 tokens per parameter, it is:</legend><button type="button" class="qo">Under-trained</button><button type="button" class="qo">About compute-optimal</button><button type="button" class="qo" data-ok="1">Trained far past it, to be cheaper to serve at a given quality</button><p class="qx" hidden aria-live="polite"><b></b> 15 × 10¹² ÷ 8 × 10⁹ ≈ 1,900 tokens per parameter, almost 100 times the ratio.</p></fieldset>
-</div>
-<details class="talk"><summary>For team discussion</summary><ul><li>Given a fixed budget, when would you choose a smaller model trained on more data over a larger one?</li><li>Our model will answer millions of requests a month. Would you spend extra training compute to make it smaller, and how would you decide?</li></ul></details>
-<p class="bridge">Everything so far concerned decoder-only models. <a class="xref" data-ref="encdec"></a> covers the other branch of the family.</p>
+<p class="bridge">Every model here is a decoder-only Transformer. <a class="xref" data-ref="encdec"></a> covers the other branch of the family, and <a class="xref" data-ref="modern"></a> what today’s models change.</p>
 </div>
 </section>
 <section class="view complete" id="complete" data-title="Part C complete"><div id="partDone"></div></section>
