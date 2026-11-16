@@ -25,7 +25,7 @@ An interactive guide used to learn Transformers and LLMs, train an engineering t
 - **Part C, training and using it**: `training`, `scaling`, `posttrain`, `prefs`, `generation`, `inference`, `hardware`, `openmodels`
 - **Part D, the wider picture**: `encdec`, `paper`, `modern`
 - **Interview drill** topics: `iv-core`, `iv-rag`, `iv-ft`, `iv-agents`, `iv-prod`, `iv-hw`
-- **Reference**: `glossary`, `notation`, `further`
+- **Reference**: `maths` (the maths refresher, linked from the home page), `glossary`, `notation`, `further`
 
 `site.js` holds the registry: `PARTS` (part id, name, goal, section ids), `SECS` (section id → title, minutes on Full depth, minutes on Quick tour, level as an index into `LEVELS`: Foundation, Core or Deep dive, shown as the `.lvl` pill in the meta line) and `TOPICS`. Adding, moving or renaming a section means editing the page and these entries; nothing else is numbered by hand. Study minutes are words / 110 + 3 per interactive, rounded to 5, without code boxes (Full depth drops `.s-only`; Quick tour drops `.opt` and `.x-only`); recount when a section changes a lot.
 

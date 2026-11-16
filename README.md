@@ -27,6 +27,7 @@ Highlights:
 - Progress (sections done, quiz answers, drill marks, where you left off) is saved in your browser only, so it does not sync between devices. Settings has a progress reset, the path, a Light, Dark or Auto theme, and whether code boxes start expanded.
 - On phones, a floating bar with previous and next buttons, the current section and a progress line; tapping it opens the contents as a bottom sheet.
 - A six-session plan on the home page for teaching the material to a team.
+- "The maths you need": a 15-minute refresher on dot products, matrices, logs, softmax, variance and gradients, linked from the home page.
 
 All numbers are computed in the browser. No pretrained model is used; where a demonstration is simplified (hand-picked attention weights, illustrative scaling curves), the page says so.
 

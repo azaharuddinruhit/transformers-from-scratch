@@ -21,7 +21,8 @@ const partUrl=p=>'part-'+p.id+'.html';
 function refInfo(id){
   if(SECS[id])return{href:partUrl(partOf(id))+'#'+id,text:SECS[id][0]};
   if(TOPICS[id])return{href:'interview.html#'+id,text:'Interview drill: '+TOPICS[id]};
-  if(id==='glossary'||id==='notation')return{href:'reference.html#'+id,text:id==='glossary'?'Glossary':'Notation'};
+  const REF={maths:'The maths you need',glossary:'Glossary',notation:'Notation'};
+  if(REF[id])return{href:'reference.html#'+id,text:REF[id]};
   return null;
 }
 const fmtMin=m=>m>=60?Math.floor(m/60)+' h'+(m%60?' '+m%60+' min':''):m+' min';
