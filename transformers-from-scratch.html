@@ -2247,11 +2247,11 @@ print("tau=2.0:  ", repr(generate("the ", 30, rng, tau=2.0)))
 <h2>Hardware: GPUs and CUDA</h2>
 <div class="start">
   <div><b>Before this section</b><p>Matrix multiplications from <a class="xref" data-ref="attention"></a> and <a class="xref" data-ref="block"></a>; parameter counts from <a class="xref" data-ref="architecture"></a>; the training loop from <a class="xref" data-ref="training"></a>.</p></div>
-  <div><b>After it, you can</b><ul><li>Explain why GPUs, not CPUs, run Transformers.</li><li>Read a GPU’s specification: memory, bandwidth and tensor throughput.</li><li>Say what the CUDA driver, toolkit and libraries each do, and fix the usual version mismatch.</li><li>Work out whether a model fits on a GPU at a given precision, and roughly how fast it will generate.</li><li>Choose between one GPU and several, and between local hardware, the cloud and an API.</li></ul></div>
+  <div><b>After it, you can</b><ul><li>Explain why GPUs, not CPUs, run Transformers.</li><li>Read a GPU’s specification: memory, bandwidth and tensor throughput.</li><li>Say what the CUDA driver, toolkit and libraries each do, and fix the usual version mismatch.</li><li>Work out whether a model fits on a GPU, and roughly how fast it will generate.</li></ul></div>
   <div class="ex"><b>The running example</b><p>A team wants to run a model with 7 billion parameters on one 24 GB graphics card. In 16-bit numbers the weights alone take 14 GB. Is there room for a 4,096-token conversation, and how many tokens per second will the card produce?</p></div>
 </div>
-<p>Almost all the work in a Transformer is matrix multiplication: every token’s vector times every weight matrix, in every layer. That work is billions of multiply-adds that do not depend on each other, so they can all run at once. A CPU has a few dozen powerful cores built to run varied, branching code quickly, one step after another. A GPU has thousands of simpler cores that apply the same instruction to many numbers at the same time. Recent GPUs add <b>tensor cores</b>: units that multiply a small block of a matrix in one step at reduced precision. For this kind of work, one GPU does far more arithmetic per second than a CPU.</p>
-<p>A GPU also has its own memory, often called <b>VRAM</b>, separate from the computer’s main memory. The weights, the KV cache (<a class="xref" data-ref="inference"></a>) and the intermediate values must all be in it while the model runs. Two figures matter: <b>capacity</b>, which decides whether a model fits at all, and <b>bandwidth</b>, the bytes per second the GPU can read from that memory, which decides how fast it generates. Data-centre GPUs use stacked HBM memory, much faster than the GDDR memory on consumer cards.</p>
+<p>Almost all the work in a Transformer is matrix multiplication: billions of multiply-adds that do not depend on each other. A CPU has a few dozen powerful cores built for varied, step-by-step code. A GPU has thousands of simpler cores that apply one instruction to many numbers at once, plus <b>tensor cores</b> that multiply a small block of a matrix in one step at reduced precision.</p>
+<p>A GPU has its own memory, often called <b>VRAM</b>. The weights, the KV cache (<a class="xref" data-ref="inference"></a>) and the intermediate values must all fit in it. Two figures matter: <b>capacity</b> decides whether a model fits at all; <b>bandwidth</b>, the bytes per second the GPU can read from that memory, decides how fast it generates.</p>
 <div class="flow" role="img" aria-label="Diagram: your Python code calls PyTorch, which calls CUDA libraries such as cuBLAS and cuDNN; they launch kernels that run on the GPU through the NVIDIA driver">
   <div><b>Your code</b><small>PyTorch: <code>model.to("cuda")</code></small></div><i>→</i>
   <div class="fa"><b>CUDA libraries</b><small>cuBLAS, cuDNN, NCCL · shipped with PyTorch</small></div><i>→</i>
@@ -2260,47 +2260,44 @@ print("tau=2.0:  ", repr(generate("the ", 30, rng, tau=2.0)))
   <div><b>GPU</b><small>cores, tensor cores, VRAM</small></div>
 </div>
 <h3>What “CUDA” means</h3>
-<p><b>CUDA</b> is NVIDIA’s platform for running general-purpose programs on its GPUs. Several separately versioned pieces are all called “CUDA”, and most installation problems come from mixing them up:</p>
+<p><b>CUDA</b> is NVIDIA’s platform for running general-purpose programs on its GPUs. Several separately versioned pieces share the name, and most installation problems come from mixing them up:</p>
 <ul>
-  <li><b>Driver</b>: part of the operating system; it talks to the hardware. Each driver supports CUDA up to a certain version. <code>nvidia-smi</code> prints the driver version and that highest supported CUDA version, which is not necessarily a version you have installed.</li>
-  <li><b>Toolkit and runtime</b>: the compiler (<code>nvcc</code>) and libraries used to build and run GPU programs. PyTorch’s pip packages bring the runtime libraries they need, so for PyTorch you usually need only a recent enough driver, not a separate toolkit.</li>
-  <li><b>Kernel</b>: a function that runs on the GPU, launched across many threads at once. PyTorch calls a ready-made kernel for each operation, so you rarely write one yourself.</li>
-  <li><b>Libraries</b>: cuBLAS for matrix multiplication, cuDNN for neural-network operations, NCCL for moving data between GPUs.</li>
-  <li><b>PyTorch’s build</b>: each PyTorch package is built for one CUDA version, shown by <code>torch.version.cuda</code>, or for the CPU only, where it shows <code>None</code>.</li>
+  <li><b>Driver</b>: part of the operating system. <code>nvidia-smi</code> prints its version and the newest CUDA version it supports, which is not necessarily one you have installed.</li>
+  <li><b>Toolkit and runtime</b>: the compiler (<code>nvcc</code>) and libraries for building and running GPU programs. PyTorch’s pip packages bring the runtime they need, so for PyTorch you usually need only a recent enough driver.</li>
+  <li><b>Kernels and libraries</b>: a kernel is a function that runs on the GPU across many threads at once. PyTorch calls ready-made ones from cuBLAS (matrix multiplication), cuDNN (neural-network operations) and NCCL (traffic between GPUs).</li>
+  <li><b>PyTorch’s build</b>: each package is built for one CUDA version, shown by <code>torch.version.cuda</code>, or for the CPU only (<code>None</code>).</li>
 </ul>
-<p>Two errors catch almost everyone. <code>torch.cuda.is_available()</code> returns <code>False</code> on a machine with an NVIDIA GPU, usually because a CPU-only PyTorch is installed or the driver is missing. “CUDA driver version is insufficient for CUDA runtime version” means the driver is older than the CUDA version PyTorch was built for. The fix for both is to install the PyTorch build that matches the driver, or to update the driver. Other vendors have their own stacks: AMD’s ROCm, which PyTorch exposes through the same <code>torch.cuda</code> calls, and Apple’s Metal, used through the <code>"mps"</code> device.</p>
+<p>Two errors catch almost everyone. <code>torch.cuda.is_available()</code> returning <code>False</code> usually means a CPU-only PyTorch or a missing driver. “CUDA driver version is insufficient for CUDA runtime version” means the driver is older than the CUDA version PyTorch was built for. Either way, install the PyTorch build that matches the driver, or update the driver. AMD’s ROCm is used through the same <code>torch.cuda</code> calls; Apple’s GPUs through the <code>"mps"</code> device.</p>
 <h3>Number formats</h3>
-<p>Every weight is stored in some number format. The format sets the memory each weight takes, and with it how many weights fit and how quickly they can be read; tensor cores also run faster on narrower formats.</p>
+<p>The format of each weight sets how many bytes it takes, and so how many weights fit and how quickly they can be read; tensor cores also run faster on narrower formats.</p>
 <div class="scroll"><table class="numt cmp">
   <thead><tr><th>Format</th><th>Bytes per number</th><th>Range</th><th>Where it is used</th></tr></thead>
   <tbody>
-    <tr><th scope="row">fp32</th><td>4</td><td>up to about <span class="tex">3.4\times10^{38}</span></td><td>The traditional default; master weights and optimizer state in training.</td></tr>
-    <tr><th scope="row">fp16</th><td>2</td><td>up to 65,504</td><td>Inference on older GPUs. Training needs loss scaling to stop small gradients vanishing and large values overflowing.</td></tr>
-    <tr><th scope="row">bf16</th><td>2</td><td>up to about <span class="tex">3.4\times10^{38}</span></td><td>Today’s usual format for training and inference: the range of fp32 with less precision. Needs an A100, an RTX 30-series card or newer.</td></tr>
-    <tr><th scope="row">fp8</th><td>1</td><td>up to 448 or 57,344 (two variants)</td><td>Tensor cores on H100, L4 and RTX 40-series cards; used for the fastest training and inference.</td></tr>
-    <tr><th scope="row">int8</th><td>1</td><td>integers −128 to 127, times a stored scale</td><td>Quantized weights for inference.</td></tr>
-    <tr><th scope="row">int4</th><td>0.5</td><td>integers −8 to 7, times a scale for each small group</td><td>Quantized weights for inference, common for running models locally.</td></tr>
+    <tr><th scope="row">fp32</th><td>4</td><td>up to about <span class="tex">3.4\times10^{38}</span></td><td>Master weights and optimizer state in training.</td></tr>
+    <tr><th scope="row">fp16</th><td>2</td><td>up to 65,504</td><td>Older GPUs; training needs loss scaling to avoid overflow.</td></tr>
+    <tr><th scope="row">bf16</th><td>2</td><td>up to about <span class="tex">3.4\times10^{38}</span></td><td>The usual format today: fp32’s range, less precision. A100, RTX 30-series or newer.</td></tr>
+    <tr><th scope="row">fp8</th><td>1</td><td>up to 448 or 57,344 (two variants)</td><td>Tensor cores on H100, L4 and RTX 40-series cards.</td></tr>
+    <tr><th scope="row">int8</th><td>1</td><td>−128 to 127, times a stored scale</td><td>Quantized inference weights; usually little quality loss.</td></tr>
+    <tr><th scope="row">int4</th><td>0.5</td><td>−8 to 7, times a scale per small group</td><td>Quantized weights for local models; check quality on your own task.</td></tr>
   </tbody>
 </table></div>
-<p>Quantized formats store integers and a scale to multiply them by. Eight-bit weights usually cost little quality; four-bit costs more, so check the result on your own evaluation.</p>
 <h3>The equations, and the reasoning behind them</h3>
-<p><b>Will the model fit?</b> The weights take one number per parameter. The KV cache adds memory for every token of every request being served. On top of both come the CUDA context, intermediate values and unusable gaps between allocations; a common rule of thumb allows another 20%:</p>
+<p><b>Will the model fit?</b> The weights take one number per parameter. The KV cache adds memory for every token of every request being served. The CUDA context, intermediate values and gaps between allocations come on top; a common rule of thumb allows another 20%:</p>
 <div class="tex d">M_{\text{needed}}\approx1.2\times\left(N\times\text{bytes per parameter}+M_{\text{KV}}\right)\le n_{\text{GPU}}\times M_{\text{GPU}},\qquad M_{\text{KV}}=2\times L\times T\times d_{\text{model}}\times2\times B</div>
 <p class="sym"><span class="tex">N</span> is the number of parameters, with 4, 2, 1 or 0.5 bytes each; <span class="tex">L</span> is the number of layers, <span class="tex">T</span> the context length and <span class="tex">B</span> the number of requests served at once; the cache holds a key and a value (the first 2) at 2 bytes each (the second 2); <span class="tex">n_{\text{GPU}}</span> GPUs have <span class="tex">M_{\text{GPU}}</span> bytes each. The 1.2 is an allowance, not a measured constant.</p>
 <p><b>How fast can it generate?</b> Each decode step reads every weight, and every cached key and value, from memory once. With few requests that reading takes longer than the arithmetic, so bandwidth sets the speed:</p>
 <div class="tex d">\text{tokens per second per request}\lesssim\frac{n_{\text{GPU}}\times R}{N\times\text{bytes per parameter}+M_{\text{KV}}}</div>
 <p class="sym"><span class="tex">R</span> is one GPU’s memory bandwidth in bytes per second. This is an upper bound; real systems reach a fraction of it.</p>
 <div class="why"><b>Why bandwidth and not compute?</b> For one request, each 16-bit weight read from memory (2 bytes) takes part in one multiply and one add (2 operations): one operation per byte. An H100 can do about <span class="tex">989\times10^{12}</span> operations per second but read only <span class="tex">3.35\times10^{12}</span> bytes, so it needs about 295 operations per byte to keep its tensor cores busy. Serving <span class="tex">B</span> requests together uses each byte <span class="tex">B</span> times, which is why batching raises throughput almost for free until <span class="tex">B</span> nears that ratio.</div>
-<p><b>And training?</b> Training keeps much more per parameter. With the Adam optimizer in mixed precision, a common recipe stores bf16 weights (2 bytes), bf16 gradients (2), fp32 master weights (4) and Adam’s two fp32 running averages (8):</p>
+<p><b>And training?</b> With the Adam optimizer in mixed precision, a common recipe keeps bf16 weights (2 bytes), bf16 gradients (2), fp32 master weights (4) and Adam’s two fp32 running averages (8), plus the activations saved for the backward pass:</p>
 <div class="tex d">M_{\text{train}}\approx16\times N\ \text{bytes, before activations}</div>
-<p class="sym">Activations, the values kept from the forward pass for the backward pass, come on top and grow with batch size and context length.</p>
 <div class="worked">
   <h4>Worked example</h4>
   <div class="x-only"><p><b>Does it fit?</b> The running example: <span class="tex">N=7\times10^9</span> in bf16, with <span class="tex">L=32,\ d_{\text{model}}=4096</span>, serving one request at <span class="tex">T=4096</span>. Weights: <span class="tex">7\times10^9\times2</span> bytes = 14 GB. KV cache: <span class="tex">2\times32\times4096\times4096\times2=2{,}147{,}483{,}648</span> bytes, about 2.15 GB. Needed: <span class="tex">1.2\times(14+2.15)\approx19.4</span> GB, which fits in 24 GB.</p>
-  <p><b>How fast?</b> On an RTX 4090 (1,008 GB/s): <span class="tex">1008/16.15\approx62</span> tokens per second at most. On an L4 (300 GB/s), which has the same 24 GB: about 19. Same model, same memory, under a third of the speed.</p>
-  <p><b>A 70B model</b> (<span class="tex">L=80,\ d_{\text{model}}=8192</span>). In bf16: <span class="tex">1.2\times(140+10.7)\approx181</span> GB, so three 80 GB GPUs. In int4 the weights are 35 GB: <span class="tex">1.2\times(35+10.7)\approx55</span> GB fits on one.</p>
-  <p><b>Training the 7B model</b> needs <span class="tex">16\times7\times10^9</span> bytes = 112 GB before activations: more than any single GPU in the table below.</p></div>
-  <p class="s-only">A 7-billion-parameter model in 16-bit numbers needs 14 GB for its weights and about 2 GB more for a long conversation. With a safety margin that is about 19 GB, so it fits on a 24 GB card. How fast it writes depends on how quickly the card reads those 16 GB for every token: about 62 tokens a second on a fast gaming card, about 19 on a low-power data-centre card with the same memory. Training the same model needs more than 100 GB.</p>
+  <p><b>How fast?</b> On an RTX 4090 (1,008 GB/s): <span class="tex">1008/16.15\approx62</span> tokens per second at most. On an L4 (300 GB/s), which has the same 24 GB: about 19.</p>
+  <p><b>A 70B model</b> (<span class="tex">L=80,\ d_{\text{model}}=8192</span>). In bf16: <span class="tex">1.2\times(140+10.7)\approx181</span> GB, so three 80 GB GPUs. In int4: <span class="tex">1.2\times(35+10.7)\approx55</span> GB, which fits on one H100 at up to <span class="tex">3350/45.7\approx73</span> tokens per second, or on one DGX Spark at up to <span class="tex">273/45.7\approx6</span>.</p>
+  <p><b>Training the 7B model</b> needs <span class="tex">16\times7\times10^9</span> bytes = 112 GB before activations: more than any single GPU below.</p></div>
+  <p class="s-only">A 7-billion-parameter model in 16-bit numbers needs about 19 GB with a long conversation and a safety margin, so it fits on a 24 GB card. How fast it writes depends on how quickly the card reads its memory: about 62 tokens a second on a fast gaming card, about 19 on a low-power data-centre card with the same memory. Training the same model needs more than 100 GB.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: choose a device, and compare number formats</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -2359,6 +2356,7 @@ GPUS = {
     "L4": (24e9, 300e9, 121e12),
     "A100 80GB": (80e9, 2039e9, 312e12),
     "H100 SXM": (80e9, 3350e9, 989.5e12),
+    "DGX Spark": (128e9, 273e9, None),     # unified memory; no BF16 figure published
 }
 BYTES = {"fp32": 4, "bf16": 2, "int8": 1, "int4": 0.5}
 
@@ -2386,7 +2384,8 @@ report("70B", 70e9, "int4", 80, 8192, 4096)
 # Decode reads 2 bytes per bf16 weight and does 2 FLOPs with it per request,
 # so it only becomes compute-bound once the batch passes F / R
 for gpu, (_, bw, flops) in GPUS.items():
-    print(f"{gpu:9}: compute-bound beyond a batch of about {flops / bw:.0f}")
+    if flops:
+        print(f"{gpu:9}: compute-bound beyond a batch of about {flops / bw:.0f}")
 
 # Training with Adam in mixed precision: 2 (bf16 weights) + 2 (gradients)
 # + 4 (fp32 master weights) + 8 (two Adam moments) = 16 bytes per parameter
@@ -2398,23 +2397,26 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
 #    L4        x1: at most   19 tokens/s for one request
 #    A100 80GB x1: at most  126 tokens/s for one request
 #    H100 SXM  x1: at most  207 tokens/s for one request
+#    DGX Spark x1: at most   17 tokens/s for one request
 # 70B in bf16, T=4096: weights 140.0 GB + KV cache 10.74 GB, x1.2 -&gt; 180.9 GB
 #    RTX 4090  x8: at most   53 tokens/s for one request
 #    L4        x8: at most   16 tokens/s for one request
 #    A100 80GB x3: at most   41 tokens/s for one request
 #    H100 SXM  x3: at most   67 tokens/s for one request
+#    DGX Spark x2: at most    4 tokens/s for one request
 # 70B in int4, T=4096: weights 35.0 GB + KV cache 10.74 GB, x1.2 -&gt; 54.9 GB
 #    RTX 4090  x3: at most   66 tokens/s for one request
 #    L4        x3: at most   20 tokens/s for one request
 #    A100 80GB x1: at most   45 tokens/s for one request
 #    H100 SXM  x1: at most   73 tokens/s for one request
+#    DGX Spark x1: at most    6 tokens/s for one request
 # RTX 4090 : compute-bound beyond a batch of about 164
 # L4       : compute-bound beyond a batch of about 403
 # A100 80GB: compute-bound beyond a batch of about 153
 # H100 SXM : compute-bound beyond a batch of about 295
 # training a 7B model: 112 GB before activations</code></pre></details>
 <h3>Real GPUs, by the numbers</h3>
-<p>The figures that matter for language models, from NVIDIA’s published specifications. NVIDIA quotes data-centre tensor throughput “with sparsity”, which assumes half the weights are zero in a fixed pattern; its footnotes say the dense figure is half of that, and the dense figure is shown here.</p>
+<p>From NVIDIA’s published specifications. NVIDIA quotes data-centre tensor throughput “with sparsity”, which assumes half the weights are zero in a fixed pattern; the dense figure, shown here, is half of that.</p>
 <div class="scroll"><table class="numt cmp">
   <thead><tr><th>GPU</th><th>Memory</th><th>Bandwidth</th><th>BF16 tensor, dense</th><th>Operations per byte</th><th>Typical use</th></tr></thead>
   <tbody>
@@ -2422,16 +2424,18 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
     <tr><th scope="row">L4</th><td>24 GB</td><td>300 GB/s</td><td>121 TFLOP/s</td><td>403</td><td>Cloud inference on a small, low-power card.</td></tr>
     <tr><th scope="row">A100 80GB (SXM)</th><td>80 GB</td><td>2,039 GB/s</td><td>312 TFLOP/s</td><td>153</td><td>Data-centre training and inference.</td></tr>
     <tr><th scope="row">H100 (SXM)</th><td>80 GB</td><td>3,350 GB/s</td><td>989 TFLOP/s</td><td>295</td><td>Data-centre training and inference.</td></tr>
+    <tr><th scope="row">DGX Spark (GB10)</th><td>128 GB, shared with the CPU</td><td>273 GB/s</td><td>not published; up to 1 PFLOP/s in FP4 with sparsity</td><td>–</td><td>Desktop: prototyping, fine-tuning, and running large models slowly.</td></tr>
   </tbody>
 </table></div>
-<small>Sources: NVIDIA’s product pages for H100, A100 and L4, and Appendix A of the NVIDIA Ada GPU Architecture whitepaper for the RTX 4090 (dense rate with FP32 accumulation); checked in November 2026. “Operations per byte” is throughput divided by bandwidth: the batch size above which decoding stops being limited by bandwidth. Newer generations exist; check the vendor’s page before buying.</small>
+<small>Sources: NVIDIA’s product pages for H100, A100, L4 and DGX Spark, and Appendix A of the NVIDIA Ada GPU Architecture whitepaper for the RTX 4090 (dense rate with FP32 accumulation); checked in November 2026. “Operations per byte” is throughput divided by bandwidth: the batch size above which decoding stops being limited by bandwidth.</small>
+<div class="callout note"><b>Unified memory: NVIDIA DGX Spark</b><p>DGX Spark is a small desktop computer built around NVIDIA’s GB10 Grace Blackwell chip, whose CPU and GPU share one pool of 128 GB. That is over five times the memory of an RTX 4090 at about a quarter of its bandwidth. So it loads models no consumer card can hold, but generates from them slowly: NVIDIA rates it for models of up to 200 billion parameters, which needs 4-bit weights, and two linked units for up to 400 billion. It suits prototyping and fine-tuning on a desk more than serving many users. Apple’s M-series machines follow the same unified-memory design.</p></div>
 <div class="widget" id="w-hw">
   <h4 class="wt">Interactive · will this model fit on this GPU?</h4>
-  <p class="look"><b>The point:</b> Memory decides whether a model runs at all; bandwidth decides how fast. <b>Do this:</b> Start with the 7B model on one RTX 4090, then raise the context length, switch to the 70B model and try 4-bit weights. <b>Watch for:</b> Which part of the bar grows, and how the speed changes between two GPUs with the same memory.</p>
+  <p class="look"><b>The point:</b> Memory decides whether a model runs at all; bandwidth decides how fast. <b>Do this:</b> Start with the 7B model on one RTX 4090, then raise the context length, switch to the 70B model and try 4-bit weights. <b>Watch for:</b> Which part of the bar grows, and how the speed changes between devices with the same memory.</p>
   <div class="controls">
     <label class="ctl">Model<select id="hw-model"></select></label>
     <label class="ctl">Weight format<select id="hw-prec"><option value="4">fp32 · 4 bytes</option><option value="2" selected>bf16 · 2 bytes</option><option value="1">int8 · 1 byte</option><option value="0.5">int4 · half a byte</option></select></label>
-    <label class="ctl">GPU<select id="hw-gpu"><option value="0" selected>RTX 4090 · 24 GB · 1,008 GB/s</option><option value="1">L4 · 24 GB · 300 GB/s</option><option value="2">A100 · 80 GB · 2,039 GB/s</option><option value="3">H100 SXM · 80 GB · 3,350 GB/s</option></select></label>
+    <label class="ctl">GPU<select id="hw-gpu"><option value="0" selected>RTX 4090 · 24 GB · 1,008 GB/s</option><option value="1">L4 · 24 GB · 300 GB/s</option><option value="2">A100 · 80 GB · 2,039 GB/s</option><option value="3">H100 SXM · 80 GB · 3,350 GB/s</option><option value="4">DGX Spark · 128 GB · 273 GB/s</option></select></label>
     <label class="ctl">Number of GPUs<select id="hw-n"><option value="1" selected>1</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label>
     <label class="ctl"><span class="row">Context length T <output id="hw-T-o"></output></span><input type="range" id="hw-T" min="9" max="17" step="1" value="12"></label>
     <label class="ctl"><span class="row">Requests at once B <output id="hw-B-o"></output></span><input type="range" id="hw-B" min="0" max="6" step="1" value="0"></label>
@@ -2440,30 +2444,24 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
   <div class="stack" id="hw-bar" role="img" aria-label="Stacked bar of GPU memory: weights, KV cache, allowance and free space"></div>
   <p class="readout" id="hw-fit" aria-live="polite"></p>
   <div class="stats" id="hw-stats" aria-live="polite"></div>
-  <small>What is simplified: the KV cache is stored at 16 bits with keys and values of full width <span class="tex">d_{\text{model}}</span>, so models that use grouped-query attention need several times less; the 20% allowance stands in for overheads that vary with the software; several GPUs are assumed to split the model evenly with no time lost to communication; speeds are upper bounds from the published peak figures, ignoring attention’s own cost. Model shapes are typical for each size class, not a particular released model.</small>
-  <div class="wjh"><b>What just happened?</b> The weights are fixed by the parameter count and the format, so changing the format moves the blue bar most. The KV cache grows with context length and with every extra request, and at long contexts it overtakes the weights. Swapping an RTX 4090 for an L4 leaves the verdict unchanged, because both have 24 GB, but the speed falls with the bandwidth. Adding GPUs adds memory and bandwidth together; the compute limit only takes over at large batches.</div>
+  <small>What is simplified: the KV cache is stored at 16 bits with keys and values of full width <span class="tex">d_{\text{model}}</span>, so models that use grouped-query attention need several times less; the 20% allowance stands in for overheads that vary with the software; several GPUs are assumed to split the model evenly with no time lost to communication; speeds are upper bounds from the published peak figures, ignoring attention’s own cost. DGX Spark has no published BF16 figure, so its compute limit is left out, and its memory is also used by the operating system. Model shapes are typical for each size class, not a particular released model.</small>
+  <div class="wjh"><b>What just happened?</b> The weights are fixed by the parameter count and the format, so changing the format moves the blue bar most. The KV cache grows with context length and with every extra request, and at long contexts it overtakes the weights. Devices with the same memory give the same verdict but different speeds, because speed follows bandwidth: the DGX Spark holds what an H100 cannot, yet generates more slowly than any card here. Adding GPUs adds memory and bandwidth together.</div>
 </div>
-<div class="callout try opt"><b>Try this</b><p>1. 7B model in bf16 on an RTX 4090: raise the context to 131,072 tokens and watch the KV cache overtake the weights. 2. Switch the GPU to the L4: the memory verdict stays the same and the speed drops to under a third. 3. 70B model on one H100: try bf16, then int8, then int4.</p></div>
+<div class="callout try opt"><b>Try this</b><p>1. 7B model in bf16 on an RTX 4090: raise the context to 131,072 tokens and watch the KV cache overtake the weights. 2. Switch the GPU to the L4: same verdict, under a third of the speed. 3. 70B model in int4: compare one H100 with one DGX Spark.</p></div>
 <h3>One GPU or several; local or cloud</h3>
 <ul>
-  <li><b>Fit first.</b> If the model fits on one GPU, use one: splitting it adds communication and complexity.</li>
-  <li><b>Data parallelism</b>: every GPU holds a full copy and handles different requests or batches. It raises throughput but does not help a model that does not fit.</li>
-  <li><b>Tensor parallelism</b>: each weight matrix is split across GPUs, which exchange partial results in every layer. It needs a fast link between the GPUs, such as NVLink inside one server; this is how a 70B model runs on several 80 GB GPUs.</li>
-  <li><b>Pipeline parallelism</b>: consecutive layers sit on different GPUs and the work flows through them. It needs less communication, but GPUs wait for each other unless the batch is split into smaller pieces.</li>
-  <li><b>Local hardware</b>: a one-off cost, and the data stays on your machine, but consumer cards top out at around 24 to 32 GB. Apple silicon shares one pool of memory between the CPU and the GPU, so it can load larger models, at lower bandwidth.</li>
-  <li><b>Cloud GPUs</b>: rented by the hour, with data-centre memory and bandwidth and nothing to maintain; you pay while they sit idle.</li>
+  <li><b>Fit first.</b> If the model fits on one GPU, use one. Otherwise it is split: <b>tensor parallelism</b> divides every weight matrix across GPUs that exchange results in every layer, over a fast link such as NVLink; <b>pipeline parallelism</b> puts consecutive layers on different GPUs. <b>Data parallelism</b>, a full copy per GPU, raises throughput but does not help a model that does not fit.</li>
+  <li><b>Local hardware</b>: a one-off cost, and the data stays with you. Consumer cards top out at around 24 to 32 GB; unified-memory machines hold more, at lower bandwidth.</li>
+  <li><b>Cloud GPUs</b>: rented by the hour, with data-centre memory and bandwidth; you pay while they sit idle.</li>
   <li><b>Hosted APIs</b>: no hardware at all. You pay per token and accept the provider’s models and data terms.</li>
 </ul>
-<p>Training at scale combines all three kinds of parallelism and also splits the optimizer state across GPUs; this guide does not go further into it.</p>
-<div class="callout note"><b>Beginner note</b><p>You do not need a GPU to follow this guide: every interactive runs in the browser and every Python box runs on a CPU. A GPU starts to matter once models reach billions of parameters.</p></div>
+<div class="callout note"><b>Beginner note</b><p>You do not need a GPU to follow this guide: every interactive runs in the browser and every Python box runs on a CPU.</p></div>
 <h3 class="opt">Common misconceptions</h3>
 <ul class="pit opt">
-  <li><b>“More cores or more TFLOPS means faster generation.”</b> For a few users at a time, memory bandwidth sets the speed. The L4 and the RTX 4090 have the same memory, and the 4090 generates over three times faster.</li>
+  <li><b>“More TFLOPS means faster generation.”</b> For a few users at a time, memory bandwidth sets the speed. The L4 and the RTX 4090 have the same memory, and the 4090 generates over three times faster.</li>
   <li><b>“<code>nvidia-smi</code> shows the CUDA version I have installed.”</b> It shows the newest CUDA version the driver supports.</li>
-  <li><b>“I need to install the CUDA toolkit to use PyTorch on a GPU.”</b> PyTorch’s packages bring their own CUDA libraries; you need a recent enough driver.</li>
   <li><b>“Two 24 GB cards are the same as one 48 GB card.”</b> The model has to be split between them, and every layer then waits for data to cross between the cards.</li>
-  <li><b>“4-bit weights make a model four times smaller at no cost.”</b> Each group of weights also stores a scale, and quality can drop. Measure it on your own task.</li>
-  <li><b>Pitfall:</b> choosing a GPU by its compute figure alone. For serving, check memory first and bandwidth second.</li>
+  <li><b>Pitfall:</b> choosing hardware by its compute figure alone. For serving, check memory first and bandwidth second.</li>
 </ul>
 <div class="wrapup">
 <h3>Key takeaways</h3>
@@ -2475,7 +2473,7 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
 <fieldset><legend>3. <code>nvidia-smi</code> reports “CUDA Version: 12.4”. What does that tell you?</legend><button type="button" class="qo">Which CUDA toolkit is installed</button><button type="button" class="qo" data-ok="1">The newest CUDA version the driver supports</button><button type="button" class="qo">Which CUDA version PyTorch was built for</button><p class="qx" hidden aria-live="polite"><b></b> PyTorch’s own CUDA version is <code>torch.version.cuda</code>. When PyTorch cannot use the GPU, compare the two numbers first.</p></fieldset>
 </div>
 <h3>Discuss with your team</h3>
-<ul class="talk"><li>We want to run an open 70B model for 50 internal users. Would you buy GPUs, rent cloud GPUs or use a hosted API, and what would change your answer?</li><li>Our 7B model fits on a 24 GB card in testing but runs out of memory in production. What grew, and what are the options?</li></ul>
+<ul class="talk"><li>We want to run an open 70B model for 50 internal users. Would you buy GPUs, buy a DGX Spark, rent cloud GPUs or use a hosted API, and what would change your answer?</li><li>Our 7B model fits on a 24 GB card in testing but runs out of memory in production. What grew, and what are the options?</li></ul>
 <p class="bridge"><b>Next:</b> <a class="xref" data-ref="inference"></a> uses these memory and bandwidth figures to explain the KV cache, batching and response time.</p>
 </div>
 </section>
@@ -4747,7 +4745,7 @@ function initInfer(){
 }
 
 /* ================= GPUs and CUDA: will it fit? ================= */
-const HW_GPUS=[['RTX 4090',24e9,1008e9,165.2e12],['L4',24e9,300e9,121e12],['A100',80e9,2039e9,312e12],['H100 SXM',80e9,3350e9,989.5e12]];
+const HW_GPUS=[['RTX 4090',24e9,1008e9,165.2e12],['L4',24e9,300e9,121e12],['A100',80e9,2039e9,312e12],['H100 SXM',80e9,3350e9,989.5e12],['DGX Spark',128e9,273e9,Infinity]]; /* DGX Spark: no published BF16 figure, so no compute limit */
 const sh={m:2,prec:2,g:0,n:1,T:4096,B:1};
 function renderHW(){
   const M=IE_MODELS[sh.m],N=M[1],L=M[2],d=M[3],G=HW_GPUS[sh.g],W=N*sh.prec,kv=2*L*sh.T*d*2*sh.B,extra=0.2*(W+kv),need=W+kv+extra,cap=sh.n*G[1],fits=need<=cap,span=Math.max(need,cap);
