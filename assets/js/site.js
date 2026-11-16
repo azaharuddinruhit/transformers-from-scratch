@@ -11,7 +11,7 @@ const PARTS=[
 const SECS={intro:['What is an LLM?',10,10,0],why:['Why Transformers?',10,10,0],tokens:['Tokenization and embeddings',15,10,0],position:['Positional information',15,15,1],
   attention:['Self-attention from scratch',15,15,1],multihead:['Multi-head attention',10,10,1],block:['FFN, residuals and normalization',20,15,1],architecture:['Full decoder-only architecture',15,10,1],
   training:['Training an LLM',15,15,1],generation:['Generation and decoding',10,10,0],hardware:['GPUs and CUDA',20,15,1],inference:['Inference in practice',20,15,2],openmodels:['Open-weight models',15,15,0],scaling:['Scaling laws',10,10,2],posttrain:['From base model to assistant',10,10,1],prefs:['Preference tuning and reasoning',15,10,1],
-  encdec:['Encoder–decoder and cross-attention',15,10,1],paper:['The 2017 paper in detail',10,10,2],modern:['What modern LLMs change',20,15,2]};
+  encdec:['Encoder–decoder and cross-attention',15,10,1],paper:['The 2017 paper in detail',10,10,2],modern:['What modern LLMs change',20,20,2]};
 const LEVELS=['Foundation','Core','Deep dive'];
 const TOPICS={'iv-core':'Transformer fundamentals','iv-rag':'RAG and embeddings','iv-ft':'Fine-tuning and alignment','iv-agents':'Agents and tool use','iv-prod':'Evaluation and production','iv-hw':'Hardware'};
 const PATHS={full:{name:'Full depth',desc:'Exact worked examples, every interactive, the maths detail and the Python code.'},

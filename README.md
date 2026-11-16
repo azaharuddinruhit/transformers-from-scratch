@@ -19,7 +19,7 @@ Each section in Parts A to D has learning objectives, a running example, equatio
 
 Highlights:
 
-- Two paths: **Full depth** (about 4 h 30 min) and **Quick tour** (about 3 h 50 min, simplified worked examples, optional material hidden). You can switch at any time.
+- Two paths: **Full depth** (about 4 h 30 min) and **Quick tour** (about 3 h 55 min, simplified worked examples, optional material hidden). You can switch at any time.
 - A tiny Transformer (about 9,600 parameters) that trains in your browser, plus a generation playground with temperature, top-k and top-p.
 - Step-by-step attention, KV-cache, GPU-memory, parameter-count and inference-cost calculators.
 - "In Python" boxes with runnable NumPy and PyTorch code and its real output, collapsed by default.

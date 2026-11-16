@@ -327,15 +327,15 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
   <tbody>
     <tr><th scope="row">Structure</th><td>Encoder + decoder with cross-attention</td><td>Decoder only</td></tr>
     <tr><th scope="row">Task</th><td>Translation, trained on sentence pairs</td><td>Next-token prediction on raw text, then fine-tuning</td></tr>
-    <tr><th scope="row">Normalisation</th><td>After the residual add (post-norm)</td><td>Before the sublayer (pre-norm), plus a final LayerNorm</td></tr>
-    <tr><th scope="row">Activation</th><td>ReLU</td><td>GELU or a close relative</td></tr>
-    <tr><th scope="row">Positions</th><td>Fixed sinusoids added to the input</td><td>Learned or relative (for example rotary) schemes</td></tr>
+    <tr><th scope="row">Normalisation</th><td>After the residual add (post-norm)</td><td>Before the sublayer (pre-norm), often RMSNorm, plus a final normalisation</td></tr>
+    <tr><th scope="row">Activation</th><td>ReLU</td><td>GELU (GPT-2, GPT-3) or a gated MLP such as SwiGLU (Llama, Qwen, Mistral)</td></tr>
+    <tr><th scope="row">Positions</th><td>Fixed sinusoids added to the input</td><td>Learned (GPT-2, GPT-3) or rotary, applied inside attention (most current models)</td></tr>
     <tr><th scope="row">Size</th><td>65 to 213 million parameters</td><td>Billions of parameters and beyond</td></tr>
     <tr><th scope="row">Decoding</th><td>Beam search</td><td>Sampling with temperature, top-k, top-p</td></tr>
     <tr><th scope="row">Unchanged</th><td colspan="2">Scaled dot-product attention, multiple heads, residual connections, layer normalisation, a position-wise feed-forward network, learned embeddings, warm-up</td></tr>
   </tbody>
 </table></div>
-<p>The line of descent is short. In 2018, GPT kept only the decoder and pretrained it on unlabelled text, and BERT kept only the encoder and pretrained it by filling in masked words. Scaling the decoder-only branch, with the handful of adjustments in the table, leads to the models described in <a class="xref" data-ref="architecture" data-to="scaling"></a>.</p>
+<p>The line of descent is short. In 2018, GPT kept only the decoder and pretrained it on unlabelled text, and BERT kept only the encoder and pretrained it by filling in masked words. Scaling the decoder-only branch, with the handful of adjustments in the table, leads to the models described in <a class="xref" data-ref="architecture" data-to="scaling"></a>. <a class="xref" data-ref="modern"></a> explains the newer adjustments.</p>
 <h3 class="opt">Common misconceptions</h3>
 <ul class="pit opt">
   <li><b>“Modern LLMs use the paper’s architecture as written.”</b> The core is intact, but normalisation placement, activation, positional scheme and overall structure have all changed.</li>
@@ -355,10 +355,20 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
 </div>
 </section>
 <section class="ch" id="modern" data-title="What modern LLMs change">
-<h2>What modern LLMs change: RoPE, RMSNorm, SwiGLU, GQA and mixture of experts</h2>
+<h2>What modern LLMs change</h2>
 <div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain how rotary position embeddings put relative position inside attention.</li><li>State what RMSNorm and SwiGLU change in the block, and why.</li><li>Work out how grouped-query attention shrinks the KV cache.</li><li>Explain mixture-of-experts routing, and why total and active parameter counts differ.</li></ul></div><p class="needs"><b>Builds on</b> <a class="xref" data-ref="position"></a>, <a class="xref" data-ref="multihead"></a>, <a class="xref" data-ref="block"></a>, the KV cache from <a class="xref" data-ref="inference"></a>, and the 2017 design from <a class="xref" data-ref="paper"></a>.</p></div>
-<div class="story"><p>Llama 3.1 8B’s configuration: 32 layers, <span class="tex">d_{\text{model}}=4096</span>, 32 query heads of width 128 sharing 8 key and value heads, a SwiGLU feed-forward network of width 14,336, RMSNorm, rotary positions and a vocabulary of 128,256. Apart from the layer count, every item on that list is a change since 2017. When “mat” attends back to “cat”, its score now depends on how far apart they are, not on where they sit.</p></div>
-<p>A model card for any current open model reads like a list of refinements to the block from <a class="xref" data-ref="block"></a>. None changes the idea: tokens become vectors, attention mixes them, an MLP transforms each one, residuals and normalisation keep the stack trainable. Each refinement fixes a cost or a weakness found by training ever larger models.</p>
+<div class="story"><p>The 2017 Transformer and a model like Llama 3.1 would both read “the cat sat on the mat” the same way: tokens become vectors, every layer runs attention and an MLP, and the last layer predicts the next token. Open Llama 3.1’s configuration file, though, and most of its entries name parts that did not exist in 2017. This section explains them one at a time.</p></div>
+<p>None of these changes alters the idea of the Transformer. Each one fixes a cost or a weakness that showed up as models grew. There are five:</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th scope="col">Change</th><th scope="col">The problem</th><th scope="col">What it changes</th><th scope="col">What you gain</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">RoPE</th><td>Position is added to the input, so the model has to learn distances</td><td>Queries and keys are rotated by their position</td><td>Scores depend on how far apart two tokens are</td></tr>
+    <tr><th scope="row">RMSNorm</th><td>LayerNorm does work that turns out to be unnecessary</td><td>Drops the mean and the shift</td><td>Less work per token, same quality</td></tr>
+    <tr><th scope="row">SwiGLU</th><td>A plain ReLU MLP</td><td>One projection gates another</td><td>Lower loss for the same compute</td></tr>
+    <tr><th scope="row">Grouped-query attention</th><td>The KV cache outgrows the weights at long contexts</td><td>Groups of query heads share keys and values</td><td>A cache several times smaller</td></tr>
+    <tr><th scope="row">Mixture of experts</th><td>A bigger model costs more for every token</td><td>Each token uses a few of many MLPs</td><td>More parameters for the same compute per token</td></tr>
+  </tbody>
+</table></div>
 <div class="flow" role="img" aria-label="Diagram: the 2017 block becomes the modern block through RMSNorm before each sublayer, rotary positions and grouped-query attention inside attention, and a SwiGLU or mixture-of-experts MLP">
   <div><b>2017 block</b><small>post-norm, ReLU, sinusoids added to the input</small></div><i>→</i>
   <div class="fa"><b>RMSNorm, before each sublayer</b><small>cheaper normalisation</small></div><i>→</i>
@@ -368,10 +378,12 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
 </div>
 
 <h3>Rotary position embeddings (RoPE)</h3>
-<p><b>The question:</b> attention scores should depend on how far apart two tokens are, more than on their absolute positions; “the cat” means the same at the start of a document or deep inside it. Adding a position vector to the input (<a class="xref" data-ref="position"></a>) mixes position into everything and leaves the model to learn distances. RoPE instead <i>rotates</i> each query and key by an angle proportional to its position, inside every attention layer.</p>
-<p><b>The reasoning.</b> Split a vector into pairs of numbers and treat each pair as a point in a plane. Rotating a point by an angle keeps its length. If the query at position <span class="tex">i</span> is turned by <span class="tex">i\omega</span> and the key at position <span class="tex">j</span> by <span class="tex">j\omega</span>, the angle between them changes by <span class="tex">(i-j)\omega</span>, so their dot product depends only on the distance <span class="tex">i-j</span>. For one pair <span class="tex">(x_1,x_2)</span>:</p>
+<p><b>The problem.</b> “The cat” means the same at the start of a document and deep inside it. So what attention needs is how far apart two tokens are, more than where each one sits. Adding a position vector to the input (<a class="xref" data-ref="position"></a>) mixes position into everything, and leaves the model to work out distances for itself.</p>
+<p><b>The change.</b> RoPE adds nothing to the input. Instead, inside every attention layer, it rotates each query and each key by an angle that grows with the token’s position.</p>
+<p><b>Why that works.</b> Split a vector into pairs of numbers, and treat each pair as an arrow in a plane. Turning an arrow does not change its length. Turn the query at position <span class="tex">i</span> by <span class="tex">i\omega</span> and the key at position <span class="tex">j</span> by <span class="tex">j\omega</span>. The angle between them then changes by <span class="tex">(i-j)\omega</span>, so their dot product depends only on the distance <span class="tex">i-j</span>. For one pair <span class="tex">(x_1,x_2)</span>:</p>
 <div class="tex d">\operatorname{RoPE}(x_1,x_2;\,i)=\left(x_1\cos i\omega-x_2\sin i\omega,\ \ x_1\sin i\omega+x_2\cos i\omega\right),\qquad \omega_f=10000^{-2f/d_k}</div>
-<p class="sym"><span class="tex">i</span> is the token’s position; <span class="tex">\omega</span> is the pair’s rotation speed, which differs for each pair <span class="tex">f=0,1,\dots,d_k/2-1</span>: the first pairs turn quickly and tell neighbours apart, the last turn slowly and carry long-range position. Queries and keys are rotated; values are not. Llama 3 uses a base of 500,000 instead of 10,000, which slows every pair down for long contexts.</p>
+<p class="sym"><span class="tex">i</span> is the token’s position. <span class="tex">\omega</span> is the pair’s rotation speed, and each pair <span class="tex">f=0,1,\dots,d_k/2-1</span> has its own. The first pairs turn quickly and tell neighbours apart. The last pairs turn slowly and carry long-range position. Queries and keys are rotated; values are not.</p>
+<p class="opt">Llama 3 uses a base of 500,000 instead of 10,000. That slows every pair down, which helps with long contexts.</p>
 <div class="widget" id="w-rope">
   <h4 class="wt">Interactive · RoPE turns queries and keys by their position</h4>
   <p class="look"><b>The point:</b> After rotation, the attention score depends only on the distance between the two tokens. <b>Do this:</b> Move the query and key positions, then press “Shift both by 5” several times. Switch to a slower pair. <b>Watch for:</b> The score stays the same when both move together, and the slow pair barely turns.</p>
@@ -384,21 +396,33 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
   <svg id="rp-svg" viewBox="0 0 240 240" role="img" aria-label="The query and key of one dimension pair, drawn as arrows rotated by their positions"></svg>
   <div class="stats" id="rp-stats" aria-live="polite"></div>
   <small>What is simplified: one pair of dimensions out of <span class="tex">d_k/2</span> is drawn, with a hand-picked query and key; the real score adds up the contributions of all pairs.</small>
-  <div class="wjh"><b>What just happened?</b> Each arrow is turned by its position times the pair’s speed. Moving both positions by the same amount turns both arrows equally, so the angle between them, and with it the score, is unchanged: only the distance matters. A fast pair turns a lot between neighbouring positions; a slow pair hardly moves over dozens of tokens, so it can still compare tokens that are far apart.</div>
+  <div class="wjh"><b>What just happened?</b> Each arrow is turned by its position times the pair’s speed. Moving both positions by the same amount turns both arrows equally. The angle between them stays the same, and so does the score: only the distance matters. A fast pair turns a lot between neighbouring positions. A slow pair hardly moves over dozens of tokens, so it can still compare tokens that are far apart.</div>
 </div>
 
-<h3>RMSNorm and SwiGLU</h3>
-<p><b>RMSNorm.</b> LayerNorm (<a class="xref" data-ref="block"></a>) subtracts the mean, divides by the standard deviation, then scales and shifts. Experiments found that dividing by the root mean square is enough, with no mean and no shift. It does less work per token and trains as well, so most current models use it, placed before each sublayer (pre-norm):</p>
+<h3>RMSNorm</h3>
+<p><b>The problem.</b> LayerNorm (<a class="xref" data-ref="block"></a>) does four things to each vector: it subtracts the mean, divides by the standard deviation, then scales and shifts. Experiments found that not all of that is needed.</p>
+<p><b>The change.</b> RMSNorm only divides by the root mean square, then scales. There is no mean and no shift. Current models place it before each sublayer (pre-norm).</p>
+<p><b>The gain.</b> Less work per token, and models train as well. So most current models use it.</p>
+<div class="opt">
 <div class="tex d">\operatorname{RMSNorm}(x)=\gamma\odot\frac{x}{\sqrt{\frac{1}{d_{\text{model}}}\sum_i x_i^2+\epsilon}}</div>
 <p class="sym"><span class="tex">\gamma</span> is the learned gain and <span class="tex">\epsilon</span> a small constant, as in LayerNorm.</p>
-<p><b>SwiGLU.</b> The 2017 MLP applies ReLU to one projection. A <b>gated</b> MLP computes two projections and lets one switch the other on or off, element by element; with the SiLU function as the switch this is SwiGLU. It gives a lower loss for the same compute, an empirical finding:</p>
+</div>
+
+<h3>SwiGLU</h3>
+<p><b>The problem.</b> The 2017 MLP is simple: one projection, a ReLU, another projection. Later experiments found a design that learns more for the same compute.</p>
+<p><b>The change.</b> A <b>gated</b> MLP computes two projections of the input. One of them, passed through a smooth switch function called SiLU, decides how much of the other gets through, element by element. This is SwiGLU.</p>
+<p><b>The gain.</b> A lower loss for the same compute. This is an empirical finding, not something derived.</p>
+<div class="opt">
 <div class="tex d">\operatorname{FFN}(x)=\left(\operatorname{SiLU}(xW_1)\odot xW_3\right)W_2,\qquad \operatorname{SiLU}(z)=z\cdot\operatorname{sigmoid}(z)</div>
-<p class="sym"><span class="tex">W_1</span> and <span class="tex">W_3</span> are <code>[d_model, d_ff]</code> and <span class="tex">W_2</span> is <code>[d_ff, d_model]</code>. With three matrices instead of two, models choose a smaller <span class="tex">d_{\text{ff}}</span> than <span class="tex">4d_{\text{model}}</span> to keep the parameter count similar; Llama 3.1 8B uses 14,336, which is 3.5 times 4,096.</p>
+<p class="sym"><span class="tex">W_1</span> and <span class="tex">W_3</span> are <code>[d_model, d_ff]</code>, and <span class="tex">W_2</span> is <code>[d_ff, d_model]</code>. Three matrices instead of two would add parameters, so models choose a smaller <span class="tex">d_{\text{ff}}</span> than <span class="tex">4d_{\text{model}}</span>. Llama 3.1 8B uses 14,336, which is 3.5 times 4,096.</p>
+</div>
 
 <h3>Grouped-query attention (GQA)</h3>
-<p><b>The question:</b> the KV cache (<a class="xref" data-ref="inference"></a>) stores a key and a value for every head, so at long contexts it outgrows the weights. Do all the heads need their own keys and values? Experiments say no. In <b>grouped-query attention</b> the query heads are split into groups, and each group shares one key head and one value head. <b>Multi-query attention</b> is the extreme case with a single shared pair. Queries keep all their heads, so the model still looks for many different things; only what is stored shrinks:</p>
+<p><b>The problem.</b> The KV cache (<a class="xref" data-ref="inference"></a>) stores a key and a value for every head, in every layer, for every token. At long contexts it grows bigger than the model’s weights.</p>
+<p><b>The change.</b> Do all the heads need their own keys and values? Experiments say no. In <b>grouped-query attention</b> the query heads are split into groups, and each group shares one key head and one value head. <b>Multi-query attention</b> is the extreme case: one key and value head for all.</p>
+<p><b>The gain.</b> Queries keep all their heads, so the model still looks for many different things. Only what is stored shrinks:</p>
 <div class="tex d">M_{\text{KV}}=2\times L\times T\times n_{\text{kv}}\times d_k\times\text{bytes per number}\times B</div>
-<p class="sym"><span class="tex">n_{\text{kv}}</span> is the number of key and value heads per layer. With <span class="tex">n_{\text{kv}}=h</span> this is ordinary multi-head attention and, since <span class="tex">h\,d_k=d_{\text{model}}</span>, the cache formula used earlier in the guide. GQA divides the cache by <span class="tex">h/n_{\text{kv}}</span>.</p>
+<p class="sym"><span class="tex">n_{\text{kv}}</span> is the number of key and value heads per layer. GQA divides the cache by <span class="tex">h/n_{\text{kv}}</span>. With <span class="tex">n_{\text{kv}}=h</span> this is ordinary multi-head attention, and the cache formula used earlier in the guide, since <span class="tex">h\,d_k=d_{\text{model}}</span>.</p>
 <div class="widget" id="w-gqa">
   <h4 class="wt">Interactive · how many key and value heads?</h4>
   <p class="look"><b>The point:</b> Sharing keys and values between query heads shrinks the cache without changing the weights much. <b>Do this:</b> Start with 32 KV heads (multi-head), then choose 8 and 1, and raise the context length. <b>Watch for:</b> The coloured groups of query heads, and the cache against the weights.</p>
@@ -413,20 +437,38 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
   <div class="stack" id="gq-bar" role="img" aria-label="Stacked bar of weight and KV-cache memory"></div>
   <div class="stats" id="gq-stats" aria-live="polite"></div>
   <small>What is simplified: the shape is Llama 3.1 8B’s (32 layers, 32 query heads of width 128, 8.03 billion parameters in bf16); the other choices of KV heads are hypothetical versions of it, and their small change in parameter count is ignored. The cache is stored at 16 bits; servers can also quantize it.</small>
-  <div class="wjh"><b>What just happened?</b> Each colour is one key and value head and the query heads that read it. With 32 KV heads every query head has its own and the cache is largest; with 8, four query heads share each pair and the cache is a quarter of the size; with 1, everything shares one pair. At long contexts the multi-head cache is several times the weights, which is why nearly every current model uses GQA.</div>
+  <div class="wjh"><b>What just happened?</b> Each colour is one key and value head and the query heads that read it. With 32 KV heads, every query head has its own and the cache is largest. With 8, four query heads share each pair and the cache is a quarter of the size. With 1, everything shares one pair. At long contexts the multi-head cache is several times the weights, which is why nearly every current model uses GQA.</div>
 </div>
 
 <h3>Mixture of experts (MoE)</h3>
-<p><b>The question:</b> can a model hold more knowledge without every token paying for it? A <b>mixture-of-experts</b> layer replaces the single MLP with many expert MLPs and a small <b>router</b>. For each token, in each layer, the router scores the experts, keeps the few best and blends their outputs:</p>
+<p><b>The problem.</b> A model with more parameters can hold more knowledge, but in an ordinary model every token passes through every parameter. Twice the parameters means twice the work per token.</p>
+<p><b>The change.</b> A <b>mixture-of-experts</b> layer replaces the single MLP with many smaller MLPs, the experts, and a small <b>router</b>. For each token, in each layer, the router scores the experts, keeps the few best and blends their outputs:</p>
 <div class="tex d">\operatorname{MoE}(x)=\sum_{e\in\mathcal{S}(x)}g_e(x)\,\operatorname{FFN}^{(e)}(x),\qquad g(x)=\operatorname{softmax}\!\big(\text{router scores of the chosen experts}\big)</div>
-<p class="sym"><span class="tex">\mathcal{S}(x)</span> is the set of experts chosen for this token, usually 1 to 8 out of <span class="tex">n_{\text{experts}}</span>, often 8 to 128; <span class="tex">g_e</span> is expert <span class="tex">e</span>’s gate, and the gates add up to 1; <span class="tex">\operatorname{FFN}^{(e)}</span> is expert <span class="tex">e</span>’s MLP. Training adds a small extra loss that keeps tokens spread across experts, so the router does not send everything to a favourite few.</p>
-<p>Every expert must be in memory, so memory follows the <i>total</i> parameter count. Each token passes through only the chosen experts, so compute and the bytes read per token follow the <i>active</i> count. That is why the mixture-of-experts models in <a class="xref" data-ref="openmodels"></a> decode so quickly for their size.</p>
+<p class="sym"><span class="tex">\mathcal{S}(x)</span> is the set of experts chosen for this token: usually 1 to 8 out of <span class="tex">n_{\text{experts}}</span>, which is often 8 to 128. <span class="tex">g_e</span> is expert <span class="tex">e</span>’s gate, and the gates add up to 1. <span class="tex">\operatorname{FFN}^{(e)}</span> is expert <span class="tex">e</span>’s MLP.</p>
+<p class="opt">Training adds a small extra loss that keeps tokens spread across the experts. Without it, the router tends to send everything to a favourite few.</p>
+<p><b>The gain, and the cost.</b> Each token passes through only the chosen experts, so compute and the bytes read per token follow the <i>active</i> parameter count. But any token may be sent to any expert, so every expert must be in memory: memory follows the <i>total</i> count. That is why the mixture-of-experts models in <a class="xref" data-ref="openmodels"></a> are fast for their size but still need a lot of memory.</p>
+
+<h3>Putting it together: Llama 3.1 8B</h3>
+<p>Here is the 2017 base model next to one current open model:</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th scope="col"></th><th scope="col">2017 Transformer (base)</th><th scope="col">Llama 3.1 8B</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Structure</th><td>Encoder and decoder, 6 layers each</td><td>Decoder only, 32 layers</td></tr>
+    <tr><th scope="row">Width <span class="tex">d_{\text{model}}</span></th><td>512</td><td>4,096</td></tr>
+    <tr><th scope="row">Positions</th><td>Sinusoids added to the input</td><td>RoPE inside attention</td></tr>
+    <tr><th scope="row">Normalisation</th><td>LayerNorm after each sublayer</td><td>RMSNorm before each sublayer</td></tr>
+    <tr><th scope="row">MLP</th><td>ReLU, width 2,048</td><td>SwiGLU, width 14,336</td></tr>
+    <tr><th scope="row">Attention heads</th><td>8, each with its own keys and values</td><td>32 query heads sharing 8 key and value heads</td></tr>
+  </tbody>
+</table></div>
+<p>Llama 3.1 8B is a dense model. Mixtral 8x7B is an example of a mixture-of-experts model.</p>
 <div class="worked">
 <h4>Worked example</h4>
-<div class="x-only"><p><b>The cache.</b> Llama 3.1 8B stores, per token, <span class="tex">2\times32\times8\times128\times2=131{,}072</span> bytes, 128 KiB. At its full context of 131,072 tokens that is <span class="tex">131{,}072\times131{,}072\approx17.2</span> GB for one request, more than its 16.1 GB of bf16 weights. With 32 KV heads instead of 8 it would be 68.7 GB, so the full context would not fit on even an 80 GB GPU alongside the weights.</p>
-<p><b>Experts.</b> Mixtral 8x7B has 8 experts per layer and sends each token to 2. It has 46.7 billion parameters in total, all of which must be in memory, but each token uses 12.9 billion of them, about 28%, so it computes like a 13B model.</p></div>
-<div class="s-only"><p><b>The cache.</b> Llama 3.1 8B shares each key and value head between four query heads. At its longest context of about 131,000 tokens its cache is about 17 GB; without sharing it would be about 69 GB, more than four times the model’s own weights.</p>
-<p><b>Experts.</b> Mixtral 8x7B picks 2 of its 8 experts for every token: 46.7 billion parameters in memory, but only 12.9 billion used for each token.</p></div>
+<div class="x-only"><p><b>The cache.</b> Llama 3.1 8B stores <span class="tex">2\times32\times8\times128\times2=131{,}072</span> bytes per token, which is 128 KiB. Its full context is 131,072 tokens, so the cache for one request is <span class="tex">131{,}072\times131{,}072\approx17.2</span> GB. That is more than its 16.1 GB of bf16 weights.</p>
+<p>With 32 key and value heads instead of 8, the cache would be 68.7 GB. The full context would then not fit on even an 80 GB GPU alongside the weights.</p>
+<p><b>Experts.</b> Mixtral 8x7B has 8 experts per layer and sends each token to 2. It has 46.7 billion parameters in total, and all of them must be in memory. Each token uses only 12.9 billion of them, about 28%, so it computes like a 13B model.</p></div>
+<div class="s-only"><p><b>The cache.</b> Llama 3.1 8B shares each key and value head between four query heads. At its longest context of about 131,000 tokens, its cache is about 17 GB. Without sharing it would be about 69 GB, more than four times the model’s own weights.</p>
+<p><b>Experts.</b> Mixtral 8x7B picks 2 of its 8 experts for every token. All 46.7 billion parameters must be in memory, but only 12.9 billion are used for each token.</p></div>
 </div>
 <details class="callout code opt"><summary>In Python: RoPE, RMSNorm, SwiGLU, grouped-query attention and a router</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
