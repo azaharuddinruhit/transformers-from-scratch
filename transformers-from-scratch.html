@@ -3584,7 +3584,7 @@ print(f"step direction: chosen {-pi_c.grad.item():+.3f}, "
 <section class="ch" id="iv-agents" data-title="Interview prep: agents and tool use">
 <div class="num">SECTION 19 · PART E: INTERVIEW PREP</div>
 <h2>Interview prep: agents and tool use</h2>
-<p>An agent is an LLM running in a loop: it decides on an action, your code executes it, the result is fed back, and the loop continues until the task is done. Interviewers probe whether you know when an agent is justified, how tool calling works, and how agents fail.</p>
+<p>An agent is an LLM running in a loop: it decides on an action, your code executes it, the result is fed back, and the loop continues until the task is done. Interviewers probe whether you know when an agent is justified, how tool calling works, what frameworks add, and how agents fail.</p>
 <div class="flow" role="img" aria-label="Diagram: the user goal goes to the LLM, which emits a tool call; code runs the tool and returns the result to the LLM; the loop repeats until a final answer.">
   <div class="fq"><b>Goal</b><small>user request</small></div><i>→</i>
   <div class="fa"><b>LLM decides</b><small>answer, or call a tool</small></div><i>→</i>
@@ -3706,10 +3706,96 @@ print(extract_ticket("Users cannot log in since this morning's release."))
 # attempt 1 rejected: Expecting value: line 1 column 1 (char 0)
 # attempt 2 rejected: priority must be one of ['high', 'low', 'medium']
 # Ticket(title='Login fails', priority='high', component='auth')</code></pre></details></div>
+<h3>Frameworks</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q7</span>What do frameworks such as LangChain and LangGraph give you, and when would you skip them?</h4><ul><li><b>LangChain</b>: integrations behind one interface (many model providers, tools, vector stores) and agent building blocks; <code>create_agent</code> builds a tool-calling agent from a model, tools and a system prompt.</li><li><b>LangGraph</b>: a lower-level runtime for long-running, stateful agents. You define the flow as a graph; it adds persistence, streaming and pauses for human input. It does not need LangChain, and LangChain’s agents are built on it.</li><li><b>Gains</b>: less boilerplate, switching providers by configuration, durable state and approval steps without writing them yourself.</li><li><b>Costs</b>: another layer to debug, APIs that change quickly, and a dependency to keep up to date. The core agent loop is short enough to write yourself.</li><li>Rule of thumb: plain code for a single call or a fixed chain; a framework when you need durable state, human approval or many integrations.</li></ul><p class="fu"><b>Trap:</b> knowing only a framework’s API. Interviewers want the loop underneath: the model call, the tool execution, the state and the stop condition.</p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q8</span>Why model an agent as a graph instead of a plain loop?</h4><ul><li><b>Nodes</b> are steps (call the model, run a tool, check the output); <b>edges</b> say what runs next; <b>conditional edges</b> choose the next step from the state.</li><li><b>State</b> is one shared record that every node reads and updates. In LangGraph, a <b>reducer</b> decides how an update merges, for example appending messages instead of replacing them.</li><li>Loops still exist (model → tool → model), but they are explicit and bounded, and fixed steps and model-driven steps sit in the same graph.</li><li>Each node can be tested alone, and adding a retry, a review step or a branch is one more node and edge.</li><li>In LangGraph: <code>StateGraph</code>, <code>add_node</code>, <code>add_edge</code>, <code>add_conditional_edges</code>, <code>START</code> and <code>END</code>, then <code>compile()</code>.</li></ul><details class="callout code opt" open><summary>In Python: a graph agent with a checkpoint and a human approval step</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py"><code>import copy
+
+# What a graph runtime such as LangGraph automates, in plain Python: nodes that
+# update shared state, a conditional edge, a checkpoint after every step, and a
+# pause for human approval. The "model" is a scripted stand-in, not an LLM.
+
+
+def call_model(state):
+    if "order" not in state:
+        return {"action": "lookup_order"}
+    if state["order"]["status"] == "damaged" and "refund" not in state:
+        return {"action": "refund", "amount": 40}
+    return {"action": "finish", "answer": state.get("refund", "No refund needed.")}
+
+
+class Interrupt(Exception):
+    """Raised by a node to pause the run until a person answers."""
+
+
+def model_node(state, resume):
+    state["next"] = call_model(state)
+
+
+def lookup_node(state, resume):
+    state["order"] = {"id": "A-1042", "status": "damaged"}   # stands in for a tool
+
+
+def refund_node(state, resume):
+    # On resume the node runs again from its start, so nothing before the pause
+    # may have side effects (LangGraph's interrupt() behaves the same way)
+    if resume is None:
+        raise Interrupt(f"approve a refund of {state['next']['amount']}?")
+    state["refund"] = "Refund issued." if resume == "yes" else "Refund declined."
+
+
+NODES = {"model": model_node, "lookup_order": lookup_node, "refund": refund_node}
+EDGES = {"lookup_order": "model", "refund": "model"}       # tools return to the model
+
+
+def route(state):                                          # conditional edge
+    action = state["next"]["action"]
+    return "END" if action == "finish" else action
+
+
+CHECKPOINTS = {}                                           # thread_id -&gt; (state, node)
+
+
+def run(thread_id, state=None, resume=None, max_steps=10):
+    if state is None:                                      # resume from the checkpoint
+        state, node = copy.deepcopy(CHECKPOINTS[thread_id])
+    else:
+        node = "model"
+    for _ in range(max_steps):
+        print("  step:", node)
+        try:
+            NODES[node](state, resume)
+        except Interrupt as pause:
+            CHECKPOINTS[thread_id] = (copy.deepcopy(state), node)
+            return f"paused, {pause}"
+        resume = None
+        node = route(state) if node == "model" else EDGES[node]
+        CHECKPOINTS[thread_id] = (copy.deepcopy(state), node)
+        if node == "END":
+            return state["next"]["answer"]
+    return "stopped at the step limit"
+
+
+print(run("thread-1", state={"goal": "My order arrived damaged"}))
+print("...a person reviews the request, then the same thread resumes...")
+print(run("thread-1", resume="yes"))
+
+# Output:
+#   step: model
+#   step: lookup_order
+#   step: model
+#   step: refund
+# paused, approve a refund of 40?
+# ...a person reviews the request, then the same thread resumes...
+#   step: refund
+#   step: model
+# Refund issued.</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q9</span>How do checkpoints and human approval work in a stateful agent?</h4><ul><li>A <b>checkpointer</b> saves the graph’s state as it runs, under a <b>thread ID</b>. A run can then resume after a crash or a pause, and a conversation can continue later.</li><li>For approval, a node pauses the run (LangGraph’s <code>interrupt()</code>) and hands back a payload, such as the action it wants to take. Your application shows it to a person.</li><li>The run resumes on the same thread with the person’s answer (<code>Command(resume=...)</code>), which becomes the return value of <code>interrupt()</code>.</li><li>Use a durable checkpointer in production, such as one backed by Postgres; in-memory ones lose everything on restart.</li></ul><p class="fu"><b>Trap:</b> on resume, the paused node runs again from its start, so anything it does before the pause must be safe to repeat. <b>Likely follow-up:</b> “How is this different from long-term memory?” Checkpoints belong to one thread, one conversation; a separate store holds what should persist across threads.</p></div>
 <h3>Reliability and safety</h3>
-<div class="qa"><h4 class="q"><span class="qn">Q7</span>How do agents fail, and how do you mitigate it?</h4><ul><li><b>Loops</b> and repeated actions: step, time and cost limits; detect repeats.</li><li><b>Wrong tool or invented arguments</b>: clearer tool descriptions, validation, fewer tools.</li><li><b>Errors compound</b> over long tasks: shorter tasks, checkpoints, verification steps.</li><li><b>Context overflow</b>: summarise history, keep tool outputs short.</li><li><b>Stopping too early</b> or claiming success: check the end state with code where possible.</li></ul></div>
-<div class="qa"><h4 class="q"><span class="qn">Q8</span>What are the security risks of agents?</h4><ul><li><b>Prompt injection</b>: web pages, emails or files contain instructions the model may follow. Treat all tool output as untrusted data.</li><li><b>Least privilege</b>: only the tools and permissions the task needs.</li><li><b>Human confirmation</b> for irreversible or outward-facing actions: payments, deletions, sending messages.</li><li><b>Sandbox</b> code execution; keep audit logs of every action.</li><li>Assume an injected instruction will eventually get through, and limit what damage it could do.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-rag"></a></p></div>
-<div class="qa"><h4 class="q"><span class="qn">Q9</span>How do you evaluate an agent?</h4><ul><li>A suite of realistic tasks with a checkable outcome; measure the <b>task success rate</b>.</li><li>Check the end state with code where possible (a record created, a test passing).</li><li>Inspect <b>trajectories</b>: right tools, wasted steps, cost and latency per task.</li><li>Run each task several times; report pass rates, because runs vary.</li><li>Add every production failure to the suite.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-prod"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q10</span>How do agents fail, and how do you mitigate it?</h4><ul><li><b>Loops</b> and repeated actions: step, time and cost limits; detect repeats.</li><li><b>Wrong tool or invented arguments</b>: clearer tool descriptions, validation, fewer tools.</li><li><b>Errors compound</b> over long tasks: shorter tasks, checkpoints, verification steps.</li><li><b>Context overflow</b>: summarise history, keep tool outputs short.</li><li><b>Stopping too early</b> or claiming success: check the end state with code where possible.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q11</span>What are the security risks of agents?</h4><ul><li><b>Prompt injection</b>: web pages, emails or files contain instructions the model may follow. Treat all tool output as untrusted data.</li><li><b>Least privilege</b>: only the tools and permissions the task needs.</li><li><b>Human confirmation</b> for irreversible or outward-facing actions: payments, deletions, sending messages.</li><li><b>Sandbox</b> code execution; keep audit logs of every action.</li><li>Assume an injected instruction will eventually get through, and limit what damage it could do.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-rag"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q12</span>How do you evaluate an agent?</h4><ul><li>A suite of realistic tasks with a checkable outcome; measure the <b>task success rate</b>.</li><li>Check the end state with code where possible (a record created, a test passing).</li><li>Inspect <b>trajectories</b>: right tools, wasted steps, cost and latency per task.</li><li>Run each task several times; report pass rates, because runs vary.</li><li>Add every production failure to the suite.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-prod"></a></p></div>
 <div class="wrapup"><p class="bridge"><b>Next:</b> All of these systems need to be measured and run reliably. <a class="xref" data-ref="iv-prod"></a> covers evaluation and production.</p></div>
 </section>
 
@@ -3873,6 +3959,9 @@ print(with_fallback(flaky_llm_call, lambda: "answer from the backup model"))
   <div class="term"><dt>Distillation</dt><dd>Training a smaller model to imitate a larger one.</dd></div>
   <div class="term"><dt>Agent</dt><dd>An LLM running in a loop that chooses actions, such as tool calls, until a goal is reached.</dd></div>
   <div class="term"><dt>Tool calling</dt><dd>The model emits a structured request (name and arguments) for your code to run a function and return the result.</dd></div>
+  <div class="term"><dt>Human-in-the-loop</dt><dd>Pausing an agent so a person can approve, edit or reject a step before it continues.</dd></div>
+  <div class="term"><dt>LangChain</dt><dd>An open-source framework with integrations for many model providers and tools, and agent building blocks such as <code>create_agent</code>; its agents are built on LangGraph.</dd></div>
+  <div class="term"><dt>LangGraph</dt><dd>A low-level runtime for long-running, stateful agents: the flow is a graph of nodes and edges over shared state, with checkpoints, streaming and pauses for human input.</dd></div>
   <div class="term"><dt>Prompt injection</dt><dd>Instructions hidden in user input, documents or tool output that try to override the intended behaviour.</dd></div>
   <div class="term"><dt>LLM-as-judge</dt><dd>Using a language model with a rubric to score or compare outputs.</dd></div>
   <div class="term"><dt>Perplexity</dt><dd>The exponential of the cross-entropy loss: the effective number of choices the model is unsure between.</dd></div>
