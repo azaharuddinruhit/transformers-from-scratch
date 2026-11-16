@@ -17,7 +17,7 @@
   --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
   --mono:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;
-  --cd-bg:#fffbeb;--cd-fg:#1f1f1f;--cd-line:#cfcfde;--cd-c:#6c664b;--cd-k:#a3144d;--cd-s:#846e15;--cd-n:#a34d14;--cd-f:#14710a;--cd-b:#036a96;
+  --cd-bg:#ffffff;--cd-fg:#262626;--cd-line:#dcdcdc;--cd-c:#5d6c79;--cd-k:#9b2393;--cd-s:#c41a16;--cd-n:#1c00cf;--cd-f:#326d74;--cd-b:#6c36a9;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   color-scheme:dark;--bg:#11141b;--surface:#191e29;--panel:#151a23;--ink:#e7eaf1;--muted:#9ba4b6;--line:#2b3343;
@@ -97,6 +97,10 @@ details.callout summary{cursor:pointer;font:700 .76rem var(--sans);letter-spacin
 .callout.code{--c:var(--accent)}
 .cbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:10px 0 6px}
 .cbar small{font-size:.8rem}
+.cpy{display:inline-grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid transparent;border-radius:7px;background:none;color:var(--muted);cursor:pointer}
+.cpy:hover{color:var(--ink);border-color:var(--line)}.cpy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cpy svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cpy .i-ok,.cpy.ok .i-cp{display:none}.cpy.ok .i-ok{display:block}.cpy.ok{color:var(--v)}
 /* Dracula spec (draculatheme.com/spec): Alucard in the light theme, Dracula in the dark theme (--cd-* variables).
    Dracula's comment colour is lightened from #6272a4 to #8a96c8 for 4.9:1 contrast; every Alucard colour passes 4.5:1 as published. */
 pre.py{margin:0;padding:12px 14px;background:var(--cd-bg);color:var(--cd-fg);border:1px solid var(--cd-line);border-radius:8px;overflow-x:auto;font:.8rem/1.6 var(--mono);tab-size:4;scrollbar-color:var(--cd-c) var(--cd-bg)}
@@ -601,7 +605,7 @@ select.dd-native{display:none}
   <p class="s-only">Three candidate tokens get scores 2.0, 1.0 and 0.1. Softmax turns those into roughly 66%, 24% and 10%. The gaps between scores matter, not the scores themselves: adding 5 to every score changes nothing.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: softmax, then sampling</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -795,7 +799,7 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
   <p class="s-only">Think of the embedding table as a spreadsheet with one row per token. Token ID 2 means “use row 2”. That row of numbers is the token’s vector.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: a greedy subword tokenizer and the embedding lookup</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 # A toy WordPiece-style vocabulary. "##" marks a piece that continues a word.
@@ -938,7 +942,7 @@ print("both 'the' rows equal:", np.array_equal(X[0], X[4]))
   <p class="s-only">Picture a row of clock hands turning at different speeds. The fast hands distinguish position 3 from position 4. The slow hands distinguish position 30 from position 300. Read together, they give every position a unique fingerprint.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: sinusoidal position vectors</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -1068,7 +1072,7 @@ print("shape is unchanged:", X.shape)
   <p class="s-only">The token “sat” asks, in effect, “who did the sitting?”. Its query matches the key of “cat” best, so “cat” gets about 46% of the attention, “sat” itself 28%, and the rest share what is left. The new vector for “sat” is mostly cat-flavoured.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: attention for the query “sat”, step by step</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 tokens = ["the", "cat", "sat", "on", "mat"]
@@ -1126,7 +1130,7 @@ print("most attended =", tokens[alpha.argmax()])
 <div class="tex d">s_{ij}\leftarrow\begin{cases}s_{ij}&amp; j\le i\\-\infty&amp; j\gt i\end{cases}\qquad\text{then}\qquad \alpha_{i}=\mathrm{softmax}(s_{i})</div>
 
 <details class="callout code opt" open><summary>In Python: the attention matrix and the causal mask</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -1259,7 +1263,7 @@ print("X", X.shape, "-&gt; weights", A.shape, "-&gt; output", out.shape)
   <p class="s-only">Splitting an 8-number vector between 2 heads gives each head 4 numbers to work with. You get two independent “where should I look?” decisions for the price of one.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: multi-head attention: split, attend, concatenate</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -1385,7 +1389,7 @@ print("2 heads:", h * 3 * d_model * d_k, "weights in W_Q, W_K, W_V")
   <p class="s-only">The two input numbers are stretched into three, bent by GELU (big positives pass through, negatives are mostly squashed), then recombined into two. The bending is what lets the network compute things a single matrix cannot.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: the tiny FFN, GELU and ReLU</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import math
 import numpy as np
 
@@ -1465,7 +1469,7 @@ print("ReLU(a)   =", relu(a))
   <p class="s-only">Subtract the average so the numbers centre on zero, then divide by their spread. [2, 4, 6, 8] and [200, 400, 600, 800] come out identical: only the pattern survives, not the scale.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: LayerNorm</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -1522,7 +1526,7 @@ print("per-token stds: ", Y.std(axis=-1).round(4))
 <p>The shape never changes, which is what makes blocks stackable. Tensor shapes are written <code>[batch, sequence_length, d_model]</code>, shortened to <code>[B, T, d_model]</code>: <code>B</code> independent sequences processed together, <code>T</code> tokens in each, <code>d_model</code> numbers per token.</p>
 
 <details class="callout code opt" open><summary>In Python: a pre-norm Transformer block</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import math
 import numpy as np
 
@@ -1664,7 +1668,7 @@ print("output shape:", x.shape, f"after {L} blocks: the shape never changes")
 <p>One detail makes training efficient: the model produces a next-token prediction at <b>every</b> position at once. Position 3’s output predicts token 4, and thanks to the causal mask it was computed without seeing token 4.</p>
 
 <details class="callout code opt" open><summary>In Python: the whole decoder-only forward pass</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import math
 import numpy as np
 
@@ -1768,7 +1772,7 @@ print({w: round(float(p), 3) for w, p in zip(vocab, probs[-1])})
   <p class="s-only">Two kinds of term dominate. Embeddings grow with vocabulary size × width. The blocks grow with layers × width². Doubling the width roughly quadruples the cost of the blocks.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: counting parameters</summary>
-<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>def count_params(n_vocab, d_model, T, L, d_ff, tied=False):
     token_emb = n_vocab * d_model
     pos_emb = T * d_model
@@ -1894,7 +1898,7 @@ for d in (768, 1536):
   <p class="s-only">Loss measures surprise. A confident correct guess costs almost nothing, an unsure guess costs a little, and a confident wrong guess costs a lot. Training rolls downhill on that number in small steps.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: teacher forcing, cross-entropy and its gradient</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -1946,7 +1950,7 @@ print("theta after one step:", theta - eta * grad)
 # finite diffs    : [ 0.2024  0.1564 -0.6614  0.1982  0.1045]
 # theta after one step: 1.95</code></pre></details>
 <details class="callout code opt" open><summary>In Python: a complete training loop</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import math
 import torch
 import torch.nn as nn
@@ -2123,7 +2127,7 @@ print("sample:", "".join(chars[i] for i in idx[0]))
   <p class="s-only">With scores 2.0, 1.0 and 0.1, the top token wins 66% of the time at temperature 1, 86% at temperature 0.5 and only 50% at temperature 2. Top-k and top-p then cut off the unlikely tail so that a rare unlucky draw cannot derail the text.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: temperature, top-k, top-p and the generation loop</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>from collections import Counter
 import numpy as np
 
@@ -2291,7 +2295,7 @@ print("tau=2.0:  ", repr(generate("the ", 30, rng, tau=2.0)))
   <p class="s-only">Generating 5 tokens after a 3-token prompt takes 25 units of work if the model starts over each time, and 7 if it remembers its earlier work. The memory for that remembering is modest for a small model and several gigabytes per conversation for a large model with a long context.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: a KV cache gives identical outputs with less work</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -2338,7 +2342,7 @@ print("positions computed with cache:   ", work_cache, "=", P + n - 1)
 # positions computed without cache: 25 = 25
 # positions computed with cache:    7 = 7</code></pre></details>
 <details class="callout code opt" open><summary>In Python: memory and speed estimates</summary>
-<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>def kv_cache_bytes(L, T, d_model, bytes_per_number=2, B=1):
     return 2 * L * T * d_model * bytes_per_number * B  # 2 = keys and values
 
@@ -2493,7 +2497,7 @@ for B in (1, 16, 256):
   <p class="s-only">A 1-billion-parameter model reading 20 billion tokens costs on the order of a hundred billion billion arithmetic operations to train. Its weights take about 2 GB, or a quarter of that after 4-bit quantization.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: compute, memory and the scaling-law curve</summary>
-<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>N = 1e9        # parameters
 D = 2e10       # training tokens
 
@@ -2618,7 +2622,7 @@ print(f"floor with D=2e10 however large N is: {loss(float('inf'), 2e10):.3f}")
   <p class="s-only">To write “black”, the decoder asks the encoder “which source word should I translate now?”. The answer is mostly “noir” (61%), with some weight on “chat” (22%), the noun that “noir” describes. French puts the adjective after the noun and English before it, and cross-attention handles the swap without any special rule.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: cross-attention</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -2774,7 +2778,7 @@ for word, row in zip(written, weights):
   <p class="s-only">The learning rate starts almost at zero, climbs in a straight line for 4,000 steps to about 0.0007, then slides down slowly. By the end of training it is a fifth of its peak.</p>
 </div>
 <details class="callout code opt" open><summary>In Python: the learning-rate schedule, post-norm and pre-norm</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -2883,7 +2887,7 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
 <div class="qa"><h4 class="q"><span class="qn">Q1</span>Walk me through what happens when a prompt goes into a decoder-only LLM.</h4><ul><li><b>Tokenize</b>: text becomes <span class="tex">T</span> integer IDs.</li><li><b>Embed</b>: each ID selects a row of <span class="tex">E</span>; add position information. Shape <code>[T, d_model]</code>.</li><li><b><span class="tex">L</span> blocks</b>, each: masked multi-head attention, then an MLP, each wrapped in LayerNorm and a residual add. Shape never changes.</li><li><b>Output</b>: final LayerNorm, then <span class="tex">W_U</span> gives logits <code>[T, n_vocab]</code>; softmax at the last position gives the next-token distribution.</li><li><b>Decode</b>: choose a token (greedy or sampling), append it, repeat. The KV cache avoids recomputing earlier positions.</li></ul><p class="fu"><b>Likely follow-up:</b> “Where are most of the parameters?” In the MLPs: with <span class="tex">d_{\text{ff}}=4d_{\text{model}}</span> an MLP has about <span class="tex">8d_{\text{model}}^2</span> weights, attention about <span class="tex">4d_{\text{model}}^2</span>. <b>Review:</b> <a class="xref" data-ref="architecture"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q2</span><span>Explain self-attention. Why divide by <span class="tex">\sqrt{d_k}</span>?</span></h4><ul><li>Each token is projected to a query, a key and a value.</li><li>Score of token <span class="tex">j</span> for token <span class="tex">i</span> is <span class="tex">q_i\cdot k_j</span>; softmax over <span class="tex">j</span> gives weights that sum to 1; the output is the weighted sum of values.</li><li>Matrix form: <span class="tex">\mathrm{softmax}(QK^{\top}/\sqrt{d_k})\,V</span>.</li><li>A dot product of <span class="tex">d_k</span> terms has a spread of about <span class="tex">\sqrt{d_k}</span>. Unscaled, large scores saturate softmax into near one-hot outputs with vanishing gradients. Dividing keeps the spread near 1.</li></ul><p class="fu"><b>Trap:</b> “attention weights explain the model’s decision.” They show where information was read from, not why the output was produced. <b>Review:</b> <a class="xref" data-ref="attention"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q3</span>Why multi-head attention? What are MQA and GQA?</h4><ul><li>One head gives each token one softmax, so one pattern of focus. Several heads capture several relationships at once (syntax, coreference, nearby tokens).</li><li>Each head works in <span class="tex">d_k=d_{\text{model}}/h</span> dimensions, so the cost and parameter count match one wide head.</li><li>Head outputs are concatenated and mixed by <span class="tex">W_O</span>.</li><li><b>MQA</b> (multi-query): all heads share one key and value head. <b>GQA</b> (grouped-query): groups of query heads share a key and value head.</li><li>Why: the KV cache shrinks by the sharing factor, which cuts inference memory and speeds up decoding, with little quality loss.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="multihead"></a>, <a class="xref" data-ref="inference"></a></p><details class="callout code opt" open><summary>In Python: grouped-query attention and its KV cache</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -2926,7 +2930,7 @@ for name, kv in [("MHA", heads), ("GQA (8 KV heads)", 8), ("MQA", 1)]:
 # MQA               KV cache per request: 0.13 GB</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q4</span>What does the causal mask do, and why does training still run in parallel?</h4><ul><li>It sets the scores for later positions to −∞ before softmax, so position <span class="tex">t</span> only sees positions ≤ <span class="tex">t</span>.</li><li>Training feeds the true text (teacher forcing) and predicts every next token in one pass; the mask makes every position’s prediction honest.</li><li>It matches generation, where the future does not exist yet.</li><li>It is also why the KV cache is exact: earlier positions never change when tokens are appended.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="attention"></a>, <a class="xref" data-ref="training"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q5</span>Why do Transformers need positional encodings? What options exist?</h4><ul><li>Attention without a mask treats its input as a set: shuffle the tokens and the outputs shuffle with them. Order must be supplied.</li><li><b>Sinusoidal</b> (2017 paper): fixed waves of different frequencies added to the embeddings.</li><li><b>Learned absolute</b> (GPT-2): a trainable table, one row per position, with a hard maximum length.</li><li><b>RoPE</b> (rotary): rotates queries and keys by a position-dependent angle so <span class="tex">q\cdot k</span> depends on the relative offset. Common in recent open models; context can be extended by rescaling its frequencies.</li><li><b>ALiBi</b>: adds a distance-proportional penalty to attention scores.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="position"></a></p><details class="callout code opt" open><summary>In Python: rotary position embedding (RoPE)</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -2959,7 +2963,7 @@ print("length kept:", np.isclose(np.linalg.norm(rope(q, 7)), np.linalg.norm(q)))
 # q at 12, k at 3 : -1.417411
 # length kept: True</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q6</span>Why residual connections and LayerNorm? Pre-norm or post-norm?</h4><ul><li><b>Residual</b> (<span class="tex">x+f(x)</span>): layers learn corrections; the gradient has a path to early layers that bypasses all weights, so deep stacks train.</li><li><b>LayerNorm</b>: resets each token vector to mean 0 and spread 1, plus a learned scale and shift, so activations do not drift.</li><li><b>Post-norm</b> (2017): normalise after the add. <b>Pre-norm</b> (GPT-style): normalise a copy before each sublayer; easier to train at depth.</li><li><b>RMSNorm</b>, used in many recent models, drops the mean subtraction and the bias: cheaper and about as good.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="block"></a>, <a class="xref" data-ref="paper"></a></p><details class="callout code opt" open><summary>In Python: RMSNorm next to LayerNorm</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -2989,7 +2993,7 @@ print("same when the mean is 0:", np.allclose(layer_norm(x0), rms_norm(x0)))
 <div class="qa"><h4 class="q"><span class="qn">Q7</span>What is the cost of attention, and how do models handle long context?</h4><ul><li>Compute grows as <span class="tex">T^2 d_{\text{model}}</span>; a naive implementation stores a <span class="tex">T\times T</span> score matrix per head.</li><li><b>FlashAttention</b>: exact attention computed in tiles held in fast on-chip memory, never storing the full matrix. Same result, much less memory traffic, faster.</li><li><b>Approximate or restricted</b> attention: sliding windows, sparse patterns.</li><li>At inference, the KV cache grows linearly with <span class="tex">T</span>: GQA, paged KV memory and KV quantization address that.</li><li>Quality also matters: models often use information in the middle of a long context less reliably than at the start or end.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="why"></a>, <a class="xref" data-ref="inference"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q8</span>Encoder-only, decoder-only, encoder–decoder: when would you use each?</h4><ul><li><b>Encoder-only</b> (BERT family): bidirectional; classification, tagging, and embedding models for search.</li><li><b>Decoder-only</b> (GPT family): causal; generation and general-purpose assistants. The dominant LLM design.</li><li><b>Encoder–decoder</b> (T5, the 2017 model): a separate input and output, linked by cross-attention; translation and summarisation.</li><li>A decoder-only model can do seq2seq tasks by putting input and output in one sequence.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="encdec"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q9</span>What is a mixture of experts (MoE)?</h4><ul><li>The MLP in each block is replaced by many expert MLPs plus a small router.</li><li>The router sends each token to its top-<span class="tex">k</span> experts (often 1 or 2).</li><li>Result: many more total parameters with roughly the compute per token of a much smaller dense model.</li><li>Costs: all experts must sit in memory, an auxiliary loss is needed to balance load across experts, training can be less stable, and serving is more complex.</li></ul><details class="callout code opt" open><summary>In Python: a mixture-of-experts layer with a top-2 router</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import numpy as np
 
 
@@ -3036,7 +3040,7 @@ print(f"each token runs {top_k} of {n_experts} expert MLPs")
 # each token runs 2 of 4 expert MLPs</code></pre></details></div>
 <h3>Training</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q10</span>What is the pretraining objective? What is perplexity?</h4><ul><li>Next-token prediction with cross-entropy: the average of <span class="tex">-\log p</span>(correct next token) over all positions.</li><li>Self-supervised: the targets are the text itself shifted by one, so any raw text is training data.</li><li><b>Perplexity</b> = <span class="tex">e^{\mathcal{L}}</span>: the effective number of tokens the model is choosing between. Lower is better.</li><li>Sanity check: an untrained model has loss near <span class="tex">\ln n_{\text{vocab}}</span>, perplexity near <span class="tex">n_{\text{vocab}}</span>.</li></ul><p class="fu"><b>Trap:</b> comparing perplexity across models with different tokenizers. The numbers are per token, and tokens differ. <b>Review:</b> <a class="xref" data-ref="training"></a></p><details class="callout code opt" open><summary>In Python: perplexity</summary>
-<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import math
 
 p_correct = [0.5, 0.25, 0.9]           # probability given to each true token
@@ -3081,7 +3085,7 @@ print(f"uniform: loss {math.log(n_vocab):.4f}  -&gt;  perplexity "
 <h3>Concepts</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q1</span>What is RAG, and when would you choose it over fine-tuning?</h4><ul><li>Retrieve relevant passages for each query and include them in the prompt.</li><li>Use RAG for <b>knowledge</b>: private, changing or very large document sets. Updating means re-indexing, not retraining.</li><li>Gives <b>citations</b> and lets you enforce <b>access control</b> per user.</li><li>Use fine-tuning for <b>behaviour</b>: format, style, tone, domain phrasing. The two combine well.</li></ul><p class="fu"><b>Trap:</b> “fine-tune the model on our docs so it knows them.” Fine-tuning is unreliable for adding facts and cannot cite or be updated cheaply.</p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q2</span>What is an embedding model, and how is similarity measured?</h4><ul><li>A model, often encoder-only, that maps a text to one vector; trained contrastively so related texts land close together.</li><li>Similarity is usually <b>cosine similarity</b> (a dot product of normalised vectors).</li><li><b>Bi-encoder</b>: query and documents are embedded separately, so document vectors are computed once and search is fast.</li><li>Different from the token embeddings inside an LLM: one vector per text, not per token.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="tokens"></a></p><details class="callout code opt" open><summary>In Python: cosine similarity search</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import re
 import numpy as np
 
@@ -3121,7 +3125,7 @@ for score, doc in search("how do I reset my password"):
 <div class="qa"><h4 class="q"><span class="qn">Q3</span>How do you chunk documents?</h4><ul><li>Chunk size trades precision against context: small chunks match precisely but lose surrounding meaning; large chunks dilute the embedding and waste prompt space.</li><li>A common start: a few hundred tokens with some overlap, then tune on your eval.</li><li>Split on structure (headings, paragraphs, code blocks, table rows), not at a fixed character count.</li><li>Attach metadata: title, section path, date, source URL, permissions.</li><li><b>Parent–child</b>: retrieve small chunks, pass their larger parent section to the model.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q4</span>How does vector search scale to millions of chunks?</h4><ul><li>Exact search compares the query to every vector: too slow at scale.</li><li><b>Approximate nearest neighbour</b> (ANN) indexes trade a little recall for large speed-ups: <b>HNSW</b> (navigable graph), <b>IVF</b> (search only nearby clusters), <b>PQ</b> (compressed vectors).</li><li>Filter on metadata (permissions, date, product) during search.</li><li>Tooling ranges from pgvector or FAISS to dedicated vector databases; choose by scale, filtering needs and operations effort.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q5</span>Why hybrid search and reranking?</h4><ul><li>Embeddings capture meaning but miss exact strings: error codes, product IDs, names. <b>Keyword search (BM25)</b> catches those.</li><li>Run both and merge the lists, for example with <b>reciprocal rank fusion</b>.</li><li>A <b>cross-encoder reranker</b> reads query and passage together: much more accurate than a bi-encoder, but too slow for the whole corpus, so apply it to the top 20 to 100.</li><li>Then send only the best few passages to the LLM.</li></ul><details class="callout code opt" open><summary>In Python: reciprocal rank fusion</summary>
-<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>from collections import defaultdict
 
 
@@ -3143,7 +3147,7 @@ print(reciprocal_rank_fusion([vector_hits, keyword_hits]))
 # ['doc7', 'doc4', 'doc2', 'doc9', 'doc1']</code></pre></details></div>
 <h3>Quality and evaluation</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q6</span>How do you evaluate a RAG system?</h4><ul><li>Evaluate <b>retrieval</b> and <b>generation</b> separately, so you know which stage to fix.</li><li>Retrieval: label which chunks answer each query; measure <b>recall@k</b>, <b>MRR</b>, <b>nDCG</b>.</li><li>Generation: <b>faithfulness</b> (every claim supported by the retrieved context), <b>answer relevance</b>, <b>correctness</b> against a reference answer.</li><li>Build the test set from real user questions plus hard cases; score with an LLM judge using a rubric, calibrated against human labels.</li><li>Re-run on every change: chunking, embedder, prompt, model.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-prod"></a></p><details class="callout code opt" open><summary>In Python: recall@k and MRR</summary>
-<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>def recall_at_k(retrieved, relevant, k):
     """Share of the relevant chunks that appear in the top k."""
     return len(set(retrieved[:k]) &amp; relevant) / len(relevant)
@@ -3195,7 +3199,7 @@ print(f"MRR      = {mrr:.3f}")
 <h3>When and how</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q1</span>Prompting, RAG or fine-tuning: how do you decide?</h4><ul><li>Start with <b>prompting</b>: cheapest, fastest to iterate, establishes a baseline on your eval.</li><li>Add <b>RAG</b> when the gap is missing knowledge.</li><li><b>Fine-tune</b> when the gap is behaviour: consistent format or style, domain jargon, a narrow task done cheaply by a smaller model, or prompts that have grown too long.</li><li>Fine-tuning brings data collection, training, evaluation and maintenance costs; justify it with eval numbers.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-rag"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q2</span>What is supervised fine-tuning (SFT)?</h4><ul><li>Train on (prompt, ideal response) pairs with the usual next-token loss.</li><li>The loss is usually computed only on the response tokens; prompt tokens are masked out.</li><li>Use the model’s own chat template exactly, or behaviour degrades.</li><li>Quality beats quantity: a few hundred to a few thousand clean, consistent examples often suffice for format and style.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="training"></a></p><details class="callout code opt" open><summary>In Python: masking the prompt out of the SFT loss</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import torch
 import torch.nn.functional as F
 
@@ -3230,7 +3234,7 @@ print("matches manual mean:", torch.isclose(loss, manual[len(prompt) - 1:].mean(
 # masked loss 3.1089   unmasked loss 2.5491
 # matches manual mean: True</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q3</span>Full fine-tuning versus LoRA. How does LoRA work?</h4><ul><li><b>Full fine-tuning</b> updates every weight. Memory holds weights, gradients and optimizer state: roughly 16 bytes per parameter with Adam in mixed precision.</li><li><b>LoRA</b> freezes each chosen weight matrix <span class="tex">W</span> and learns a low-rank update: <span class="tex">W'=W+\tfrac{\alpha}{r}BA</span>, with rank <span class="tex">r</span> much smaller than the matrix sides.</li><li>Trainable parameters per matrix: <span class="tex">r\,(d_{\text{in}}+d_{\text{out}})</span>, often well under 1% of the model.</li><li><span class="tex">B</span> starts at zero, so training starts from the original model.</li><li>After training, <span class="tex">BA</span> can be merged into <span class="tex">W</span> (no extra latency), or kept as a swappable per-task adapter.</li></ul><p class="fu"><b>Likely follow-up:</b> “Which matrices get adapters?” Originally the attention projections; applying it to all linear layers often works better. <b>Review:</b> <a class="xref" data-ref="block"></a></p><details class="callout code opt" open><summary>In Python: a LoRA layer</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import torch
 import torch.nn as nn
 
@@ -3292,7 +3296,7 @@ print("merged layer matches adapter:",
 <h3>Alignment</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q7</span>Explain RLHF.</h4><ul><li>Collect human comparisons: for one prompt, which of two responses is better.</li><li>Train a <b>reward model</b> to predict those preferences.</li><li>Optimise the policy (the LLM) with reinforcement learning, classically PPO, to maximise reward.</li><li>Add a <b>KL penalty</b> that keeps the policy close to the SFT model.</li><li>Effective but complex: several models in memory, sensitive hyperparameters, unstable training.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q8</span>What is DPO, and why is it popular?</h4><ul><li>Direct Preference Optimization trains directly on preference pairs (chosen, rejected).</li><li>Its loss raises the probability of the chosen response relative to the rejected one, measured against a frozen reference model.</li><li>No separate reward model and no RL loop: simpler and more stable, similar results in many settings.</li><li>Many variants exist; the core idea is preference learning as a classification-style loss.</li></ul><details class="callout code opt" open><summary>In Python: the DPO loss</summary>
-<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import torch
 import torch.nn.functional as F
 
@@ -3354,7 +3358,7 @@ print(f"step direction: chosen {-pi_c.grad.item():+.3f}, "
 <h3>Building agents</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q1</span>What is an agent, and when should you not build one?</h4><ul><li>An LLM that chooses its own sequence of actions (tool calls) based on what it observes, until a goal is met.</li><li>A <b>workflow</b> is different: code fixes the steps and calls the LLM at chosen points.</li><li>Prefer the simplest thing that works: one call, then a fixed chain or workflow, then an agent only when the steps cannot be known in advance.</li><li>Agents cost more, are slower and harder to test, and errors compound over steps.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q2</span>How does tool (function) calling work?</h4><ul><li>You describe each tool to the model: a name, a description and a JSON schema for its parameters.</li><li>The model replies with a structured call: tool name plus arguments.</li><li><b>Your code</b> validates the arguments, executes the tool and sends back the result; the model never executes anything itself.</li><li>The model then continues: another call, or a final answer.</li></ul><details class="callout code opt" open><summary>In Python: a tool-calling loop</summary>
-<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import json
 
 # 1. Describe each tool: name, description and a JSON schema for its arguments
@@ -3413,7 +3417,7 @@ print(run_agent("Where is my order A-1042?"))
 <div class="qa"><h4 class="q"><span class="qn">Q4</span>What agent patterns do you know?</h4><ul><li><b>ReAct</b>: alternate reasoning, an action, and the observation it returns.</li><li><b>Plan then execute</b>: draft a plan, then work through its steps, re-planning when needed.</li><li><b>Reflection</b>: the model critiques and revises its own output.</li><li><b>Orchestrator and workers</b>: one agent splits the task and delegates to sub-agents. Useful for independent, parallel subtasks; costs more tokens and coordination.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q5</span>How does an agent remember things?</h4><ul><li><b>Short-term</b>: the context window. Trim, or summarise older turns, as it fills.</li><li><b>Long-term</b>: write facts or past episodes to a store (database, vector index) and retrieve them when relevant.</li><li>Keep authoritative state (orders, tickets, files) in your systems, not in the model’s context.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-rag"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q6</span>How do you get reliable structured output?</h4><ul><li>Use the provider’s structured-output or JSON mode with a schema.</li><li>Constrained decoding masks out tokens that would break the schema.</li><li>Always validate (for example with a schema library) and retry with the validation error included.</li><li>Keep schemas small and flat; describe each field.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="generation"></a></p><details class="callout code opt" open><summary>In Python: validate structured output and retry</summary>
-<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import json
 from dataclasses import dataclass
 
@@ -3485,7 +3489,7 @@ print(extract_ticket("Users cannot log in since this morning's release."))
 <h3>Production</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q5</span>How do you choose a model?</h4><ul><li>Quality on <b>your</b> eval, not public leaderboards alone.</li><li>Latency (time to first token, tokens per second), price per million input and output tokens, context length, tool-use and multimodal support.</li><li>Data privacy and hosting: a hosted API or self-hosted open weights; licence terms.</li><li>Start with the strongest model to find the quality ceiling, then test cheaper ones; route easy requests to a smaller model.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="scaling"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q6</span>How do you estimate and reduce cost?</h4><ul><li>Cost ≈ requests × (input tokens × input price + output tokens × output price). Output tokens usually cost more.</li><li>Shorter prompts, capped output length, prompt caching for repeated prefixes, smaller models via routing, batch APIs for offline jobs, caching repeated answers.</li><li>Track cost per request and per user from day one.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="inference"></a></p><details class="callout code opt" open><summary>In Python: estimating monthly cost</summary>
-<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>def monthly_cost(requests_per_day, input_tokens, output_tokens,
                  price_in_per_m, price_out_per_m, cached_share=0.0,
                  cached_discount=0.9):
@@ -3519,7 +3523,7 @@ for label, kwargs in [
 <div class="qa"><h4 class="q"><span class="qn">Q7</span>How do you reduce latency?</h4><ul><li>Time to first token grows with prompt length; total time grows with output length.</li><li><b>Stream</b> the output so users see progress.</li><li>Shorten prompts and outputs; put static content first so it can be cached.</li><li>Run independent calls in parallel; use a smaller model where quality allows; speculative decoding when you host the model.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="inference"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q8</span>What do you monitor in production?</h4><ul><li>Traces of prompts, responses and tool calls, with PII handling and retention rules.</li><li>Latency, error and timeout rates, token usage and cost, refusal rate.</li><li>User feedback signals and task completion.</li><li>Regular sampled human review; every failure becomes a new eval case.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q9</span>How do you make an LLM service reliable?</h4><ul><li>Timeouts; retries with exponential backoff for rate limits and transient errors.</li><li>Fallback to another model or provider; graceful degradation when all fail.</li><li>Validate and parse every structured output; retry on failure.</li><li>Pin model versions; re-run the eval before upgrading.</li></ul><details class="callout code opt" open><summary>In Python: retries with backoff, then a fallback</summary>
-<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py"><code>import random
 import time
 
@@ -4310,7 +4314,7 @@ function initCode(){
   $$('.codeBtn').forEach(b=>b.addEventListener('click',()=>{const v=b.dataset.c;applyCode(v);try{if(v==='open')localStorage.removeItem('tfs-code');else localStorage.setItem('tfs-code',v);}catch(e){}}));
   $$('.cpy').forEach(b=>b.addEventListener('click',()=>{
     const text=b.closest('details').querySelector('pre code').textContent;
-    const done=()=>{b.textContent='Copied';setTimeout(()=>{b.textContent='Copy';},1500);};
+    const done=()=>{b.classList.add('ok');b.setAttribute('aria-label','Copied');setTimeout(()=>{b.classList.remove('ok');b.setAttribute('aria-label','Copy code');},1500);};
     const fallback=()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){}ta.remove();};
     if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(done,fallback);else fallback();
   }));
