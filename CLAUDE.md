@@ -23,10 +23,11 @@ An interactive guide used to learn Transformers and LLMs, train an engineering t
 
 - **Part A, the big picture**: `intro`, `why`
 - **Part B, building the model**: `tokens`, `position`, `attention`, `multihead`, `block`, `architecture`
-- **Part C, training and using it**: `training`, `scaling`, `posttrain`, `prefs`, `generation`, `inference`, `hardware`, `openmodels`
-- **Part D, the wider picture**: `encdec`, `paper`, `modern`
+- **Part C, training and using it**: `training` (includes scale: compute and tokens per parameter), `posttrain`, `prefs`, `generation`, `inference`, `hardware`
+- **Part D, the wider picture**: `encdec` (includes the 2017 paper), `modern`
 - **Interview drill** topics: `iv-core`, `iv-rag`, `iv-ft`, `iv-agents`, `iv-prod`, `iv-hw`
-- **Reference**: `maths` (the maths refresher, linked from the home page), `glossary`, `notation`, `further`
+- **Reference**: `maths` (the maths refresher, linked from the home page), `glossary`, `notation`, `models` (the open-weight models lookup), `further`
+- **Merged or moved sections**: `MOVED` in `site.js` maps old ids (`scaling`, `paper`, `openmodels`) to their new homes, so old links and bookmarks still work. Add an entry whenever a section is removed.
 
 `site.js` holds the registry: `PARTS` (part id, name, goal, section ids), `SECS` (section id → title, minutes on Full depth, minutes on Quick tour, level as an index into `LEVELS`: Foundation, Core or Deep dive, shown as the `.lvl` pill in the meta line) and `TOPICS`. Adding, moving or renaming a section means editing the page and these entries; nothing else is numbered by hand. Study minutes are words / 110 + 3 per interactive, rounded to 5, without code boxes (Full depth drops `.s-only`; Quick tour drops `.opt` and `.x-only`); recount when a section changes a lot.
 
@@ -61,8 +62,8 @@ Drill questions are `div.qa` blocks: `h4.q` with a `span.qn` number, `p.sample` 
 - `python tools/snippets.py --check`: every snippet still produces the output shown.
 - `node tools/test-model.js`: the toy model reaches a validation loss near 0.3 in 600 steps (it prints about 0.31).
 - Open each page and check the console is free of errors, in the light and dark themes.
-- Paper facts in "The 2017 paper in detail" (BLEU scores, model sizes, training times) were written from memory; verify them against the paper before presenting.
+- The 2017 paper facts kept in "Encoder–decoder and the 2017 paper" (6 + 6 layers, width 512, 8 heads, MLP width 2,048, 65 to 213 million parameters, the warm-up schedule) were written from memory; verify them against the paper before presenting. The BLEU scores and training times were removed.
 - GPU figures in "GPUs and CUDA" (the table, `HW_GPUS` in `part-c.js` and the `s11b` snippet) come from NVIDIA's H100, A100, L4 and DGX Spark product pages and Appendix A of the Ada architecture whitepaper (RTX 4090), checked November 2026. NVIDIA quotes data-centre tensor throughput with sparsity; the guide shows the dense figure (half). DGX Spark has no published BF16 figure, so the guide gives none and the widget leaves out its compute limit. Keep the three copies in step.
-- Open-weight model facts in "Open-weight models" (sizes, download sizes, context lengths, licences, Ollama and vLLM behaviour) come from the ollama.com library pages, the Hugging Face model cards and docs.ollama.com / docs.vllm.ai, checked November 2026. New versions appear every few months; re-check before presenting.
+- Open-weight model facts in the "Open-weight models" lookup on the Reference page (sizes, download sizes, context lengths, licences, Ollama and vLLM behaviour) come from the ollama.com library pages, the Hugging Face model cards and docs.ollama.com / docs.vllm.ai, checked November 2026. New versions appear every few months; re-check before presenting.
 - Model configurations in "What modern LLMs change" (Llama 3.1 8B: 32 layers, 32 query heads, 8 KV heads, width 14,336; Mixtral 8x7B: 46.7B total, 12.9B active) and the Llama 3 pretraining figure (over 15 trillion tokens) in "Training an LLM" and "Scaling laws" were written from the published model cards and papers from memory; verify before presenting.
 - LangChain and LangGraph facts in the agents drill questions (Q7 to Q9) were checked against docs.langchain.com in November 2026. These APIs change often; re-check before presenting. The snippet imitates the ideas in plain Python and does not use either library.

@@ -63,7 +63,7 @@
 </section>
 <section class="ch" id="training" data-title="Training an LLM">
 <h2>Training an LLM</h2>
-<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Derive the cross-entropy loss from “make real text probable”.</li><li>Explain teacher forcing and why one sequence gives many training examples.</li><li>Describe one training step: forward, loss, backward, update.</li><li>Read a loss curve and recognise overfitting and divergence.</li></ul></div><p class="needs"><b>Builds on</b> The full model from <a class="xref" data-ref="architecture"></a>; the chain rule from <a class="xref" data-ref="intro"></a>; gradients and gradient descent in outline.</p></div>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Derive the cross-entropy loss from “make real text probable”.</li><li>Explain teacher forcing and why one sequence gives many training examples.</li><li>Describe one training step: forward, loss, backward, update.</li><li>Read a loss curve and recognise overfitting and divergence.</li><li>Estimate training compute, and say why parameters and data must grow together.</li></ul></div><p class="needs"><b>Builds on</b> The full model from <a class="xref" data-ref="architecture"></a>; the chain rule from <a class="xref" data-ref="intro"></a>; gradients and gradient descent in outline.</p></div>
 <div class="story"><p>Given the text “the cat sat on the mat”, the input is “the cat sat on the” and the targets are the same tokens shifted by one, ending in “mat”. If the model gives “mat” probability 0.44, that position contributes <span class="tex">-\ln 0.44=0.82</span> to the loss.</p></div>
 <p>An untrained model has random parameters and predicts nonsense. Training is a loop: show the model real text, measure how surprised it was by each actual next token, and nudge every parameter in the direction that would have made it slightly less surprised. Repeat billions of times.</p>
 <div class="flow" role="img" aria-label="Diagram of the training loop: batch of text, forward pass, loss, backward pass, optimizer update, repeat">
@@ -268,58 +268,18 @@ print("sample:", "".join(chars[i] for i in idx[0]))
   <li><b>Overfitting</b>: training loss keeps dropping while validation loss stalls or rises. The model is memorising its training text instead of learning patterns that carry over.</li>
   <li><b>Why curves matter</b>: they are the main instrument panel of training. A flat line, a sudden spike or a widening gap between the two curves each points to a different problem, long before you read any generated text.</li>
 </ul>
-<h3 class="opt">Common misconceptions</h3>
-<ul class="pit opt">
-  <li><b>“Loss should reach zero.”</b> Language is uncertain; many continuations are valid. A loss of zero would mean memorisation.</li>
-  <li><b>“The model is trained on its own outputs.”</b> During pretraining it always sees real text (teacher forcing). It first consumes its own outputs at inference time.</li>
-  <li><b>“A larger learning rate just trains faster.”</b> Beyond a point it destabilises training or settles on a worse result.</li>
-  <li><b>Pitfall:</b> evaluating on data that overlaps the training set makes a model look better than it is.</li>
-</ul>
-<div class="wrapup">
-<h3>Key takeaways</h3>
-<ul class="take"><li>Loss = average of <span class="tex">-\log</span>(probability given to the correct next token).</li><li>An untrained model starts near <span class="tex">\ln n_{\text{vocab}}</span>, the loss of uniform guessing.</li><li>Targets are the inputs shifted by one; all positions are trained in one parallel pass.</li><li>One step: <span class="tex">\theta\leftarrow\theta-\eta\,\nabla_\theta\mathcal{L}</span>, in practice with Adam and a warm-up schedule.</li><li>Training loss falling while validation loss rises is overfitting.</li></ul>
-<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
-<div class="quiz">
-<fieldset><legend>1. The model assigns probability 0.5 to the correct next token. What is the loss at that position?</legend><button type="button" class="qo">0.5</button><button type="button" class="qo" data-ok="1">0.69</button><button type="button" class="qo">2.0</button><p class="qx" hidden aria-live="polite"><b></b> −ln 0.5 = 0.693.</p></fieldset>
-<fieldset><legend>2. A character-level model has 21 possible characters. What loss should you expect before any training?</legend><button type="button" class="qo">About 0</button><button type="button" class="qo" data-ok="1">About 3.04</button><button type="button" class="qo">About 21</button><p class="qx" hidden aria-live="polite"><b></b> Uniform guessing gives ln 21 = 3.04.</p></fieldset>
-<fieldset><legend>3. During training, what does the model receive as input at position t?</legend><button type="button" class="qo">Its own earlier predictions</button><button type="button" class="qo" data-ok="1">The true earlier tokens</button><button type="button" class="qo">Random tokens</button><p class="qx" hidden aria-live="polite"><b></b> This is teacher forcing: the real text is fed in, shifted by one position.</p></fieldset>
-<fieldset><legend>4. Training loss keeps falling but validation loss starts rising. What is happening?</legend><button type="button" class="qo">The learning rate is too low</button><button type="button" class="qo" data-ok="1">The model is memorising the training set (overfitting)</button><button type="button" class="qo">The gradient check failed</button><p class="qx" hidden aria-live="polite"><b></b> It is getting better at the examples it has seen and worse at text it has not.</p></fieldset>
-</div>
-<details class="talk"><summary>For team discussion</summary><ul><li>The objective is only “predict the next token”. Why does that single objective produce grammar, facts and reasoning patterns?</li><li>Train the toy model on the small dataset. What do you see, and how would you detect the same thing in a real project?</li></ul></details>
-<p class="bridge">How good a trained model gets depends on how large it is and how much it reads. <a class="xref" data-ref="scaling"></a> shows how the two trade off.</p>
-</div>
-</section>
-<section class="ch" id="scaling" data-title="Scaling laws">
-<h2>Scaling laws: model size, data and compute</h2>
-<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Estimate training compute from parameters and tokens.</li><li>Explain why parameters and data must grow together.</li><li>Judge from tokens per parameter whether a model was trained to the compute-optimal point or well beyond it.</li></ul></div><p class="needs"><b>Builds on</b> Parameter counts from <a class="xref" data-ref="architecture"></a> and the loss from <a class="xref" data-ref="training"></a>.</p></div>
-<div class="story"><p>The toy model in this guide has under 10,000 parameters and has seen a few hundred sentences. Predicting “mat” well in general, for any prompt, is what billions of parameters and trillions of tokens buy.</p></div>
-<p>The toy model above and a frontier LLM share the same architecture. The difference is scale: parameters, data and compute, each larger by many orders of magnitude. A striking empirical finding is that performance improves smoothly and predictably as these grow together, following what are called <b>scaling laws</b>.</p>
-<div class="flow" role="img" aria-label="Diagram: a compute budget is split between model size and training tokens, and the split sets the final loss">
-  <div><b>Compute budget</b><small>FLOPs you can afford</small></div><i>→</i>
-  <div class="fa"><b>Split it</b><small>compute ≈ 6 × N × D</small></div><i>→</i>
-  <div><b>Model size N</b><small>parameters</small></div><i>+</i>
-  <div><b>Data D</b><small>training tokens</small></div><i>→</i>
-  <div class="fa"><b>Final loss</b><small>predicted by a scaling law</small></div>
-</div>
-<ul>
-  <li><b>Model size</b> (parameters, <span class="tex">N</span>): capacity to store patterns. More parameters help only if there is enough data to fill them.</li>
-  <li><b>Dataset size</b> (tokens, <span class="tex">D</span>): how much text the model learns from.</li>
-  <li><b>Compute</b>: training cost grows with both. A standard rule of thumb is about 6 floating-point operations per parameter per training token.</li>
-  <li><b>Inference cost</b>: about 2 operations per parameter for every token generated, paid on every request for as long as the model is in service. This is why many released models are smaller than compute-optimal and trained on far more data: a smaller model is cheaper to serve.</li>
-</ul>
-<h3>The equations, and the reasoning behind them</h3>
-<p><b>Training compute.</b> One forward pass costs about 2 floating-point operations per parameter per token: each weight is used in one multiplication and one addition. The backward pass costs about twice the forward pass. Together that is roughly 6 operations per parameter per token, so for <span class="tex">N</span> parameters and <span class="tex">D</span> training tokens:</p>
+<h3>How big, and how much data?</h3>
+<p>The toy model on this page and a frontier LLM share the same architecture. The difference is scale: the number of parameters <span class="tex">N</span>, the number of training tokens <span class="tex">D</span>, and the compute that the two together require.</p>
+<p><b>Compute.</b> A forward pass costs about 2 floating-point operations per parameter per token: each weight takes part in one multiplication and one addition. The backward pass costs about twice that. So training costs about 6 operations per parameter per token:</p>
 <div class="tex d">C_{\text{train}}\approx 6\,N\,D\ \ \text{FLOPs}</div>
-<p><b>Loss as a function of scale.</b> Think of the loss as having three sources: a part no model can remove because language is uncertain, a part caused by having too few parameters, and a part caused by having seen too little data. Measured curves are close to straight lines on logarithmic axes, which is the signature of a power law, so each removable part is modelled as one:</p>
-<div class="tex d">\mathcal{L}(N,D)\approx \mathcal{L}_{\infty}+\frac{a}{N^{r}}+\frac{b}{D^{s}}</div>
-<p class="sym"><span class="tex">\mathcal{L}_\infty</span> is the irreducible loss. <span class="tex">a</span>, <span class="tex">b</span> are constants. <span class="tex">r</span>, <span class="tex">s</span> are exponents between 0 and 1. This is the form fitted by Hoffmann et al. (2022).</p>
-<details class="why"><summary>What the form tells you.</summary><div class="whyb">The two fractions shrink independently. Make <span class="tex">N</span> enormous and the second term vanishes, but the third is untouched: you are left with <span class="tex">\mathcal{L}_\infty+b/D^{s}</span> however large the model. Whichever of parameters or data is scarce sets the floor, which is why the two must grow together.</div></details>
+<p><b>Parameters and data must grow together.</b> A larger model can store more patterns, but only if there is enough text to fill it. Give a model ten times the parameters and the same data, and the loss soon stops falling, because the data has run out. Experiments by Hoffmann et al. (2022) found the lowest loss for a fixed training budget at about 20 training tokens per parameter.</p>
+<p><b>Serving changes the sum.</b> Generating one token costs about <span class="tex">2N</span> operations, paid on every request for as long as the model is in use. So many released models are smaller than that ratio suggests, and are trained on far more text: a smaller model is cheaper to run.</p>
 <div class="worked">
-  <h4>Worked example</h4>
+  <h4>Worked example: compute and tokens per parameter</h4>
   <p class="x-only">A model with <span class="tex">N=10^{9}</span> parameters trained on <span class="tex">D=2\times10^{10}</span> tokens needs about <span class="tex">6\times10^{9}\times2\times10^{10}=1.2\times10^{20}</span> FLOPs. That is <span class="tex">D/N=20</span> tokens per parameter, close to the compute-optimal ratio of about 20 found by Hoffmann et al. (2022). Llama 3 8B was trained on over <span class="tex">15\times10^{12}</span> tokens: about 1,900 per parameter, far past that point, because it was built to be cheap to run.</p>
   <p class="s-only">A 1-billion-parameter model reading 20 billion tokens costs on the order of a hundred billion billion arithmetic operations to train. That is 20 tokens per parameter, about the compute-optimal ratio. Models built to be cheap to run are trained on far more: Llama 3 8B saw about 1,900 tokens per parameter.</p>
 </div>
-<details class="callout code opt"><summary>In Python: compute, memory and the scaling-law curve</summary>
+<details class="callout code opt"><summary>In Python: training compute and tokens per parameter</summary>
 <div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
 <pre class="py" data-src="s12_scaling.py"><code>N = 1e9        # parameters
 D = 2e10       # training tokens
@@ -329,64 +289,37 @@ print(f"inference ~ 2N = {2 * N:.0e} FLOPs per generated token")
 print(f"tokens per parameter: {D / N:.0f} (the compute-optimal rule of thumb is ~20)")
 print(f"Llama 3 8B, over 15e12 tokens: {15e12 / 8e9:.0f} tokens per parameter")
 
-
-def loss(N, D, L_inf=1.69, a=406.4, r=0.34, b=410.7, s=0.28):
-    # Hoffmann et al. (2022), Appendix D.2, Eq. 10: their fitted constants
-    return L_inf + a / N ** r + b / D ** s
-
-
-# Growing only N leaves the data term untouched, so the loss stops improving
-for n in (1e8, 1e9, 1e10, 1e11, 1e12):
-    print(f"N={n:.0e}, D=2e10: loss {loss(n, 2e10):.3f}")
-print(f"floor with D=2e10 however large N is: {loss(float('inf'), 2e10):.3f}")
-
 # Output:
 # training compute ~ 6ND = 1.2e+20 FLOPs
 # inference ~ 2N = 2e+09 FLOPs per generated token
 # tokens per parameter: 20 (the compute-optimal rule of thumb is ~20)
-# Llama 3 8B, over 15e12 tokens: 1875 tokens per parameter
-# N=1e+08, D=2e10: loss 3.000
-# N=1e+09, D=2e10: loss 2.580
-# N=1e+10, D=2e10: loss 2.388
-# N=1e+11, D=2e10: loss 2.300
-# N=1e+12, D=2e10: loss 2.260
-# floor with D=2e10 however large N is: 2.226</code></pre></details>
-
-<div class="widget" id="w-scale">
-  <h4 class="wt">Interactive · model size, data and compute (conceptual)</h4>
-  <p class="look"><b>The point:</b> Parameters and data must grow together. <b>Do this:</b> Fix the data slider and raise the model size; then do the reverse. <b>Watch for:</b> The curve flattens when one of the two runs out, and the “Bottleneck” reading says which.</p>
-  <p class="cap"><b>Conceptual illustration, not a prediction.</b> The curve uses the functional form above with constants in the neighbourhood of one published fit. Real results depend on data quality, architecture, training recipe and what you measure. The “capability” gauge is an arbitrary rescaling of the illustrative loss.</p>
-  <div class="controls">
-    <label class="ctl"><span class="row">Model size N <output id="sc-n-o"></output></span><input type="range" id="sc-n" min="6" max="12" step="0.1" value="9"></label>
-    <label class="ctl"><span class="row">Training tokens D <output id="sc-d-o"></output></span><input type="range" id="sc-d" min="8" max="13.5" step="0.1" value="10.3"></label>
-  </div>
-  <svg id="sc-chart" role="img" aria-label="Illustrative loss as a function of model size for the chosen dataset size"></svg>
-  <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> with your dataset (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> with unlimited data (dashed)</span><span>● your model</span></div>
-  <div class="stats" id="sc-read" aria-live="polite"></div>
-  <div class="wjh"><b>What just happened?</b> Moving the model-size slider slides the dot along the solid curve. The curve flattens: past a certain size, extra parameters stop helping because the data has run out, and the gap to the dashed line shows how much is being left on the table. Raising the data slider lowers the whole solid curve. Compute is the product of the two, so balanced growth is expensive, and growing only one of them is wasteful.</div>
-</div>
+# Llama 3 8B, over 15e12 tokens: 1875 tokens per parameter</code></pre></details>
 <h3 class="opt">Common misconceptions</h3>
 <ul class="pit opt">
+  <li><b>“Loss should reach zero.”</b> Language is uncertain; many continuations are valid. A loss of zero would mean memorisation.</li>
+  <li><b>“The model is trained on its own outputs.”</b> During pretraining it always sees real text (teacher forcing). It first consumes its own outputs at inference time.</li>
+  <li><b>“A larger learning rate just trains faster.”</b> Beyond a point it destabilises training or settles on a worse result.</li>
   <li><b>“Bigger is always better.”</b> Only when data and compute grow too. An oversized model on too little data wastes compute and overfits.</li>
-  <li><b>“Scaling laws are laws of nature.”</b> They are empirical fits over the ranges tested, for particular setups.</li>
-  <li><b>“Compute-optimal is how every model is trained.”</b> It gives the lowest loss for a fixed training budget. A model that will answer many requests is often trained far past it, because a smaller model is cheaper to serve.</li>
+  <li><b>Pitfall:</b> evaluating on data that overlaps the training set makes a model look better than it is.</li>
 </ul>
 <div class="wrapup">
 <h3>Key takeaways</h3>
-<ul class="take"><li>Training compute ≈ <span class="tex">6ND</span> floating-point operations.</li><li>Loss falls as a power law in both <span class="tex">N</span> and <span class="tex">D</span>; whichever is scarce sets the floor.</li><li>About 20 training tokens per parameter is compute-optimal; models built for heavy use are often trained on far more.</li><li>The curves in this section are illustrative fits, not a prediction for any particular model.</li></ul>
+<ul class="take"><li>Loss = average of <span class="tex">-\log</span>(probability given to the correct next token).</li><li>An untrained model starts near <span class="tex">\ln n_{\text{vocab}}</span>, the loss of uniform guessing.</li><li>Targets are the inputs shifted by one; all positions are trained in one parallel pass.</li><li>One step: <span class="tex">\theta\leftarrow\theta-\eta\,\nabla_\theta\mathcal{L}</span>, in practice with Adam and a warm-up schedule.</li><li>Training loss falling while validation loss rises is overfitting.</li><li>Training compute ≈ <span class="tex">6ND</span> operations; parameters and data must grow together, at about 20 tokens per parameter for the lowest training cost.</li></ul>
 <h3 class="checkh">Check yourself <span class="qscore"></span></h3>
 <div class="quiz">
-<fieldset><legend>1. You make the model 10 times larger but keep the dataset fixed. What limits the improvement?</legend><button type="button" class="qo" data-ok="1">The data term of the loss, which does not shrink</button><button type="button" class="qo">The vocabulary</button><button type="button" class="qo">Nothing; loss keeps falling at the same rate</button><p class="qx" hidden aria-live="polite"><b></b> Only the parameter term shrinks. The data term stays where it was.</p></fieldset>
-<fieldset><legend>2. Roughly how much compute to train 1 billion parameters on 20 billion tokens?</legend><button type="button" class="qo" data-ok="1">1.2 × 10²⁰ FLOPs</button><button type="button" class="qo">2 × 10¹⁹ FLOPs</button><button type="button" class="qo">6 × 10⁹ FLOPs</button><p class="qx" hidden aria-live="polite"><b></b> 6 × 10⁹ × 2 × 10¹⁰ = 1.2 × 10²⁰.</p></fieldset>
-<fieldset><legend>3. An 8-billion-parameter model is trained on 15 trillion tokens. Compared with the compute-optimal ratio of about 20 tokens per parameter, it is:</legend><button type="button" class="qo">Under-trained</button><button type="button" class="qo">About compute-optimal</button><button type="button" class="qo" data-ok="1">Trained far past it, to be cheaper to serve at a given quality</button><p class="qx" hidden aria-live="polite"><b></b> 15 × 10¹² ÷ 8 × 10⁹ ≈ 1,900 tokens per parameter, almost 100 times the ratio.</p></fieldset>
+<fieldset><legend>1. The model assigns probability 0.5 to the correct next token. What is the loss at that position?</legend><button type="button" class="qo">0.5</button><button type="button" class="qo" data-ok="1">0.69</button><button type="button" class="qo">2.0</button><p class="qx" hidden aria-live="polite"><b></b> −ln 0.5 = 0.693.</p></fieldset>
+<fieldset><legend>2. A character-level model has 21 possible characters. What loss should you expect before any training?</legend><button type="button" class="qo">About 0</button><button type="button" class="qo" data-ok="1">About 3.04</button><button type="button" class="qo">About 21</button><p class="qx" hidden aria-live="polite"><b></b> Uniform guessing gives ln 21 = 3.04.</p></fieldset>
+<fieldset><legend>3. During training, what does the model receive as input at position t?</legend><button type="button" class="qo">Its own earlier predictions</button><button type="button" class="qo" data-ok="1">The true earlier tokens</button><button type="button" class="qo">Random tokens</button><p class="qx" hidden aria-live="polite"><b></b> This is teacher forcing: the real text is fed in, shifted by one position.</p></fieldset>
+<fieldset><legend>4. Training loss keeps falling but validation loss starts rising. What is happening?</legend><button type="button" class="qo">The learning rate is too low</button><button type="button" class="qo" data-ok="1">The model is memorising the training set (overfitting)</button><button type="button" class="qo">The gradient check failed</button><p class="qx" hidden aria-live="polite"><b></b> It is getting better at the examples it has seen and worse at text it has not.</p></fieldset>
+<fieldset><legend>5. An 8-billion-parameter model is trained on 15 trillion tokens. Compared with the compute-optimal ratio of about 20 tokens per parameter, it is:</legend><button type="button" class="qo">Under-trained</button><button type="button" class="qo">About compute-optimal</button><button type="button" class="qo" data-ok="1">Trained far past it, to be cheaper to serve at a given quality</button><p class="qx" hidden aria-live="polite"><b></b> 15 × 10¹² ÷ 8 × 10⁹ ≈ 1,900 tokens per parameter, almost 100 times the ratio.</p></fieldset>
 </div>
-<details class="talk"><summary>For team discussion</summary><ul><li>Given a fixed budget, when would you choose a smaller model trained on more data over a larger one?</li><li>Our model will answer millions of requests a month. Would you spend extra training compute to make it smaller, and how would you decide?</li></ul></details>
+<details class="talk"><summary>For team discussion</summary><ul><li>The objective is only “predict the next token”. Why does that single objective produce grammar, facts and reasoning patterns?</li><li>Train the toy model on the small dataset. What do you see, and how would you detect the same thing in a real project?</li><li>Our model will answer millions of requests a month. Would you spend extra training compute to make it smaller, and how would you decide?</li></ul></details>
 <p class="bridge">Pretraining at any scale produces a model that continues text. <a class="xref" data-ref="posttrain"></a> turns it into an assistant that answers.</p>
 </div>
 </section>
 <section class="ch" id="posttrain" data-title="From base model to assistant">
 <h2>Post-training: from base model to assistant</h2>
-<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why a pretrained (base) model continues text instead of answering.</li><li>Name the stages that turn a base model into an assistant.</li><li>Describe supervised fine-tuning and the chat template, including which tokens carry the loss.</li></ul></div><p class="needs"><b>Builds on</b> The loss and teacher forcing from <a class="xref" data-ref="training"></a>; pretraining at scale from <a class="xref" data-ref="scaling"></a>.</p></div>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why a pretrained (base) model continues text instead of answering.</li><li>Name the stages that turn a base model into an assistant.</li><li>Describe supervised fine-tuning and the chat template, including which tokens carry the loss.</li></ul></div><p class="needs"><b>Builds on</b> The loss and teacher forcing from <a class="xref" data-ref="training"></a>; pretraining at scale, also from <a class="xref" data-ref="training"></a>.</p></div>
 <div class="story"><p>Give a base model “the cat sat on the” and it continues with “mat”. Give it “What did the cat sit on?” and it may continue with another question, as quiz pages on the web do. After post-training, the same question is followed by an answer: “The cat sat on the mat.”</p></div>
 <p>Pretraining produces a <b>base model</b>. It knows a great deal of language and facts, but it has one skill: continuing text the way the internet would. <b>Post-training</b> turns it into an assistant that follows instructions, answers in a useful format and declines harmful requests.</p>
 <p>Post-training needs far less data than pretraining: thousands to millions of examples, against trillions of tokens. That is enough because it does not teach new knowledge. It teaches the model which of the things it can already write it should write.</p>
@@ -951,14 +884,6 @@ for B in (1, 16, 256):
 </div>
 <h3>What “CUDA” means</h3>
 <p><b>CUDA</b> is NVIDIA’s platform for running general-purpose programs on its GPUs. For PyTorch, one rule covers most cases: the NVIDIA driver must be new enough for the CUDA version your PyTorch build was made for. PyTorch brings the rest of CUDA with it.</p>
-<p class="opt">Several separately versioned pieces share the name, and most installation problems come from mixing them up:</p>
-<ul class="opt">
-  <li><b>Driver</b>: part of the operating system. <code>nvidia-smi</code> prints its version and the newest CUDA version it supports, which is not necessarily one you have installed.</li>
-  <li><b>Toolkit and runtime</b>: the compiler (<code>nvcc</code>) and libraries for building and running GPU programs. PyTorch’s pip packages bring the runtime they need, so for PyTorch you usually need only a recent enough driver.</li>
-  <li><b>Kernels and libraries</b>: a kernel is a function that runs on the GPU across many threads at once. PyTorch calls ready-made ones from cuBLAS (matrix multiplication), cuDNN (neural-network operations) and NCCL (traffic between GPUs).</li>
-  <li><b>PyTorch’s build</b>: each package is built for one CUDA version, shown by <code>torch.version.cuda</code>, or for the CPU only (<code>None</code>).</li>
-</ul>
-<p class="opt">Two errors catch almost everyone. <code>torch.cuda.is_available()</code> returning <code>False</code> usually means a CPU-only PyTorch or a missing driver. “CUDA driver version is insufficient for CUDA runtime version” means the driver is older than the CUDA version PyTorch was built for. Either way, install the PyTorch build that matches the driver, or update the driver. AMD’s ROCm is used through the same <code>torch.cuda</code> calls; Apple’s GPUs through the <code>"mps"</code> device.</p>
 <h3>Number formats</h3>
 <p>The format of each weight sets how many bytes it takes, and so how many weights fit and how quickly they can be read; tensor cores also run faster on narrower formats.</p>
 <div class="scroll"><table class="numt cmp">
@@ -1119,7 +1044,6 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
   </tbody>
 </table></div>
 <small>Sources: NVIDIA’s product pages for H100, A100, L4 and DGX Spark, and Appendix A of the NVIDIA Ada GPU Architecture whitepaper for the RTX 4090 (dense rate with FP32 accumulation); checked in November 2026. “Operations per byte” is throughput divided by bandwidth: the batch size above which decoding stops being limited by bandwidth.</small>
-<div class="callout note opt"><b>Unified memory: NVIDIA DGX Spark</b><p>DGX Spark is a small desktop computer built around NVIDIA’s GB10 Grace Blackwell chip, whose CPU and GPU share one pool of 128 GB. That is over five times the memory of an RTX 4090 at about a quarter of its bandwidth. So it loads models no consumer card can hold, but generates from them slowly: NVIDIA rates it for models of up to 200 billion parameters, which needs 4-bit weights, and two linked units for up to 400 billion. It suits prototyping and fine-tuning on a desk more than serving many users. Apple’s M-series machines follow the same unified-memory design.</p></div>
 <div class="widget" id="w-hw">
   <h4 class="wt">Interactive · will this model fit on this GPU?</h4>
   <p class="look"><b>The point:</b> Memory decides whether a model runs at all; bandwidth decides how fast. <b>Do this:</b> Start with the 7B model on one RTX 4090, then raise the context length, switch to the 70B model and try 4-bit weights. <b>Watch for:</b> Which part of the bar grows, and how the speed changes between devices with the same memory.</p>
@@ -1171,18 +1095,10 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
   <div class="wjh"><b>What just happened?</b> At batch size 1 the limit is usually how fast the weights can be read from memory, which is why halving the bits per weight roughly doubles the speed. Raising the batch size lets one read of the weights serve many requests, so total throughput climbs while each request keeps its speed. Once the compute limit is reached, the solid line goes flat and the dashed line starts to fall: more users are now sharing a fixed amount of work. Meanwhile every extra request adds its own KV cache to the memory bar.</div>
 </div>
 <div class="callout try opt"><b>Try this</b><p>1. Switch the precision from 16-bit to 4-bit and watch both the memory bar and the tokens per second. 2. Push the prompt to 100,000 tokens and the batch to 16: the cache overtakes the weights. 3. Lower the compute slider until the bottleneck changes from memory bandwidth to compute.</p></div>
-<h3 class="opt">One GPU or several; local or cloud</h3>
-<ul class="opt">
-  <li><b>Fit first.</b> If the model fits on one GPU, use one. Otherwise it is split: <b>tensor parallelism</b> divides every weight matrix across GPUs that exchange results in every layer, over a fast link such as NVLink; <b>pipeline parallelism</b> puts consecutive layers on different GPUs. <b>Data parallelism</b>, a full copy per GPU, raises throughput but does not help a model that does not fit.</li>
-  <li><b>Local hardware</b>: a one-off cost, and the data stays with you. Consumer cards top out at around 24 to 32 GB; unified-memory machines hold more, at lower bandwidth.</li>
-  <li><b>Cloud GPUs</b>: rented by the hour, with data-centre memory and bandwidth; you pay while they sit idle.</li>
-  <li><b>Hosted APIs</b>: no hardware at all. You pay per token and accept the provider’s models and data terms.</li>
-</ul>
 <div class="callout note"><b>Beginner note</b><p>You do not need a GPU to follow this guide: every interactive runs in the browser and every Python box runs on a CPU.</p></div>
 <h3 class="opt">Common misconceptions</h3>
 <ul class="pit opt">
   <li><b>“More TFLOPS means faster generation.”</b> For a few users at a time, memory bandwidth sets the speed. The L4 and the RTX 4090 have the same memory, and the 4090 generates over three times faster.</li>
-  <li><b>“<code>nvidia-smi</code> shows the CUDA version I have installed.”</b> It shows the newest CUDA version the driver supports.</li>
   <li><b>“Two 24 GB cards are the same as one 48 GB card.”</b> The model has to be split between them, and every layer then waits for data to cross between the cards.</li>
   <li><b>Pitfall:</b> choosing hardware by its compute figure alone. For serving, check memory first and bandwidth second.</li>
 </ul>
@@ -1196,167 +1112,7 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
 <fieldset><legend>3. A 7B model fits on a 24 GB card in testing but runs out of memory when many people use it. What grew?</legend><button type="button" class="qo">The weights</button><button type="button" class="qo" data-ok="1">The KV cache: one per request, growing with each conversation</button><button type="button" class="qo">The CUDA libraries</button><p class="qx" hidden aria-live="polite"><b></b> The weights are fixed. Each request adds its own cache, and it grows with every token.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>We want to run an open 70B model for 50 internal users. Would you buy GPUs, buy a DGX Spark, rent cloud GPUs or use a hosted API, and what would change your answer?</li><li>For serving our users, would we rather have more memory, more bandwidth or more compute, and why?</li></ul></details>
-<p class="bridge">You can now build, train, sample from and serve a model. <a class="xref" data-ref="openmodels"></a> shows how to run real models that others have trained.</p>
-</div>
-</section>
-<section class="ch" id="openmodels" data-title="Open-weight models">
-<h2>Open-weight models: running them yourself</h2>
-<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Say what “open-weight” means, and what it does not.</li><li>Name the main open-weight model families and read their size, context length and licence.</li><li>Work out which models fit on your GPU, and why mixture-of-experts models decode quickly.</li><li>Run a model with Ollama or serve it with vLLM, and call either through the same API.</li></ul></div><p class="needs"><b>Builds on</b> Memory and bandwidth from <a class="xref" data-ref="hardware"></a>; the KV cache and batching from <a class="xref" data-ref="inference"></a>.</p></div>
-<div class="story"><p>The team from <a class="xref" data-ref="hardware"></a> still has its 24 GB card. Which model could it download today, will it fit, how fast will it answer, and how would the rest of the company reach it?</p></div>
-<p>An <b>open-weight model</b> is one whose trained weights anyone can download and run on their own hardware. Once downloaded it works offline: prompts never leave the machine, there is no bill per token, and the model only changes when you change it. In return, you provide the hardware and keep it running.</p>
-<p>Open weights are not the same as open source. A release usually includes the weights and the code to run them, but not the training data or the full training code. Each release comes with a licence that says what you may do with it.</p>
-<div class="flow" role="img" aria-label="Diagram: download weights, load into GPU memory, serve an API with Ollama or vLLM, call it from your application">
-  <div><b>Download weights</b><small>Ollama library or Hugging Face</small></div><i>→</i>
-  <div><b>Load into memory</b><small>usually quantized to about 4 bits</small></div><i>→</i>
-  <div class="fa"><b>Serve an API</b><small>Ollama or vLLM</small></div><i>→</i>
-  <div><b>Your application</b><small>an OpenAI-style client</small></div>
-</div>
-
-<h3>Popular families</h3>
-<p>These families are widely downloaded and run on a single machine. The sizes are the ones offered in the Ollama library; the context lengths and licences come from the model cards. New versions appear every few months, so check the model card before you choose.</p>
-<div class="scroll"><table class="numt cmp">
-  <thead><tr><th>Family (maker)</th><th>Sizes</th><th>Context</th><th>Licence</th><th>Notes</th></tr></thead>
-  <tbody>
-  <tr><th scope="row">Llama 3.1 (Meta)</th><td>8B, 70B, 405B</td><td>128K</td><td>Llama 3.1 Community Licence</td><td>The most downloaded family on Ollama, with many fine-tunes. Llama 3.2 adds 1B and 3B models.</td></tr>
-  <tr><th scope="row">Qwen3.6 and Qwen3.8 (Alibaba)</th><td>Qwen3.8: 27B. Qwen3.6: 27B, and 35B mixture-of-experts with 3B active</td><td>256K, extensible to about 1M</td><td>Apache 2.0</td><td>Aimed at coding and agent tasks; text and image input.</td></tr>
-  <tr><th scope="row">Gemma 4 (Google)</th><td>E2B, E4B, 12B, 26B mixture-of-experts with 3.8B active, 31B</td><td>128K (E2B, E4B), 256K (larger sizes)</td><td>Apache 2.0</td><td>Text and image input. “E” sizes are small models with 2.3B and 4.5B effective parameters.</td></tr>
-  <tr><th scope="row">gpt-oss (OpenAI)</th><td>20B (21B total, 3.6B active), 120B (117B total, 5.1B active)</td><td>128K</td><td>Apache 2.0</td><td>Reasoning models. The expert weights ship in a 4-bit format (MXFP4), so the 20B runs in 16 GB and the 120B on one 80 GB GPU.</td></tr>
-  <tr><th scope="row">DeepSeek-R1 (DeepSeek)</th><td>671B mixture-of-experts; distilled 1.5B to 70B</td><td>160K (671B), 128K (distilled)</td><td>MIT; distilled sizes also follow their Qwen or Llama base</td><td>Reasoning model. The distilled sizes are Qwen 2.5 and Llama models trained on R1’s outputs.</td></tr>
-  <tr><th scope="row">Mistral Small 3.2 (Mistral AI)</th><td>24B</td><td>128K</td><td>Apache 2.0</td><td>Text and image input; a good fit for one 24 GB card at 4 bits.</td></tr>
-  <tr><th scope="row">Phi-4 (Microsoft)</th><td>14B</td><td>16K</td><td>MIT</td><td>A small model with a short context.</td></tr>
-  </tbody>
-</table></div>
-<p>A RAG system also needs an embedding model (see <a class="xref" data-ref="iv-rag"></a>). On Ollama the most downloaded are <code>nomic-embed-text</code> and <code>bge-m3</code>.</p>
-<div class="callout note"><b>Choosing</b><p>Public leaderboards change monthly and rarely match your task. Shortlist two or three models that fit your hardware and licence, then compare them on your own evaluation set (see <a class="xref" data-ref="iv-prod"></a>).</p></div>
-
-<h3>Will it fit, and how fast will it be?</h3>
-<p><b>The question:</b> will a given model fit, and how many tokens per second can it produce? Memory follows the rule from <a class="xref" data-ref="hardware"></a>: about 1.2 × (weights + KV cache). An Ollama download is the weights, already quantized (usually to about 4 bits), so its size is a good first estimate of the weights term.</p>
-<p>Speed follows the bound from <a class="xref" data-ref="hardware"></a>: bandwidth divided by the bytes read per token. One twist matters here. In a <b>mixture-of-experts</b> model (see <a class="xref" data-ref="modern"></a>) a router sends each token through only a few of each block’s expert MLPs. Every expert must be in memory, so memory follows the <i>total</i> parameter count; but each token reads only the <i>active</i> parameters, so in the speed bound <span class="tex">N</span> becomes the active count.</p>
-<details class="why"><summary>Why is a mixture-of-experts model not simply a small model?</summary><div class="whyb"><p>Its 21 billion parameters store more knowledge and skills than a dense 3.6-billion-parameter model can, while each token pays the reading cost of only 3.6 billion. The price is memory: a dense model with the same speed would need about a sixth of the space.</p></div></details>
-<div class="worked">
-<div class="x-only"><p><b>Does it fit?</b> On the 24 GB card, apply the 1.2 margin to the Ollama download sizes:</p>
-<ul><li><code>gpt-oss:20b</code>, 14 GB: <span class="tex">1.2\times14=16.8</span> GB. Fits, with room for a long cache.</li>
-<li><code>qwen3.8:27b</code>, 18 GB: <span class="tex">1.2\times18=21.6</span> GB. Fits, with a moderate context.</li>
-<li><code>llama3.1:70b</code>, 43 GB: <span class="tex">1.2\times43\approx52</span> GB. Does not fit; it needs more than two 24 GB cards, one 80 GB GPU, or a DGX Spark.</li></ul>
-<p><b>How fast?</b> gpt-oss-20b reads <span class="tex">3.6\times10^9</span> active parameters at 4.25 bits, about 0.53 bytes each: roughly 1.9 GB per token. (This treats every active parameter as 4-bit; the attention weights are in fact stored in 16 bits, so the true figure is somewhat higher and the bound somewhat lower.) With the RTX 4090’s <span class="tex">R=1{,}008</span> GB/s the bound is <span class="tex">1008/1.9\approx530</span> tokens per second. A dense 21B model at the same precision reads about 11 GB per token and is bounded near 90.</p></div>
-<div class="s-only"><p><b>Does it fit?</b> Multiply the download size by 1.2. <code>gpt-oss:20b</code> (14 GB) needs about 17 GB and fits on a 24 GB card; <code>llama3.1:70b</code> (43 GB) needs about 52 GB and does not.</p>
-<p><b>How fast?</b> gpt-oss-20b reads only its 3.6 billion active parameters per token, about 1.9 GB, so its speed bound is about six times that of a dense model of the same total size.</p></div>
-</div>
-<div class="scroll"><table class="numt cmp">
-  <thead><tr><th>Ollama tag</th><th>Download</th><th>On one 24 GB card</th></tr></thead>
-  <tbody>
-  <tr><th scope="row"><code>llama3.1:8b</code></th><td>4.9 GB</td><td>Fits, with room for long contexts</td></tr>
-  <tr><th scope="row"><code>phi4:14b</code></th><td>9.1 GB</td><td>Fits</td></tr>
-  <tr><th scope="row"><code>gpt-oss:20b</code></th><td>14 GB</td><td>Fits</td></tr>
-  <tr><th scope="row"><code>mistral-small3.2:24b</code></th><td>15 GB</td><td>Fits</td></tr>
-  <tr><th scope="row"><code>qwen3.8:27b</code></th><td>18 GB</td><td>Fits, with a moderate context</td></tr>
-  <tr><th scope="row"><code>gemma4:31b</code></th><td>19 to 20 GB</td><td>Only with a short context</td></tr>
-  <tr><th scope="row"><code>llama3.1:70b</code></th><td>43 GB</td><td>No</td></tr>
-  <tr><th scope="row"><code>gpt-oss:120b</code></th><td>65 GB</td><td>No: one 80 GB GPU, or a DGX Spark</td></tr>
-  </tbody>
-</table></div>
-<div class="callout mistake"><b>Pitfall: Ollama’s default context</b><p>Ollama runs every model with a 4,096-token context unless you raise it, whatever the model supports. A longer prompt is cut to fit, and the model never sees the start of it. Raise the limit with <code>OLLAMA_CONTEXT_LENGTH</code> when starting the server, or <code>num_ctx</code> per request, and remember that a longer context means a larger KV cache.</p></div>
-
-<h3>Ollama or vLLM?</h3>
-<p><b>Ollama</b> is an app for Windows, macOS and Linux. It downloads quantized models from its library by name, runs them on the GPU, the CPU or both (splitting a model that does not fit), and serves an API on port 11434. It is the quickest way to try a model on a laptop or workstation.</p>
-<p><b>vLLM</b> is a Python serving engine for Linux; on Windows it runs under WSL. On NVIDIA it needs a GPU of compute capability 7.5 or newer. It loads models from Hugging Face and is built for many users at once: continuous batching, paged KV-cache memory and tensor parallelism across GPUs (see <a class="xref" data-ref="inference"></a>). It serves an API on port 8000.</p>
-<div class="scroll opt"><table class="numt cmp">
-  <thead><tr><th></th><th>Ollama</th><th>vLLM</th></tr></thead>
-  <tbody>
-  <tr><th scope="row">Best for</th><td>One person, development, laptops and workstations</td><td>Many users on a GPU server</td></tr>
-  <tr><th scope="row">Platforms</th><td>Windows, macOS, Linux; GPU, CPU or both</td><td>Linux (Windows through WSL); GPUs</td></tr>
-  <tr><th scope="row">Models</th><td>Ollama library, mostly 4-bit GGUF files</td><td>Hugging Face weights, 16-bit or GPU quantization formats</td></tr>
-  <tr><th scope="row">Requests at once</th><td>One per model by default (<code>OLLAMA_NUM_PARALLEL</code>); others queue</td><td>Many, batched continuously</td></tr>
-  <tr><th scope="row">API</th><td><code>http://localhost:11434/v1</code></td><td><code>http://localhost:8000/v1</code></td></tr>
-  </tbody>
-</table></div>
-<p>The commands, in a terminal:</p>
-<pre class="sh"><code># Ollama: install from ollama.com, then
-ollama pull gpt-oss:20b                     # download the weights (14 GB)
-ollama run gpt-oss:20b "Explain the KV cache in one sentence."
-ollama ps                                   # what is loaded, and how much is on the GPU
-
-# vLLM: on Linux with an NVIDIA GPU
-uv pip install vllm --torch-backend=auto
-vllm download-kernels
-vllm serve openai/gpt-oss-20b --max-model-len 32768
-vllm serve openai/gpt-oss-120b --tensor-parallel-size 2   # 65 GB of weights over two 48 GB GPUs</code></pre>
-<p>Both speak the OpenAI chat-completions API, so application code switches between them, or to a hosted API, by changing the base URL and the model name.</p>
-<details class="callout code opt"><summary>In Python: one client for Ollama and vLLM</summary>
-<div class="cbar"><small>Needs a running Ollama or vLLM server · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
-<pre class="py" data-src="s13_local_api.py" data-run="no"><code>import json
-import time
-import urllib.request
-
-# Ollama and vLLM both serve the OpenAI chat-completions API, so one client works
-# with either: only the base URL and the model name change.
-SERVERS = {
-    "ollama": ("http://localhost:11434/v1", "gpt-oss:20b"),      # ollama pull gpt-oss:20b
-    "vllm": ("http://localhost:8000/v1", "openai/gpt-oss-20b"),  # vllm serve openai/gpt-oss-20b
-}
-BASE_URL, MODEL = SERVERS["ollama"]
-
-
-def call(path, body=None):
-    data = json.dumps(body).encode() if body is not None else None
-    request = urllib.request.Request(BASE_URL + path, data=data,
-                                     headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(request, timeout=600) as response:
-        return json.load(response)
-
-
-try:
-    models = [m["id"] for m in call("/models")["data"]]
-except OSError as error:
-    raise SystemExit(f"No server at {BASE_URL}: start Ollama or vLLM first ({error})")
-print("models on the server:", ", ".join(models))
-
-start = time.perf_counter()
-reply = call("/chat/completions", {
-    "model": MODEL,
-    "messages": [{"role": "user", "content": "Explain the KV cache in one sentence."}],
-    "temperature": 0.2,
-    "max_tokens": 1000,     # reasoning models spend tokens thinking before they answer
-})
-seconds = time.perf_counter() - start
-used = reply["usage"]
-print("reply:", reply["choices"][0]["message"]["content"])
-print(f"{used['prompt_tokens']} prompt tokens, {used['completion_tokens']} output tokens "
-      f"in {seconds:.1f} s, {used['completion_tokens'] / seconds:.0f} tokens/s including prefill")
-
-# Example output (needs a running server, so it is not run with the other snippets;
-# the reply, the token counts and the speed depend on your model and hardware):
-# models on the server: gpt-oss:20b
-# reply: &lt;the model's one-sentence answer&gt;
-# &lt;p&gt; prompt tokens, &lt;n&gt; output tokens in &lt;t&gt; s, &lt;r&gt; tokens/s including prefill</code></pre></details>
-
-<h3 class="opt">Licences</h3>
-<ul class="opt">
-  <li><b>Apache 2.0 and MIT</b> (Qwen, Gemma 4, gpt-oss, Mistral Small, DeepSeek-R1, Phi-4): commercial use is allowed; keep the licence and copyright notices.</li>
-  <li><b>Llama 3.1 Community Licence</b>: free for most uses, with conditions. Products with more than 700 million monthly active users need Meta’s permission; you must show “Built with Llama”, follow Meta’s acceptable-use policy, and start the name of any model trained with Llama’s outputs with “Llama”.</li>
-  <li><b>Fine-tunes and distilled models</b> carry their base model’s licence as well as their own.</li>
-</ul>
-<p class="opt">This is a summary, not legal advice: read the licence file that comes with the weights.</p>
-
-<h3 class="opt">Common misconceptions</h3>
-<ul class="pit opt">
-  <li><b>“Open-weight means open source.”</b> Usually only the weights and the code to run them are published, not the training data.</li>
-  <li><b>“If the download fits in GPU memory, the model runs well.”</b> The KV cache and the runtime need room too, and it grows with context length and concurrent users.</li>
-  <li><b>“A 26B mixture-of-experts model with 3.8B active needs memory for only 3.8B.”</b> Every expert must be loaded. Only the work and the bytes read per token shrink.</li>
-  <li><b>“Ollama and vLLM are models.”</b> They are runtimes. The same model can run in either.</li>
-</ul>
-
-<div class="wrapup">
-<h3>Key takeaways</h3>
-<ul class="take"><li>Open-weight models run on your own hardware: data stays local and there is no per-token bill, but you run the hardware.</li><li>Memory follows the total parameter count and the precision; decoding speed follows the bytes read per token, which for a mixture-of-experts model means the active parameters.</li><li>Ollama is the quick start for one user on almost any machine; vLLM serves many users from Linux GPU servers.</li><li>Both expose the OpenAI chat-completions API, so client code switches by changing the base URL.</li><li>Check the licence: Apache 2.0 and MIT are permissive; Llama’s licence adds conditions.</li></ul>
-<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
-<div class="quiz">
-<fieldset><legend>1. gpt-oss-20b has 21B parameters, 3.6B of them active per token. What sets the memory it needs?</legend><button type="button" class="qo">The 3.6B active parameters</button><button type="button" class="qo" data-ok="1">All 21B parameters, plus the KV cache</button><button type="button" class="qo">Only the context length</button><p class="qx" hidden aria-live="polite"><b></b> Every expert must be in memory. The active count sets the work and the bytes read per token, so it sets the speed.</p></fieldset>
-<fieldset><legend>2. Twenty colleagues will use one model at the same time from a Linux server with an NVIDIA GPU. Which runtime fits best?</legend><button type="button" class="qo">Ollama with its default settings</button><button type="button" class="qo" data-ok="1">vLLM</button><button type="button" class="qo">It makes no difference</button><p class="qx" hidden aria-live="polite"><b></b> vLLM batches many requests continuously. Ollama processes one request per model at a time by default and queues the rest.</p></fieldset>
-<fieldset><legend>3. You send a 6,000-token document to a model in Ollama, and the answers ignore its first part. What is the likely cause?</legend><button type="button" class="qo">The model is too small</button><button type="button" class="qo" data-ok="1">The 4,096-token default context cut the prompt</button><button type="button" class="qo">The temperature is too high</button><p class="qx" hidden aria-live="polite"><b></b> Ollama uses a 4,096-token context unless you raise it, so the start of a longer prompt is dropped.</p></fieldset>
-</div>
-<details class="talk"><summary>For team discussion</summary><ul><li>Which of our workloads must not leave our network? Could a 20B to 30B open model handle them, and how would we measure that?</li><li>Who would look after a GPU server: updates, monitoring, model upgrades? How does that cost compare with an API bill?</li></ul></details>
-<p class="bridge">Every model here is a decoder-only Transformer. <a class="xref" data-ref="encdec"></a> covers the other branch of the family, and <a class="xref" data-ref="modern"></a> what today’s models change.</p>
+<p class="bridge">You can now build, train, sample from and serve a model. <a class="xref" data-ref="models"></a> lists open models you can run yourself, and <a class="xref" data-ref="encdec"></a> turns to the other branch of the Transformer family.</p>
 </div>
 </section>
 <section class="view complete" id="complete" data-title="Part C complete"><div id="partDone"></div></section>

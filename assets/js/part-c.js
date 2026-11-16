@@ -1,5 +1,5 @@
 'use strict';
-/* Part C widgets: training, generation, GPUs, inference and scaling. */
+/* Part C widgets: training, post-training, generation, inference and GPUs. */
 /* ================= training ================= */
 let trainer=null;
 const s8={running:false,start:0,total:600,lr:0.005,steps:600,temp:0.8,ema:[],val:[],last:null,cur:0,diverged:false,shown:-1};
@@ -167,20 +167,6 @@ function initInfer(){
   slider('ie-mem',v=>bytes(Math.pow(2,v)*1e9),v=>{si.mem=Math.pow(2,v)*1e9;renderIE();});si.mem=Math.pow(2,+$('#ie-mem').value)*1e9;
   reg(renderKC);reg(renderIE);
 }
-/* ---------- illustrative scaling curve ---------- */
-function scaleLoss(N,D){return 1.69+406.4/Math.pow(N,0.34)+410.7/Math.pow(D,0.28);}
-/* ================= scaling ================= */
-const s10={n:9,d:10.3};
-function renderScale(){
-  const N=Math.pow(10,s10.n),D=Math.pow(10,s10.d),L=scaleLoss(N,D),a=[],b=[];
-  for(let x=6;x<=12.001;x+=0.1){a.push([x,scaleLoss(Math.pow(10,x),D)]);b.push([x,1.69+406.4/Math.pow(Math.pow(10,x),0.34)]);}
-  const lab={6:'1M',7:'10M',8:'100M',9:'1B',10:'10B',11:'100B',12:'1T'},wide=$('#sc-chart').getBoundingClientRect().width>480;
-  lineChart($('#sc-chart'),[{pts:b,cls:'b'},{pts:a,cls:'a'}],{x0:6,x1:12,y0:1.5,y1:8,h:270,xt:wide?[6,7,8,9,10,11,12]:[6,8,10,12],xf:v=>lab[v],yt:[2,4,6,8],xl:'model size (parameters, log scale)',yl:'illustrative loss',dots:[[s10.n,L,'your model']]});
-  const ratio=D/N,cap=Math.max(0,Math.min(100,100*(8-L)/(8-1.69)));
-  $('#sc-read').innerHTML=[['Training compute ≈ 6ND',sci(6*N*D)+' FLOPs'],['Tokens per parameter',ratio>=10?Math.round(ratio).toLocaleString('en-US'):ratio.toFixed(2)],['Illustrative loss',fmt(L,3)],['“Capability” gauge',Math.round(cap)+' / 100'],['Weights at 16-bit',bytes(N*2)],['Bottleneck',ratio<5?'data: model too large for this dataset':ratio>200?'model: more parameters would help':'roughly balanced']].map(r=>'<div><span>'+r[0]+'</span><b style="font-size:.92rem">'+r[1]+'</b></div>').join('');
-}
-function initScale(){slider('sc-n',v=>big(Math.pow(10,v))+' params',v=>{s10.n=v;renderScale();});slider('sc-d',v=>big(Math.pow(10,v))+' tokens',v=>{s10.d=v;renderScale();});reg(renderScale);}
-
 /* ================= Post-training: chat template and loss mask ================= */
 const CT_MSGS=[['system','You are a helpful assistant.'],['user','What did the cat sit on?'],['assistant','The cat sat on the mat.'],['user','And the dog?'],['assistant','The text does not mention a dog.']];
 const sct={turns:1};
@@ -213,4 +199,4 @@ function initPref(){
   reg(renderPref);
 }
 
-PAGE_INITS.push(initTrain,initGen,initHW,initInfer,initScale,initChat,initPref);
+PAGE_INITS.push(initTrain,initGen,initHW,initInfer,initChat,initPref);

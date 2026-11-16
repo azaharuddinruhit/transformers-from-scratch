@@ -47,8 +47,8 @@
 <main id="main">
 <header class="hero slim">
 <h1>Reference</h1>
-<p class="lede">The maths the guide assumes, the glossary, the notation used throughout, and where to go next.</p>
-<p class="jump"><a href="#maths">The maths you need</a> · <a href="#glossary">Glossary</a> · <a href="#notation">Notation</a> · <a href="#further">Further learning</a></p>
+<p class="lede">The maths the guide assumes, the glossary, the notation used throughout, open-weight models you can run yourself, and where to go next.</p>
+<p class="jump"><a href="#maths">The maths you need</a> · <a href="#glossary">Glossary</a> · <a href="#notation">Notation</a> · <a href="#models">Open-weight models</a> · <a href="#further">Further learning</a></p>
 </header>
 <section class="refsec" id="maths">
 <h2>The maths you need</h2>
@@ -129,7 +129,7 @@
 <h3>Large numbers and memory</h3>
 <p>Model sizes are written in powers of ten: 7 billion is <span class="tex">7\times10^9</span>. A gigabyte (GB) is <span class="tex">10^9</span> bytes. To find memory, multiply a count by the bytes each item takes.</p>
 <p><b>Example.</b> A 7-billion-parameter model at 2 bytes per parameter takes <span class="tex">7\times10^9\times2=1.4\times10^{10}</span> bytes, which is 14 GB.</p>
-<p><b>Where it appears:</b> <a class="xref" data-ref="scaling"></a>, <a class="xref" data-ref="inference"></a> and <a class="xref" data-ref="hardware"></a>.</p>
+<p><b>Where it appears:</b> <a class="xref" data-ref="training"></a>, <a class="xref" data-ref="inference"></a> and <a class="xref" data-ref="hardware"></a>.</p>
 </section>
 <section class="refsec" id="glossary">
 <h2>Glossary</h2>
@@ -249,6 +249,71 @@
   </tbody>
 </table></div>
 <p>Where a source uses different letters (the 2017 paper writes <span class="tex">pos</span>, <span class="tex">n</span> and <span class="tex">d</span>, for instance), the section says so.</p>
+</section>
+<section class="refsec" id="models">
+<h2>Open-weight models</h2>
+<p>An <b>open-weight model</b> is one whose trained weights anyone can download and run on their own hardware. Prompts never leave the machine and there is no bill per token; in return, you provide the hardware and keep it running. Open weights are not open source: a release usually includes the weights and the code to run them, but not the training data.</p>
+<p>This is a lookup, checked against the Ollama library and the model cards in November 2026. New versions appear every few months, so check the model card before you choose.</p>
+<h3>Popular families</h3>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th>Family (maker)</th><th>Sizes</th><th>Context</th><th>Licence</th><th>Notes</th></tr></thead>
+  <tbody>
+  <tr><th scope="row">Llama 3.1 (Meta)</th><td>8B, 70B, 405B</td><td>128K</td><td>Llama 3.1 Community Licence</td><td>The most downloaded family on Ollama, with many fine-tunes. Llama 3.2 adds 1B and 3B models.</td></tr>
+  <tr><th scope="row">Qwen3.6 and Qwen3.8 (Alibaba)</th><td>Qwen3.8: 27B. Qwen3.6: 27B, and 35B mixture-of-experts with 3B active</td><td>256K, extensible to about 1M</td><td>Apache 2.0</td><td>Aimed at coding and agent tasks; text and image input.</td></tr>
+  <tr><th scope="row">Gemma 4 (Google)</th><td>E2B, E4B, 12B, 26B mixture-of-experts with 3.8B active, 31B</td><td>128K (E2B, E4B), 256K (larger sizes)</td><td>Apache 2.0</td><td>Text and image input. “E” sizes are small models with 2.3B and 4.5B effective parameters.</td></tr>
+  <tr><th scope="row">gpt-oss (OpenAI)</th><td>20B (21B total, 3.6B active), 120B (117B total, 5.1B active)</td><td>128K</td><td>Apache 2.0</td><td>Reasoning models. The expert weights ship in a 4-bit format (MXFP4), so the 20B runs in 16 GB and the 120B on one 80 GB GPU.</td></tr>
+  <tr><th scope="row">DeepSeek-R1 (DeepSeek)</th><td>671B mixture-of-experts; distilled 1.5B to 70B</td><td>160K (671B), 128K (distilled)</td><td>MIT; distilled sizes also follow their Qwen or Llama base</td><td>Reasoning model. The distilled sizes are Qwen 2.5 and Llama models trained on R1’s outputs.</td></tr>
+  <tr><th scope="row">Mistral Small 3.2 (Mistral AI)</th><td>24B</td><td>128K</td><td>Apache 2.0</td><td>Text and image input; a good fit for one 24 GB card at 4 bits.</td></tr>
+  <tr><th scope="row">Phi-4 (Microsoft)</th><td>14B</td><td>16K</td><td>MIT</td><td>A small model with a short context.</td></tr>
+  </tbody>
+</table></div>
+<p>A RAG system also needs an embedding model (see <a class="xref" data-ref="iv-rag"></a>). On Ollama the most downloaded are <code>nomic-embed-text</code> and <code>bge-m3</code>.</p>
+<div class="callout note"><b>Choosing</b><p>Public leaderboards change monthly and rarely match your task. Shortlist two or three models that fit your hardware and licence, then compare them on your own evaluation set (see <a class="xref" data-ref="iv-prod"></a>).</p></div>
+<h3>Will it fit on one 24 GB card?</h3>
+<p>Memory follows the rule from <a class="xref" data-ref="hardware"></a>: about 1.2 × (weights + KV cache). An Ollama download is the weights, already quantized to about 4 bits, so its size is a good first estimate of the weights. For a mixture-of-experts model (see <a class="xref" data-ref="modern"></a>), memory follows the total parameter count and speed follows the active count.</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th>Ollama tag</th><th>Download</th><th>On one 24 GB card</th></tr></thead>
+  <tbody>
+  <tr><th scope="row"><code>llama3.1:8b</code></th><td>4.9 GB</td><td>Fits, with room for long contexts</td></tr>
+  <tr><th scope="row"><code>phi4:14b</code></th><td>9.1 GB</td><td>Fits</td></tr>
+  <tr><th scope="row"><code>gpt-oss:20b</code></th><td>14 GB</td><td>Fits</td></tr>
+  <tr><th scope="row"><code>mistral-small3.2:24b</code></th><td>15 GB</td><td>Fits</td></tr>
+  <tr><th scope="row"><code>qwen3.8:27b</code></th><td>18 GB</td><td>Fits, with a moderate context</td></tr>
+  <tr><th scope="row"><code>gemma4:31b</code></th><td>19 to 20 GB</td><td>Only with a short context</td></tr>
+  <tr><th scope="row"><code>llama3.1:70b</code></th><td>43 GB</td><td>No</td></tr>
+  <tr><th scope="row"><code>gpt-oss:120b</code></th><td>65 GB</td><td>No: one 80 GB GPU, or a DGX Spark</td></tr>
+  </tbody>
+</table></div>
+<div class="callout mistake"><b>Pitfall: Ollama’s default context</b><p>Ollama runs every model with a 4,096-token context unless you raise it, whatever the model supports. A longer prompt is cut to fit, and the model never sees the start of it. Raise the limit with <code>OLLAMA_CONTEXT_LENGTH</code> when starting the server, or <code>num_ctx</code> per request, and remember that a longer context means a larger KV cache.</p></div>
+<h3>Ollama or vLLM?</h3>
+<p><b>Ollama</b> is an app for Windows, macOS and Linux and the quickest way to try a model on one machine. <b>vLLM</b> is a Python serving engine for Linux GPU servers, built for many users at once. Both speak the OpenAI chat-completions API, so application code switches between them, or to a hosted API, by changing the base URL and the model name.</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th></th><th>Ollama</th><th>vLLM</th></tr></thead>
+  <tbody>
+  <tr><th scope="row">Best for</th><td>One person, development, laptops and workstations</td><td>Many users on a GPU server</td></tr>
+  <tr><th scope="row">Platforms</th><td>Windows, macOS, Linux; GPU, CPU or both</td><td>Linux (Windows through WSL); GPUs</td></tr>
+  <tr><th scope="row">Models</th><td>Ollama library, mostly 4-bit GGUF files</td><td>Hugging Face weights, 16-bit or GPU quantization formats</td></tr>
+  <tr><th scope="row">Requests at once</th><td>One per model by default (<code>OLLAMA_NUM_PARALLEL</code>); others queue</td><td>Many, batched continuously</td></tr>
+  <tr><th scope="row">API</th><td><code>http://localhost:11434/v1</code></td><td><code>http://localhost:8000/v1</code></td></tr>
+  </tbody>
+</table></div>
+<pre class="sh"><code># Ollama: install from ollama.com, then
+ollama pull gpt-oss:20b                     # download the weights (14 GB)
+ollama run gpt-oss:20b "Explain the KV cache in one sentence."
+ollama ps                                   # what is loaded, and how much is on the GPU
+
+# vLLM: on Linux with an NVIDIA GPU
+uv pip install vllm --torch-backend=auto
+vllm download-kernels
+vllm serve openai/gpt-oss-20b --max-model-len 32768
+vllm serve openai/gpt-oss-120b --tensor-parallel-size 2   # 65 GB of weights over two 48 GB GPUs</code></pre>
+<h3>Licences</h3>
+<ul>
+  <li><b>Apache 2.0 and MIT</b> (Qwen, Gemma 4, gpt-oss, Mistral Small, DeepSeek-R1, Phi-4): commercial use is allowed; keep the licence and copyright notices.</li>
+  <li><b>Llama 3.1 Community Licence</b>: free for most uses, with conditions. Products with more than 700 million monthly active users need Meta’s permission; you must show “Built with Llama”, follow Meta’s acceptable-use policy, and start the name of any model trained with Llama’s outputs with “Llama”.</li>
+  <li><b>Fine-tunes and distilled models</b> carry their base model’s licence as well as their own.</li>
+</ul>
+<p>This is a summary, not legal advice: read the licence file that comes with the weights.</p>
 </section>
 <section class="refsec" id="further">
 <h2>Further learning</h2>

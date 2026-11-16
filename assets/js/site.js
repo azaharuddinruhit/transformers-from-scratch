@@ -5,25 +5,28 @@ const SITE_VERSION='__SITE_VERSION__';
 const PARTS=[
   {id:'a',name:'The big picture',goal:'What an LLM computes, and why the Transformer replaced recurrent networks.',secs:['intro','why']},
   {id:'b',name:'Building the model',goal:'Every layer of a decoder-only Transformer, from text to the probabilities of the next token.',secs:['tokens','position','attention','multihead','block','architecture']},
-  {id:'c',name:'Training and using it',goal:'How the model learns, how it generates text, and what it takes to run it.',secs:['training','scaling','posttrain','prefs','generation','inference','hardware','openmodels']},
-  {id:'d',name:'The wider picture',goal:'The original encoder–decoder Transformer, the 2017 paper that introduced it, and what today’s models change.',secs:['encdec','paper','modern']}];
+  {id:'c',name:'Training and using it',goal:'How the model learns, how it generates text, and what it takes to run it.',secs:['training','posttrain','prefs','generation','inference','hardware']},
+  {id:'d',name:'The wider picture',goal:'The original encoder–decoder Transformer from the 2017 paper, and what today’s models change.',secs:['encdec','modern']}];
 /* title, study minutes for Full depth and Quick tour, then the level (an index into LEVELS).
    Minutes: words / 110 + 3 per interactive, rounded to 5, code boxes left out (Full depth drops .s-only; Quick tour
    drops .opt and .x-only). Recount when a section changes a lot. */
 const SECS={intro:['What is an LLM?',10,10,0],why:['Why Transformers?',10,10,0],tokens:['Tokenization and embeddings',15,10,0],position:['Positional information',15,15,1],
   attention:['Self-attention from scratch',15,15,1],multihead:['Multi-head attention',10,10,1],block:['FFN, residuals and normalization',20,15,1],architecture:['Full decoder-only architecture',15,10,1],
-  training:['Training an LLM',15,15,1],generation:['Generation and decoding',10,10,0],hardware:['GPUs and CUDA',25,15,1],inference:['Inference in practice',15,10,1],openmodels:['Open-weight models',15,15,0],scaling:['Scaling laws',10,10,2],posttrain:['From base model to assistant',10,10,1],prefs:['Preference tuning and reasoning',15,10,1],
-  encdec:['Encoder–decoder and cross-attention',15,10,1],paper:['The 2017 paper in detail',10,10,2],modern:['What modern LLMs change',20,20,2]};
+  training:['Training an LLM',20,15,1],generation:['Generation and decoding',10,10,0],hardware:['GPUs and CUDA',20,15,1],inference:['Inference in practice',15,10,1],posttrain:['From base model to assistant',10,10,1],prefs:['Preference tuning and reasoning',15,10,1],
+  encdec:['Encoder–decoder and the 2017 paper',25,15,1],modern:['What modern LLMs change',20,20,2]};
 const LEVELS=['Foundation','Core','Deep dive'];
 const TOPICS={'iv-core':'Transformer fundamentals','iv-rag':'RAG and embeddings','iv-ft':'Fine-tuning and alignment','iv-agents':'Agents and tool use','iv-prod':'Evaluation and production','iv-hw':'Hardware'};
 const PATHS={full:{name:'Full depth',desc:'Exact worked examples, every interactive, the maths detail and the Python code.'},
   quick:{name:'Quick tour',desc:'Simplified worked examples; optional material is hidden. You can switch at any time.'}};
 const partOf=id=>PARTS.find(p=>p.secs.includes(id));
 const partUrl=p=>'part-'+p.id+'.html';
+/* sections that were merged or moved: old links and bookmarks still land in the right place */
+const MOVED={scaling:'training',paper:'encdec',openmodels:'models'};
 function refInfo(id){
+  id=MOVED[id]||id;
   if(SECS[id])return{href:partUrl(partOf(id))+'#'+id,text:SECS[id][0]};
   if(TOPICS[id])return{href:'interview.html#'+id,text:'Interview drill: '+TOPICS[id]};
-  const REF={maths:'The maths you need',glossary:'Glossary',notation:'Notation'};
+  const REF={maths:'The maths you need',glossary:'Glossary',notation:'Notation',models:'Open-weight models'};
   if(REF[id])return{href:'reference.html#'+id,text:REF[id]};
   return null;
 }
@@ -160,7 +163,7 @@ function initPart(){
     const t=anchor&&document.getElementById(anchor);
     if(t&&t!==$('#'+id))t.scrollIntoView();else window.scrollTo(0,0);
   }
-  const route=()=>{const h=decodeURIComponent(location.hash.slice(1)),el=h&&document.getElementById(h),v=el&&el.closest('#main>section');show(v?v.id:h,h);};
+  const route=()=>{const h=decodeURIComponent(location.hash.slice(1));if(MOVED[h]){location.replace(refInfo(h).href);return;}const el=h&&document.getElementById(h),v=el&&el.closest('#main>section');show(v?v.id:h,h);};
   window.addEventListener('hashchange',route);
   initQuiz(()=>paint());
   onPathChange.push(paint);

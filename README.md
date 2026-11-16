@@ -10,10 +10,10 @@ An interactive visual guide to how GPT-style language models work, from tokens t
 | --- | --- | --- |
 | Part A · The big picture | 2 | What an LLM computes, and why Transformers replaced recurrent networks |
 | Part B · Building the model | 6 | Tokens, positions, self-attention, multi-head attention, the Transformer block, the full model |
-| Part C · Training and using it | 8 | Cross-entropy training, scaling laws, from base model to assistant (fine-tuning and the chat template), preference tuning and reasoning models (RLHF, DPO), decoding, inference in practice, GPUs and CUDA, open-weight models with Ollama and vLLM |
-| Part D · The wider picture | 3 | Encoder–decoder models, the 2017 paper in detail, and what modern LLMs change (RoPE, RMSNorm, SwiGLU, GQA, mixture of experts) |
+| Part C · Training and using it | 6 | Cross-entropy training and how it scales, from base model to assistant (fine-tuning and the chat template), preference tuning and reasoning models (RLHF, DPO), decoding, inference in practice, GPUs and CUDA |
+| Part D · The wider picture | 2 | Encoder–decoder models and the 2017 paper, and what modern LLMs change (RoPE, RMSNorm, SwiGLU, GQA, mixture of experts) |
 | Interview drill | 6 topics | 64 questions, each with a short sample answer and bullet points: fundamentals, RAG, fine-tuning, agents, production, hardware |
-| Reference | 4 | The maths you need (a 25-minute refresher), glossary, notation and further learning |
+| Reference | 5 | The maths you need (a 25-minute refresher), glossary, notation, an open-weight models lookup (families, sizes, Ollama and vLLM) and further learning |
 
 Each section in Parts A to D shows its level (Foundation, Core or Deep dive) and has learning objectives, a running example, equations built up step by step with every symbol named, a worked example you can check by hand, interactive widgets, key takeaways, a self-check quiz and discussion questions.
 
@@ -25,7 +25,7 @@ Each section in Parts A to D shows its level (Foundation, Core or Deep dive) and
 
 ## Highlights
 
-- Two paths: **Full depth** (about 4 h 30 min) and **Quick tour** (about 3 h 50 min, simplified worked examples, optional material hidden). You can switch at any time.
+- Two paths: **Full depth** (about 4 h 5 min) and **Quick tour** (about 3 h 20 min, simplified worked examples, optional material hidden). You can switch at any time.
 - A tiny Transformer (about 9,600 parameters) that trains in your browser, plus a generation playground with temperature, top-k and top-p.
 - Step-by-step attention, KV-cache, GPU-memory, parameter-count and inference-cost calculators, plus interactives for the chat template, preference tuning, rotary positions and grouped-query attention.
 - "In Python" boxes with runnable NumPy and PyTorch code and its real output, collapsed by default.
@@ -66,7 +66,7 @@ One-time setup: in the repository, go to **Settings → Pages → Build and depl
 
 ## Caveats
 
-- Facts about the 2017 paper (BLEU scores, model sizes, training times) were written from memory; verify them against the paper before relying on them.
+- Facts about the 2017 paper (model sizes and the warm-up schedule) were written from memory; verify them against the paper before relying on them.
 - Model configurations in "What modern LLMs change" (Llama 3.1 8B, Mixtral 8x7B) and the Llama 3 pretraining figure (over 15 trillion tokens) were also written from memory of the published model cards and papers; verify them before presenting.
 - GPU figures and open-weight model facts (sizes, context lengths, licences, Ollama and vLLM behaviour) were checked against vendor pages and model cards in November 2026. New models and versions appear every few months.
 - Tested in Chrome on desktop and at phone width. Not yet tested on Safari, Firefox or with a screen reader.

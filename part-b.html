@@ -912,7 +912,7 @@ print("output shape:", x.shape, f"after {L} blocks: the shape never changes")
   <li><b>“The MLP mixes information between tokens.”</b> It does not. It is applied to each position separately; only attention moves information across positions.</li>
   <li><b>“LayerNorm is the same as BatchNorm.”</b> LayerNorm uses statistics of a single token’s vector, so it behaves identically in training and inference and does not depend on batch size.</li>
   <li><b>“Residual connections are an optimisation trick you could drop.”</b> Deep Transformers do not train without them.</li>
-  <li><b>Pitfall:</b> the original 2017 paper put the normalisation <i>after</i> the residual add (post-norm). Pre-norm, shown here, is what GPT-style models use because it is easier to train at depth. <a class="xref" data-ref="paper"></a> compares the two.</li>
+  <li><b>Pitfall:</b> the original 2017 paper put the normalisation <i>after</i> the residual add (post-norm). Pre-norm, shown here, is what GPT-style models use because it is easier to train at depth. <a class="xref" data-ref="encdec"></a> compares the two.</li>
 </ul>
 <div class="wrapup">
 <h3>Key takeaways</h3>
