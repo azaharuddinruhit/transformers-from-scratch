@@ -17,7 +17,7 @@
   --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
   --mono:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;
-  --cd-bg:#ffffff;--cd-fg:#262626;--cd-line:#dcdcdc;--cd-c:#5d6c79;--cd-k:#9b2393;--cd-s:#c41a16;--cd-n:#1c00cf;--cd-f:#326d74;--cd-b:#6c36a9;
+  --cd-bg:#f6f8fa;--cd-fg:#1f2328;--cd-line:#d1d9e0;--cd-c:#59636e;--cd-k:#cf222e;--cd-s:#0a3069;--cd-n:#0550ae;--cd-f:#6639ba;--cd-b:#953800;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   color-scheme:dark;--bg:#11141b;--surface:#191e29;--panel:#151a23;--ink:#e7eaf1;--muted:#9ba4b6;--line:#2b3343;
@@ -115,7 +115,7 @@ body.simple .x-only{display:none!important}body:not(.simple) .s-only{display:non
 
 /* equations */
 .tex{font-family:var(--mono);font-size:.86em;text-transform:none;letter-spacing:normal}
-.sym{text-transform:none;letter-spacing:normal;white-space:nowrap}.sym sub{font-size:.75em;line-height:0}
+.msym{text-transform:none;letter-spacing:normal;white-space:nowrap}.msym sub{font-size:.75em;line-height:0}
 .tex[data-done]{font-family:inherit;font-size:1em}
 .tex.d{display:block;margin:14px 0;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto;text-align:center;white-space:pre-wrap}
 .tex.d[data-done]{white-space:normal}
@@ -2237,16 +2237,255 @@ print("tau=2.0:  ", repr(generate("the ", 30, rng, tau=2.0)))
 </div>
 <h3>Discuss with your team</h3>
 <ul class="talk"><li>Which settings would you choose for code generation, and which for brainstorming? Why?</li><li>The same prompt can give different answers on each run. Where in our workflows is that acceptable and where is it not?</li></ul>
-<p class="bridge"><b>Next:</b> Generation runs the model once per token. <a class="xref" data-ref="inference"></a> shows what makes that fast enough to use, and what it costs.</p>
+<p class="bridge"><b>Next:</b> Generation runs the model once per token, billions of multiply-adds each time. <a class="xref" data-ref="hardware"></a> looks at the hardware that does that work, and <a class="xref" data-ref="inference"></a> at what makes it fast enough to use.</p>
 </div>
 </section>
 
 <!-- ================= 11 ================= -->
-<section class="ch" id="inference" data-title="Inference in practice">
+<section class="ch" id="hardware" data-title="GPUs and CUDA">
 <div class="num">SECTION 11 · PART C: TRAINING AND USING IT</div>
+<h2>Hardware: GPUs and CUDA</h2>
+<div class="start">
+  <div><b>Before this section</b><p>Matrix multiplications from <a class="xref" data-ref="attention"></a> and <a class="xref" data-ref="block"></a>; parameter counts from <a class="xref" data-ref="architecture"></a>; the training loop from <a class="xref" data-ref="training"></a>.</p></div>
+  <div><b>After it, you can</b><ul><li>Explain why GPUs, not CPUs, run Transformers.</li><li>Read a GPU’s specification: memory, bandwidth and tensor throughput.</li><li>Say what the CUDA driver, toolkit and libraries each do, and fix the usual version mismatch.</li><li>Work out whether a model fits on a GPU at a given precision, and roughly how fast it will generate.</li><li>Choose between one GPU and several, and between local hardware, the cloud and an API.</li></ul></div>
+  <div class="ex"><b>The running example</b><p>A team wants to run a model with 7 billion parameters on one 24 GB graphics card. In 16-bit numbers the weights alone take 14 GB. Is there room for a 4,096-token conversation, and how many tokens per second will the card produce?</p></div>
+</div>
+<p>Almost all the work in a Transformer is matrix multiplication: every token’s vector times every weight matrix, in every layer. That work is billions of multiply-adds that do not depend on each other, so they can all run at once. A CPU has a few dozen powerful cores built to run varied, branching code quickly, one step after another. A GPU has thousands of simpler cores that apply the same instruction to many numbers at the same time. Recent GPUs add <b>tensor cores</b>: units that multiply a small block of a matrix in one step at reduced precision. For this kind of work, one GPU does far more arithmetic per second than a CPU.</p>
+<p>A GPU also has its own memory, often called <b>VRAM</b>, separate from the computer’s main memory. The weights, the KV cache (<a class="xref" data-ref="inference"></a>) and the intermediate values must all be in it while the model runs. Two figures matter: <b>capacity</b>, which decides whether a model fits at all, and <b>bandwidth</b>, the bytes per second the GPU can read from that memory, which decides how fast it generates. Data-centre GPUs use stacked HBM memory, much faster than the GDDR memory on consumer cards.</p>
+<div class="flow" role="img" aria-label="Diagram: your Python code calls PyTorch, which calls CUDA libraries such as cuBLAS and cuDNN; they launch kernels that run on the GPU through the NVIDIA driver">
+  <div><b>Your code</b><small>PyTorch: <code>model.to("cuda")</code></small></div><i>→</i>
+  <div class="fa"><b>CUDA libraries</b><small>cuBLAS, cuDNN, NCCL · shipped with PyTorch</small></div><i>→</i>
+  <div><b>Kernels</b><small>functions run by thousands of GPU threads</small></div><i>→</i>
+  <div class="fa"><b>Driver</b><small>installed in the operating system</small></div><i>→</i>
+  <div><b>GPU</b><small>cores, tensor cores, VRAM</small></div>
+</div>
+<h3>What “CUDA” means</h3>
+<p><b>CUDA</b> is NVIDIA’s platform for running general-purpose programs on its GPUs. Several separately versioned pieces are all called “CUDA”, and most installation problems come from mixing them up:</p>
+<ul>
+  <li><b>Driver</b>: part of the operating system; it talks to the hardware. Each driver supports CUDA up to a certain version. <code>nvidia-smi</code> prints the driver version and that highest supported CUDA version, which is not necessarily a version you have installed.</li>
+  <li><b>Toolkit and runtime</b>: the compiler (<code>nvcc</code>) and libraries used to build and run GPU programs. PyTorch’s pip packages bring the runtime libraries they need, so for PyTorch you usually need only a recent enough driver, not a separate toolkit.</li>
+  <li><b>Kernel</b>: a function that runs on the GPU, launched across many threads at once. PyTorch calls a ready-made kernel for each operation, so you rarely write one yourself.</li>
+  <li><b>Libraries</b>: cuBLAS for matrix multiplication, cuDNN for neural-network operations, NCCL for moving data between GPUs.</li>
+  <li><b>PyTorch’s build</b>: each PyTorch package is built for one CUDA version, shown by <code>torch.version.cuda</code>, or for the CPU only, where it shows <code>None</code>.</li>
+</ul>
+<p>Two errors catch almost everyone. <code>torch.cuda.is_available()</code> returns <code>False</code> on a machine with an NVIDIA GPU, usually because a CPU-only PyTorch is installed or the driver is missing. “CUDA driver version is insufficient for CUDA runtime version” means the driver is older than the CUDA version PyTorch was built for. The fix for both is to install the PyTorch build that matches the driver, or to update the driver. Other vendors have their own stacks: AMD’s ROCm, which PyTorch exposes through the same <code>torch.cuda</code> calls, and Apple’s Metal, used through the <code>"mps"</code> device.</p>
+<h3>Number formats</h3>
+<p>Every weight is stored in some number format. The format sets the memory each weight takes, and with it how many weights fit and how quickly they can be read; tensor cores also run faster on narrower formats.</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th>Format</th><th>Bytes per number</th><th>Range</th><th>Where it is used</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">fp32</th><td>4</td><td>up to about <span class="tex">3.4\times10^{38}</span></td><td>The traditional default; master weights and optimizer state in training.</td></tr>
+    <tr><th scope="row">fp16</th><td>2</td><td>up to 65,504</td><td>Inference on older GPUs. Training needs loss scaling to stop small gradients vanishing and large values overflowing.</td></tr>
+    <tr><th scope="row">bf16</th><td>2</td><td>up to about <span class="tex">3.4\times10^{38}</span></td><td>Today’s usual format for training and inference: the range of fp32 with less precision. Needs an A100, an RTX 30-series card or newer.</td></tr>
+    <tr><th scope="row">fp8</th><td>1</td><td>up to 448 or 57,344 (two variants)</td><td>Tensor cores on H100, L4 and RTX 40-series cards; used for the fastest training and inference.</td></tr>
+    <tr><th scope="row">int8</th><td>1</td><td>integers −128 to 127, times a stored scale</td><td>Quantized weights for inference.</td></tr>
+    <tr><th scope="row">int4</th><td>0.5</td><td>integers −8 to 7, times a scale for each small group</td><td>Quantized weights for inference, common for running models locally.</td></tr>
+  </tbody>
+</table></div>
+<p>Quantized formats store integers and a scale to multiply them by. Eight-bit weights usually cost little quality; four-bit costs more, so check the result on your own evaluation.</p>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>Will the model fit?</b> The weights take one number per parameter. The KV cache adds memory for every token of every request being served. On top of both come the CUDA context, intermediate values and unusable gaps between allocations; a common rule of thumb allows another 20%:</p>
+<div class="tex d">M_{\text{needed}}\approx1.2\times\left(N\times\text{bytes per parameter}+M_{\text{KV}}\right)\le n_{\text{GPU}}\times M_{\text{GPU}},\qquad M_{\text{KV}}=2\times L\times T\times d_{\text{model}}\times2\times B</div>
+<p class="sym"><span class="tex">N</span> is the number of parameters, with 4, 2, 1 or 0.5 bytes each; <span class="tex">L</span> is the number of layers, <span class="tex">T</span> the context length and <span class="tex">B</span> the number of requests served at once; the cache holds a key and a value (the first 2) at 2 bytes each (the second 2); <span class="tex">n_{\text{GPU}}</span> GPUs have <span class="tex">M_{\text{GPU}}</span> bytes each. The 1.2 is an allowance, not a measured constant.</p>
+<p><b>How fast can it generate?</b> Each decode step reads every weight, and every cached key and value, from memory once. With few requests that reading takes longer than the arithmetic, so bandwidth sets the speed:</p>
+<div class="tex d">\text{tokens per second per request}\lesssim\frac{n_{\text{GPU}}\times R}{N\times\text{bytes per parameter}+M_{\text{KV}}}</div>
+<p class="sym"><span class="tex">R</span> is one GPU’s memory bandwidth in bytes per second. This is an upper bound; real systems reach a fraction of it.</p>
+<div class="why"><b>Why bandwidth and not compute?</b> For one request, each 16-bit weight read from memory (2 bytes) takes part in one multiply and one add (2 operations): one operation per byte. An H100 can do about <span class="tex">989\times10^{12}</span> operations per second but read only <span class="tex">3.35\times10^{12}</span> bytes, so it needs about 295 operations per byte to keep its tensor cores busy. Serving <span class="tex">B</span> requests together uses each byte <span class="tex">B</span> times, which is why batching raises throughput almost for free until <span class="tex">B</span> nears that ratio.</div>
+<p><b>And training?</b> Training keeps much more per parameter. With the Adam optimizer in mixed precision, a common recipe stores bf16 weights (2 bytes), bf16 gradients (2), fp32 master weights (4) and Adam’s two fp32 running averages (8):</p>
+<div class="tex d">M_{\text{train}}\approx16\times N\ \text{bytes, before activations}</div>
+<p class="sym">Activations, the values kept from the forward pass for the backward pass, come on top and grow with batch size and context length.</p>
+<div class="worked">
+  <h4>Worked example</h4>
+  <div class="x-only"><p><b>Does it fit?</b> The running example: <span class="tex">N=7\times10^9</span> in bf16, with <span class="tex">L=32,\ d_{\text{model}}=4096</span>, serving one request at <span class="tex">T=4096</span>. Weights: <span class="tex">7\times10^9\times2</span> bytes = 14 GB. KV cache: <span class="tex">2\times32\times4096\times4096\times2=2{,}147{,}483{,}648</span> bytes, about 2.15 GB. Needed: <span class="tex">1.2\times(14+2.15)\approx19.4</span> GB, which fits in 24 GB.</p>
+  <p><b>How fast?</b> On an RTX 4090 (1,008 GB/s): <span class="tex">1008/16.15\approx62</span> tokens per second at most. On an L4 (300 GB/s), which has the same 24 GB: about 19. Same model, same memory, under a third of the speed.</p>
+  <p><b>A 70B model</b> (<span class="tex">L=80,\ d_{\text{model}}=8192</span>). In bf16: <span class="tex">1.2\times(140+10.7)\approx181</span> GB, so three 80 GB GPUs. In int4 the weights are 35 GB: <span class="tex">1.2\times(35+10.7)\approx55</span> GB fits on one.</p>
+  <p><b>Training the 7B model</b> needs <span class="tex">16\times7\times10^9</span> bytes = 112 GB before activations: more than any single GPU in the table below.</p></div>
+  <p class="s-only">A 7-billion-parameter model in 16-bit numbers needs 14 GB for its weights and about 2 GB more for a long conversation. With a safety margin that is about 19 GB, so it fits on a 24 GB card. How fast it writes depends on how quickly the card reads those 16 GB for every token: about 62 tokens a second on a fast gaming card, about 19 on a low-power data-centre card with the same memory. Training the same model needs more than 100 GB.</p>
+</div>
+<details class="callout code opt" open><summary>In Python: choose a device, and compare number formats</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py"><code>import torch
+
+# Pick the best available device and fall back to the CPU
+if torch.cuda.is_available():              # NVIDIA, and AMD ROCm builds of PyTorch
+    device = "cuda"
+elif torch.backends.mps.is_available():    # Apple silicon
+    device = "mps"
+else:
+    device = "cpu"
+
+print("PyTorch:", torch.__version__)
+print("built for CUDA:", torch.version.cuda)   # None means a CPU-only build
+print("device:", device)
+if device == "cuda":
+    props = torch.cuda.get_device_properties(0)
+    print(f"GPU: {props.name}, {props.total_memory / 1e9:.1f} GB")
+
+# Bytes per number, largest value and precision of each floating-point format
+for dtype in (torch.float32, torch.float16, torch.bfloat16):
+    fi = torch.finfo(dtype)
+    print(f"{str(dtype):15} {fi.bits // 8} bytes  max {fi.max:9.3g}  gap after 1.0: {fi.eps:.3g}")
+
+# float16 overflows where bfloat16 does not; bfloat16 rounds more coarsely
+x = torch.tensor([70000.0, 1.001])
+print("float16: ", x.to(torch.float16).tolist())
+print("bfloat16:", x.to(torch.bfloat16).tolist())
+
+# Weights move to the device once; inputs must be on the same device
+torch.manual_seed(0)
+layer = torch.nn.Linear(4096, 4096).to(device)
+x = torch.randn(8, 4096, device=device)
+with torch.autocast(device_type=device, dtype=torch.bfloat16):   # mixed precision
+    y = layer(x)
+print("weights stored as:", layer.weight.dtype, "| matmul output:", y.dtype, "on", y.device.type)
+
+# Output on a CPU-only machine; with an NVIDIA GPU the device is cuda and the GPU is named:
+# PyTorch: 2.15.0+cpu
+# built for CUDA: None
+# device: cpu
+# torch.float32   4 bytes  max   3.4e+38  gap after 1.0: 1.19e-07
+# torch.float16   2 bytes  max  6.55e+04  gap after 1.0: 0.000977
+# torch.bfloat16  2 bytes  max  3.39e+38  gap after 1.0: 0.00781
+# float16:  [inf, 1.0009765625]
+# bfloat16: [70144.0, 1.0]
+# weights stored as: torch.float32 | matmul output: torch.bfloat16 on cpu</code></pre></details>
+<details class="callout code opt" open><summary>In Python: will it fit, and how fast can it be?</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py"><code>import math
+
+# Vendor figures: memory (bytes), bandwidth (bytes/s), dense BF16 tensor FLOP/s
+GPUS = {
+    "RTX 4090": (24e9, 1008e9, 165.2e12),
+    "L4": (24e9, 300e9, 121e12),
+    "A100 80GB": (80e9, 2039e9, 312e12),
+    "H100 SXM": (80e9, 3350e9, 989.5e12),
+}
+BYTES = {"fp32": 4, "bf16": 2, "int8": 1, "int4": 0.5}
+
+
+def memory_needed(N, fmt, L, d_model, T, B=1, allowance=1.2):
+    weights = N * BYTES[fmt]
+    kv = 2 * L * T * d_model * 2 * B       # keys and values, 16-bit, full width
+    return weights, kv, allowance * (weights + kv)
+
+
+def report(name, N, fmt, L, d_model, T):
+    w, kv, total = memory_needed(N, fmt, L, d_model, T)
+    print(f"{name} in {fmt}, T={T}: weights {w / 1e9:.1f} GB + KV cache "
+          f"{kv / 1e9:.2f} GB, x1.2 -&gt; {total / 1e9:.1f} GB")
+    for gpu, (mem, bw, _) in GPUS.items():
+        n = math.ceil(total / mem)           # GPUs needed, split evenly
+        speed = n * bw / (w + kv)            # every step reads weights and cache
+        print(f"   {gpu:9} x{n}: at most {speed:4.0f} tokens/s for one request")
+
+
+report("7B", 7e9, "bf16", 32, 4096, 4096)
+report("70B", 70e9, "bf16", 80, 8192, 4096)
+report("70B", 70e9, "int4", 80, 8192, 4096)
+
+# Decode reads 2 bytes per bf16 weight and does 2 FLOPs with it per request,
+# so it only becomes compute-bound once the batch passes F / R
+for gpu, (_, bw, flops) in GPUS.items():
+    print(f"{gpu:9}: compute-bound beyond a batch of about {flops / bw:.0f}")
+
+# Training with Adam in mixed precision: 2 (bf16 weights) + 2 (gradients)
+# + 4 (fp32 master weights) + 8 (two Adam moments) = 16 bytes per parameter
+print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
+
+# Output:
+# 7B in bf16, T=4096: weights 14.0 GB + KV cache 2.15 GB, x1.2 -&gt; 19.4 GB
+#    RTX 4090  x1: at most   62 tokens/s for one request
+#    L4        x1: at most   19 tokens/s for one request
+#    A100 80GB x1: at most  126 tokens/s for one request
+#    H100 SXM  x1: at most  207 tokens/s for one request
+# 70B in bf16, T=4096: weights 140.0 GB + KV cache 10.74 GB, x1.2 -&gt; 180.9 GB
+#    RTX 4090  x8: at most   53 tokens/s for one request
+#    L4        x8: at most   16 tokens/s for one request
+#    A100 80GB x3: at most   41 tokens/s for one request
+#    H100 SXM  x3: at most   67 tokens/s for one request
+# 70B in int4, T=4096: weights 35.0 GB + KV cache 10.74 GB, x1.2 -&gt; 54.9 GB
+#    RTX 4090  x3: at most   66 tokens/s for one request
+#    L4        x3: at most   20 tokens/s for one request
+#    A100 80GB x1: at most   45 tokens/s for one request
+#    H100 SXM  x1: at most   73 tokens/s for one request
+# RTX 4090 : compute-bound beyond a batch of about 164
+# L4       : compute-bound beyond a batch of about 403
+# A100 80GB: compute-bound beyond a batch of about 153
+# H100 SXM : compute-bound beyond a batch of about 295
+# training a 7B model: 112 GB before activations</code></pre></details>
+<h3>Real GPUs, by the numbers</h3>
+<p>The figures that matter for language models, from NVIDIA’s published specifications. NVIDIA quotes data-centre tensor throughput “with sparsity”, which assumes half the weights are zero in a fixed pattern; its footnotes say the dense figure is half of that, and the dense figure is shown here.</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th>GPU</th><th>Memory</th><th>Bandwidth</th><th>BF16 tensor, dense</th><th>Operations per byte</th><th>Typical use</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">GeForce RTX 4090</th><td>24 GB</td><td>1,008 GB/s</td><td>165 TFLOP/s</td><td>164</td><td>Desktop: local inference and small fine-tuning jobs.</td></tr>
+    <tr><th scope="row">L4</th><td>24 GB</td><td>300 GB/s</td><td>121 TFLOP/s</td><td>403</td><td>Cloud inference on a small, low-power card.</td></tr>
+    <tr><th scope="row">A100 80GB (SXM)</th><td>80 GB</td><td>2,039 GB/s</td><td>312 TFLOP/s</td><td>153</td><td>Data-centre training and inference.</td></tr>
+    <tr><th scope="row">H100 (SXM)</th><td>80 GB</td><td>3,350 GB/s</td><td>989 TFLOP/s</td><td>295</td><td>Data-centre training and inference.</td></tr>
+  </tbody>
+</table></div>
+<small>Sources: NVIDIA’s product pages for H100, A100 and L4, and Appendix A of the NVIDIA Ada GPU Architecture whitepaper for the RTX 4090 (dense rate with FP32 accumulation); checked in November 2026. “Operations per byte” is throughput divided by bandwidth: the batch size above which decoding stops being limited by bandwidth. Newer generations exist; check the vendor’s page before buying.</small>
+<div class="widget" id="w-hw">
+  <h4 class="wt">Interactive · will this model fit on this GPU?</h4>
+  <p class="look"><b>The point:</b> Memory decides whether a model runs at all; bandwidth decides how fast. <b>Do this:</b> Start with the 7B model on one RTX 4090, then raise the context length, switch to the 70B model and try 4-bit weights. <b>Watch for:</b> Which part of the bar grows, and how the speed changes between two GPUs with the same memory.</p>
+  <div class="controls">
+    <label class="ctl">Model<select id="hw-model"></select></label>
+    <label class="ctl">Weight format<select id="hw-prec"><option value="4">fp32 · 4 bytes</option><option value="2" selected>bf16 · 2 bytes</option><option value="1">int8 · 1 byte</option><option value="0.5">int4 · half a byte</option></select></label>
+    <label class="ctl">GPU<select id="hw-gpu"><option value="0" selected>RTX 4090 · 24 GB · 1,008 GB/s</option><option value="1">L4 · 24 GB · 300 GB/s</option><option value="2">A100 · 80 GB · 2,039 GB/s</option><option value="3">H100 SXM · 80 GB · 3,350 GB/s</option></select></label>
+    <label class="ctl">Number of GPUs<select id="hw-n"><option value="1" selected>1</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label>
+    <label class="ctl"><span class="row">Context length T <output id="hw-T-o"></output></span><input type="range" id="hw-T" min="9" max="17" step="1" value="12"></label>
+    <label class="ctl"><span class="row">Requests at once B <output id="hw-B-o"></output></span><input type="range" id="hw-B" min="0" max="6" step="1" value="0"></label>
+  </div>
+  <span class="lab">GPU memory</span>
+  <div class="stack" id="hw-bar" role="img" aria-label="Stacked bar of GPU memory: weights, KV cache, allowance and free space"></div>
+  <p class="readout" id="hw-fit" aria-live="polite"></p>
+  <div class="stats" id="hw-stats" aria-live="polite"></div>
+  <small>What is simplified: the KV cache is stored at 16 bits with keys and values of full width <span class="tex">d_{\text{model}}</span>, so models that use grouped-query attention need several times less; the 20% allowance stands in for overheads that vary with the software; several GPUs are assumed to split the model evenly with no time lost to communication; speeds are upper bounds from the published peak figures, ignoring attention’s own cost. Model shapes are typical for each size class, not a particular released model.</small>
+  <div class="wjh"><b>What just happened?</b> The weights are fixed by the parameter count and the format, so changing the format moves the blue bar most. The KV cache grows with context length and with every extra request, and at long contexts it overtakes the weights. Swapping an RTX 4090 for an L4 leaves the verdict unchanged, because both have 24 GB, but the speed falls with the bandwidth. Adding GPUs adds memory and bandwidth together; the compute limit only takes over at large batches.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>1. 7B model in bf16 on an RTX 4090: raise the context to 131,072 tokens and watch the KV cache overtake the weights. 2. Switch the GPU to the L4: the memory verdict stays the same and the speed drops to under a third. 3. 70B model on one H100: try bf16, then int8, then int4.</p></div>
+<h3>One GPU or several; local or cloud</h3>
+<ul>
+  <li><b>Fit first.</b> If the model fits on one GPU, use one: splitting it adds communication and complexity.</li>
+  <li><b>Data parallelism</b>: every GPU holds a full copy and handles different requests or batches. It raises throughput but does not help a model that does not fit.</li>
+  <li><b>Tensor parallelism</b>: each weight matrix is split across GPUs, which exchange partial results in every layer. It needs a fast link between the GPUs, such as NVLink inside one server; this is how a 70B model runs on several 80 GB GPUs.</li>
+  <li><b>Pipeline parallelism</b>: consecutive layers sit on different GPUs and the work flows through them. It needs less communication, but GPUs wait for each other unless the batch is split into smaller pieces.</li>
+  <li><b>Local hardware</b>: a one-off cost, and the data stays on your machine, but consumer cards top out at around 24 to 32 GB. Apple silicon shares one pool of memory between the CPU and the GPU, so it can load larger models, at lower bandwidth.</li>
+  <li><b>Cloud GPUs</b>: rented by the hour, with data-centre memory and bandwidth and nothing to maintain; you pay while they sit idle.</li>
+  <li><b>Hosted APIs</b>: no hardware at all. You pay per token and accept the provider’s models and data terms.</li>
+</ul>
+<p>Training at scale combines all three kinds of parallelism and also splits the optimizer state across GPUs; this guide does not go further into it.</p>
+<div class="callout note"><b>Beginner note</b><p>You do not need a GPU to follow this guide: every interactive runs in the browser and every Python box runs on a CPU. A GPU starts to matter once models reach billions of parameters.</p></div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“More cores or more TFLOPS means faster generation.”</b> For a few users at a time, memory bandwidth sets the speed. The L4 and the RTX 4090 have the same memory, and the 4090 generates over three times faster.</li>
+  <li><b>“<code>nvidia-smi</code> shows the CUDA version I have installed.”</b> It shows the newest CUDA version the driver supports.</li>
+  <li><b>“I need to install the CUDA toolkit to use PyTorch on a GPU.”</b> PyTorch’s packages bring their own CUDA libraries; you need a recent enough driver.</li>
+  <li><b>“Two 24 GB cards are the same as one 48 GB card.”</b> The model has to be split between them, and every layer then waits for data to cross between the cards.</li>
+  <li><b>“4-bit weights make a model four times smaller at no cost.”</b> Each group of weights also stores a scale, and quality can drop. Measure it on your own task.</li>
+  <li><b>Pitfall:</b> choosing a GPU by its compute figure alone. For serving, check memory first and bandwidth second.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Transformers are mostly matrix multiplication, which GPUs and their tensor cores run massively in parallel.</li><li>Memory capacity decides whether a model fits: weights (parameters × bytes) plus the KV cache plus a margin.</li><li>Memory bandwidth decides how fast a single request generates; compute matters only for large batches.</li><li>bf16 halves fp32’s memory with the same range; int8 and int4 shrink it further at some cost in quality.</li><li>For PyTorch, the driver must support the CUDA version your PyTorch build uses; the rest of CUDA comes with PyTorch.</li></ul>
+<h3>Check yourself</h3>
+<div class="quiz">
+<fieldset><legend>1. A model with 7 billion parameters is stored in bf16. How much memory do its weights take?</legend><button type="button" class="qo">7 GB</button><button type="button" class="qo" data-ok="1">14 GB</button><button type="button" class="qo">28 GB</button><p class="qx" hidden aria-live="polite"><b></b> 7 × 10⁹ parameters × 2 bytes. In fp32 it would be 28 GB; in int8, 7 GB.</p></fieldset>
+<fieldset><legend>2. One person is chatting with a model on a single GPU. What mostly limits the tokens per second?</legend><button type="button" class="qo">The tensor cores’ TFLOPS</button><button type="button" class="qo" data-ok="1">The memory bandwidth</button><button type="button" class="qo">The CPU’s clock speed</button><p class="qx" hidden aria-live="polite"><b></b> Every step reads all the weights to do only one token’s worth of arithmetic, so the tensor cores wait for memory.</p></fieldset>
+<fieldset><legend>3. <code>nvidia-smi</code> reports “CUDA Version: 12.4”. What does that tell you?</legend><button type="button" class="qo">Which CUDA toolkit is installed</button><button type="button" class="qo" data-ok="1">The newest CUDA version the driver supports</button><button type="button" class="qo">Which CUDA version PyTorch was built for</button><p class="qx" hidden aria-live="polite"><b></b> PyTorch’s own CUDA version is <code>torch.version.cuda</code>. When PyTorch cannot use the GPU, compare the two numbers first.</p></fieldset>
+</div>
+<h3>Discuss with your team</h3>
+<ul class="talk"><li>We want to run an open 70B model for 50 internal users. Would you buy GPUs, rent cloud GPUs or use a hosted API, and what would change your answer?</li><li>Our 7B model fits on a 24 GB card in testing but runs out of memory in production. What grew, and what are the options?</li></ul>
+<p class="bridge"><b>Next:</b> <a class="xref" data-ref="inference"></a> uses these memory and bandwidth figures to explain the KV cache, batching and response time.</p>
+</div>
+</section>
+
+<!-- ================= 12 ================= -->
+<section class="ch" id="inference" data-title="Inference in practice">
+<div class="num">SECTION 12 · PART C: TRAINING AND USING IT</div>
 <h2>Inference in practice</h2>
 <div class="start">
-  <div><b>Before this section</b><p>The generation loop from <a class="xref" data-ref="generation"></a>; keys and values from <a class="xref" data-ref="attention"></a>; parameter counts from <a class="xref" data-ref="architecture"></a>.</p></div>
+  <div><b>Before this section</b><p>The generation loop from <a class="xref" data-ref="generation"></a>; keys and values from <a class="xref" data-ref="attention"></a>; parameter counts from <a class="xref" data-ref="architecture"></a>; memory and bandwidth from <a class="xref" data-ref="hardware"></a>.</p></div>
   <div><b>After it, you can</b><ul><li>Explain what the KV cache stores and why it is valid to reuse it.</li><li>Count the work with and without a cache.</li><li>Estimate KV-cache memory and response time from a model’s configuration.</li><li>Distinguish time to first token from tokens per second.</li></ul></div>
   <div class="ex"><b>The running example</b><p>After writing “mat”, the model needs the next token. The keys and values of “the cat sat on the” cannot have changed, because the causal mask stops earlier positions from seeing later ones. They are read from the cache; only “mat” is processed.</p></div>
 </div>
@@ -2408,7 +2647,7 @@ for B in (1, 16, 256):
 <div class="widget opt" id="w-ie">
   <h4 class="wt">Interactive · latency and memory estimator (conceptual)</h4>
   <p class="look"><b>The point:</b> Memory and speed follow from a few numbers about the model and the hardware. <b>Do this:</b> Choose a model, then raise the batch size and the prompt length. <b>Watch for:</b> Which bar grows (the KV cache, not the weights) and when the bottleneck label changes.</p>
-  <p class="cap"><b>Order-of-magnitude illustration, not a benchmark.</b> It applies the simple bounds from the “Math detail” box above. Real systems are slower, and the hardware sliders are generic quantities, not specific products.</p>
+  <p class="cap"><b>Order-of-magnitude illustration, not a benchmark.</b> It applies the simple bounds from the “Math detail” box above. Real systems are slower, and the hardware sliders are generic quantities, not specific products; <a class="xref" data-ref="hardware"></a> lists the figures for real GPUs.</p>
   <div class="controls">
     <label class="ctl">Model<select id="ie-model"></select></label>
     <label class="ctl">Weight precision<select id="ie-prec"><option value="4">32-bit floats</option><option value="2" selected>16-bit floats</option><option value="1">8-bit quantized</option><option value="0.5">4-bit quantized</option></select></label>
@@ -2455,9 +2694,9 @@ for B in (1, 16, 256):
 </div>
 </section>
 
-<!-- ================= 12 ================= -->
+<!-- ================= 13 ================= -->
 <section class="ch" id="scaling" data-title="Scaling and practicalities">
-<div class="num">SECTION 12 · PART C: TRAINING AND USING IT</div>
+<div class="num">SECTION 13 · PART C: TRAINING AND USING IT</div>
 <h2>Scaling laws and LLM practicalities</h2>
 <div class="start">
   <div><b>Before this section</b><p>Parameter counts from <a class="xref" data-ref="architecture"></a> and the loss from <a class="xref" data-ref="training"></a>.</p></div>
@@ -2564,9 +2803,9 @@ print(f"floor with D=2e10 however large N is: {loss(float('inf'), 2e10):.3f}")
 </div>
 </section>
 
-<!-- ================= 13 ================= -->
+<!-- ================= 14 ================= -->
 <section class="ch" id="encdec" data-title="Encoder–decoder and cross-attention">
-<div class="num">SECTION 13 · PART D: THE WIDER PICTURE</div>
+<div class="num">SECTION 14 · PART D: THE WIDER PICTURE</div>
 <h2>Encoder–decoder Transformers and cross-attention</h2>
 <div class="start">
   <div><b>Before this section</b><p>Self-attention and the causal mask from <a class="xref" data-ref="attention"></a>; the block from <a class="xref" data-ref="block"></a>.</p></div>
@@ -2730,9 +2969,9 @@ for word, row in zip(written, weights):
 </div>
 </section>
 
-<!-- ================= 14 ================= -->
+<!-- ================= 15 ================= -->
 <section class="ch" id="paper" data-title="The 2017 paper in detail">
-<div class="num">SECTION 14 · PART D: THE WIDER PICTURE</div>
+<div class="num">SECTION 15 · PART D: THE WIDER PICTURE</div>
 <h2>The 2017 paper in detail: “Attention Is All You Need”</h2>
 <div class="start">
   <div><b>Before this section</b><p>Every earlier section, especially <a class="xref" data-ref="block"></a> and <a class="xref" data-ref="encdec"></a>.</p></div>
@@ -2870,9 +3109,9 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
 </div>
 </section>
 
-<!-- ================= 15 ================= -->
+<!-- ================= 16 ================= -->
 <section class="ch" id="iv-core" data-title="Interview prep: Transformer fundamentals">
-<div class="num">SECTION 15 · PART E: INTERVIEW PREP</div>
+<div class="num">SECTION 16 · PART E: INTERVIEW PREP</div>
 <h2>Interview prep: Transformer fundamentals</h2>
 <p>Part E turns the guide into interview answers for a mid-level AI engineer role that mixes model internals with applied LLM work. Every answer is a short list of bullets: the points an interviewer listens for, in the order you would say them. The first section covers the material of Parts A to D; the next four cover applied topics the guide has not yet discussed: retrieval, fine-tuning, agents and production.</p>
 <div class="callout note"><b>How to answer any technical question</b><ul>
@@ -3070,9 +3309,9 @@ print(f"uniform: loss {math.log(n_vocab):.4f}  -&gt;  perplexity "
 <div class="wrapup"><p class="bridge"><b>Next:</b> The rest of Part E covers applied topics. <a class="xref" data-ref="iv-rag"></a> starts with the most common one: giving a model knowledge it was not trained on.</p></div>
 </section>
 
-<!-- ================= 16 ================= -->
+<!-- ================= 17 ================= -->
 <section class="ch" id="iv-rag" data-title="Interview prep: RAG and embeddings">
-<div class="num">SECTION 16 · PART E: INTERVIEW PREP</div>
+<div class="num">SECTION 17 · PART E: INTERVIEW PREP</div>
 <h2>Interview prep: retrieval-augmented generation (RAG) and embeddings</h2>
 <p>RAG means fetching relevant text at question time and placing it in the prompt, so that the model answers from your documents and not from memory. It is the most common architecture in applied LLM work, and interviewers expect you to discuss each stage and how to evaluate it.</p>
 <div class="flow" role="img" aria-label="Diagram: offline, documents are chunked, embedded and indexed. Online, the query is embedded, the top chunks are retrieved and reranked, placed in the prompt, and the LLM answers with citations.">
@@ -3185,9 +3424,9 @@ print(f"MRR      = {mrr:.3f}")
 <div class="wrapup"><p class="bridge"><b>Next:</b> Retrieval changes what the model knows at question time. <a class="xref" data-ref="iv-ft"></a> covers changing the model itself.</p></div>
 </section>
 
-<!-- ================= 17 ================= -->
+<!-- ================= 18 ================= -->
 <section class="ch" id="iv-ft" data-title="Interview prep: fine-tuning and alignment">
-<div class="num">SECTION 17 · PART E: INTERVIEW PREP</div>
+<div class="num">SECTION 18 · PART E: INTERVIEW PREP</div>
 <h2>Interview prep: fine-tuning and alignment</h2>
 <p>Fine-tuning continues training a pretrained model on a smaller, targeted dataset. Interviewers want to know when it is the right tool, how parameter-efficient methods work, and how chat models are aligned with human preferences.</p>
 <div class="flow" role="img" aria-label="Diagram: a pretrained base model goes through supervised fine-tuning, then preference tuning, producing an aligned assistant.">
@@ -3343,9 +3582,9 @@ print(f"step direction: chosen {-pi_c.grad.item():+.3f}, "
 <div class="wrapup"><p class="bridge"><b>Next:</b> A fine-tuned or base model still only produces text. <a class="xref" data-ref="iv-agents"></a> covers models that take actions.</p></div>
 </section>
 
-<!-- ================= 18 ================= -->
+<!-- ================= 19 ================= -->
 <section class="ch" id="iv-agents" data-title="Interview prep: agents and tool use">
-<div class="num">SECTION 18 · PART E: INTERVIEW PREP</div>
+<div class="num">SECTION 19 · PART E: INTERVIEW PREP</div>
 <h2>Interview prep: agents and tool use</h2>
 <p>An agent is an LLM running in a loop: it decides on an action, your code executes it, the result is fed back, and the loop continues until the task is done. Interviewers probe whether you know when an agent is justified, how tool calling works, and how agents fail.</p>
 <div class="flow" role="img" aria-label="Diagram: the user goal goes to the LLM, which emits a tool call; code runs the tool and returns the result to the LLM; the loop repeats until a final answer.">
@@ -3476,9 +3715,9 @@ print(extract_ticket("Users cannot log in since this morning's release."))
 <div class="wrapup"><p class="bridge"><b>Next:</b> All of these systems need to be measured and run reliably. <a class="xref" data-ref="iv-prod"></a> covers evaluation and production.</p></div>
 </section>
 
-<!-- ================= 19 ================= -->
+<!-- ================= 20 ================= -->
 <section class="ch" id="iv-prod" data-title="Interview prep: evaluation and production">
-<div class="num">SECTION 19 · PART E: INTERVIEW PREP</div>
+<div class="num">SECTION 20 · PART E: INTERVIEW PREP</div>
 <h2>Interview prep: evaluation, production and system design</h2>
 <p>Mid-level interviews usually include a “how would you ship and run this?” discussion. The questions below cover evaluation, cost, latency, reliability and safety, and end with a worked system-design answer you can adapt.</p>
 <h3>Evaluation</h3>
@@ -3570,16 +3809,20 @@ print(with_fallback(flaky_llm_call, lambda: "answer from the backup model"))
 # attempt 2 failed (timeout); retrying in 0.152 s
 # answer</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q10</span>What guardrails would you add?</h4><ul><li>Input checks: abuse, prompt injection patterns, off-topic requests.</li><li>Output checks: PII, policy violations, schema validity, groundedness for factual answers.</li><li>Least-privilege tools and confirmation steps for risky actions.</li><li>Red-team before launch and again after major changes.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-agents"></a></p></div>
+<h3>Hardware</h3>
+<div class="qa"><h4 class="q"><span class="qn">Q11</span>How much GPU memory do you need to serve a model?</h4><ul><li>Weights: parameters × bytes per parameter (2 for bf16, 0.5 for int4). A 70B model in bf16 is 140 GB.</li><li>KV cache: 2 × layers × context length × key–value width × 2 bytes, for every request served at once. Grouped-query attention shrinks the width.</li><li>A margin of 10–20% for the CUDA context, activations and fragmentation.</li><li>If it does not fit: quantize, choose a smaller model, shorten the context or cap concurrency, or split the model across GPUs with tensor parallelism.</li></ul><p class="fu"><b>Likely follow-up:</b> “And to fine-tune it?” Full fine-tuning with Adam in mixed precision needs about 16 bytes per parameter plus activations; LoRA and QLoRA freeze the base weights and need far less. <b>Review:</b> <a class="xref" data-ref="hardware"></a>, <a class="xref" data-ref="iv-ft"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q12</span>Why is decoding limited by memory bandwidth, and what follows from that?</h4><ul><li>Each decode step reads every weight once to produce one token per request: about one operation per byte read.</li><li>GPUs can do hundreds of operations per byte of bandwidth (an H100 about 295), so at small batch sizes the tensor cores wait for memory.</li><li>So quantization speeds up decoding as well as saving memory; batching raises throughput almost for free; for interactive use, compare GPUs by memory and bandwidth before TFLOPS.</li><li>Prefill is the opposite: all prompt tokens share each weight read, so it is limited by compute.</li></ul><p class="fu"><b>Trap:</b> quoting the headline TFLOPS. Data-centre figures are usually given with sparsity, twice the dense rate. <b>Review:</b> <a class="xref" data-ref="hardware"></a>, <a class="xref" data-ref="inference"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q13</span><span><code>torch.cuda.is_available()</code> returns <code>False</code> on a machine with an NVIDIA GPU. How do you debug it?</span></h4><ul><li>Run <code>nvidia-smi</code>. If it fails, the driver is missing or broken.</li><li>Print <code>torch.__version__</code> and <code>torch.version.cuda</code>. A “+cpu” version or <code>None</code> means a CPU-only build: reinstall the CUDA build that matches the driver.</li><li>Compare <code>torch.version.cuda</code> with the CUDA version <code>nvidia-smi</code> reports. If PyTorch needs a newer one, update the driver or install an older build.</li><li>In a container, check the GPU is passed through (for Docker, <code>--gpus all</code> with the NVIDIA Container Toolkit), and that <code>CUDA_VISIBLE_DEVICES</code> is not hiding it.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="hardware"></a></p></div>
 <h3>Worked system-design answer</h3>
-<div class="qa design"><h4 class="q"><span class="qn">Q11</span>System design: “Design a Q&amp;A assistant over our internal documents for 5,000 employees.”</h4><p class="dstep">Clarify (2–3 minutes)</p><ul><li>Who are the users and what do they ask? What document types, how many, how often do they change?</li><li>Do permissions differ per user? Latency and cost targets? Languages?</li><li>How will we know it works: deflected tickets, time saved, answer accuracy?</li></ul><p class="dstep">Ingestion (offline)</p><ul><li>Connectors per source; parse to text while keeping structure.</li><li>Chunk by headings with metadata: title, path, date, owner, access list.</li><li>Embed and index for both vector and keyword search; re-index incrementally on change.</li></ul><p class="dstep">Query path (online)</p><ul><li>Rewrite the question using chat history.</li><li>Hybrid retrieval of the top 50, filtered by the user’s permissions; rerank to the top 5–8.</li><li>Prompt: instructions, passages with IDs, question; require citations and allow “I don’t know”. Stream the answer.</li></ul><p class="dstep">Evaluation</p><ul><li>A golden set of about 200 real questions with answers and source passages from subject experts.</li><li>Retrieval recall@k; answer faithfulness and correctness with a calibrated LLM judge.</li><li>Run on every change; add failures from production.</li></ul><p class="dstep">Operations</p><ul><li>Cost per query estimate; prompt caching; answer caching for frequent questions.</li><li>Tracing, feedback buttons, dashboards for latency, cost and “no answer” rate.</li><li>Fallback model; rate limiting.</li></ul><p class="dstep">Risks and mitigations</p><ul><li>Permission leakage → filter at retrieval. Prompt injection in documents → treat as data, no write tools.</li><li>Stale documents → dates in metadata, prefer newest. Hallucination → citations, abstention, faithfulness checks.</li></ul><p class="dstep">Close</p><ul><li>Ship a simple baseline first, measure each stage, improve the weakest one. Name what you would do with more time.</li></ul></div>
+<div class="qa design"><h4 class="q"><span class="qn">Q14</span>System design: “Design a Q&amp;A assistant over our internal documents for 5,000 employees.”</h4><p class="dstep">Clarify (2–3 minutes)</p><ul><li>Who are the users and what do they ask? What document types, how many, how often do they change?</li><li>Do permissions differ per user? Latency and cost targets? Languages?</li><li>How will we know it works: deflected tickets, time saved, answer accuracy?</li></ul><p class="dstep">Ingestion (offline)</p><ul><li>Connectors per source; parse to text while keeping structure.</li><li>Chunk by headings with metadata: title, path, date, owner, access list.</li><li>Embed and index for both vector and keyword search; re-index incrementally on change.</li></ul><p class="dstep">Query path (online)</p><ul><li>Rewrite the question using chat history.</li><li>Hybrid retrieval of the top 50, filtered by the user’s permissions; rerank to the top 5–8.</li><li>Prompt: instructions, passages with IDs, question; require citations and allow “I don’t know”. Stream the answer.</li></ul><p class="dstep">Evaluation</p><ul><li>A golden set of about 200 real questions with answers and source passages from subject experts.</li><li>Retrieval recall@k; answer faithfulness and correctness with a calibrated LLM judge.</li><li>Run on every change; add failures from production.</li></ul><p class="dstep">Operations</p><ul><li>Cost per query estimate; prompt caching; answer caching for frequent questions.</li><li>Tracing, feedback buttons, dashboards for latency, cost and “no answer” rate.</li><li>Fallback model; rate limiting.</li></ul><p class="dstep">Risks and mitigations</p><ul><li>Permission leakage → filter at retrieval. Prompt injection in documents → treat as data, no write tools.</li><li>Stale documents → dates in metadata, prefer newest. Hallucination → citations, abstention, faithfulness checks.</li></ul><p class="dstep">Close</p><ul><li>Ship a simple baseline first, measure each stage, improve the weakest one. Name what you would do with more time.</li></ul></div>
 <h3>The project question</h3>
-<div class="qa"><h4 class="q"><span class="qn">Q12</span>Tell me about an LLM project you built.</h4><ul><li><b>Situation</b>: the problem and who had it, in one sentence.</li><li><b>Task</b>: your responsibility and the success metric.</li><li><b>Action</b>: the design choices you made and the alternatives you rejected, with reasons.</li><li><b>Result</b>: numbers (accuracy, latency, cost, adoption) and what you learned.</li><li>Be ready to go deeper on the evaluation: how you knew it worked.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q15</span>Tell me about an LLM project you built.</h4><ul><li><b>Situation</b>: the problem and who had it, in one sentence.</li><li><b>Task</b>: your responsibility and the success metric.</li><li><b>Action</b>: the design choices you made and the alternatives you rejected, with reasons.</li><li><b>Result</b>: numbers (accuracy, latency, cost, adoption) and what you learned.</li><li>Be ready to go deeper on the evaluation: how you knew it worked.</li></ul></div>
 <div class="wrapup"><p class="bridge"><b>Next:</b> That completes Part E. Before an interview, re-read the key takeaways of each section in Parts A to D and the bullets you marked here. <a class="xref" data-ref="glossary"></a> collects the terms.</p></div>
 </section>
 
-<!-- ================= 20 ================= -->
+<!-- ================= 21 ================= -->
 <section class="ch" id="glossary" data-title="Glossary and further learning">
-<div class="num">SECTION 20 · REFERENCE</div>
+<div class="num">SECTION 21 · REFERENCE</div>
 <h2>Glossary and further learning</h2>
 
 <label class="ctl" style="max-width:420px">Filter the glossary<input type="text" id="gl-q" placeholder="e.g. soft, cache, top" autocomplete="off"></label>
@@ -3641,6 +3884,12 @@ print(with_fallback(flaky_llm_call, lambda: "answer from the backup model"))
   <div class="term"><dt>Mixture of experts</dt><dd>A layer with many expert MLPs and a router that sends each token to only a few of them.</dd></div>
   <div class="term"><dt>Quantization</dt><dd>Storing weights (and sometimes activations or the KV cache) in fewer bits to save memory and bandwidth.</dd></div>
   <div class="term"><dt>Speculative decoding</dt><dd>A small draft model proposes tokens that the large model verifies in one pass, speeding up generation.</dd></div>
+  <div class="term"><dt>GPU</dt><dd>A processor with thousands of simple cores that apply the same operation to many numbers at once; it runs nearly all model training and inference.</dd></div>
+  <div class="term"><dt>Tensor core</dt><dd>A unit inside a GPU that multiplies a small block of a matrix in one step, at reduced precision such as bf16 or fp8.</dd></div>
+  <div class="term"><dt>VRAM</dt><dd>The GPU’s own memory. The weights, the KV cache and intermediate values must fit in it.</dd></div>
+  <div class="term"><dt>Memory bandwidth</dt><dd>The bytes per second a GPU can read from its memory; the usual limit on generation speed for a single request.</dd></div>
+  <div class="term"><dt>CUDA</dt><dd>NVIDIA’s platform for running programs on its GPUs: a driver, a runtime, a compiler and libraries such as cuBLAS and cuDNN.</dd></div>
+  <div class="term"><dt>bf16</dt><dd>A 16-bit floating-point format with the same range as 32-bit floats and less precision; the usual format for training and inference.</dd></div>
 </dl>
 <p id="gl-none" hidden>No glossary entry matches that filter.</p>
 <h3>Foundational papers</h3>
@@ -3905,7 +4154,7 @@ function slider(id,f,cb){const e=$('#'+id),o=$('#'+id+'-o'),u=()=>{const t=Strin
 
 /* ---------- maths rendering (KaTeX with plain-text fallback) ---------- */
 /* d_model -> d<sub>model</sub> for text that widgets rewrite (KaTeX is used for static text) */
-const sym=t=>t.replace(/\b([dnTXEW])_(model|ff|vocab|src|tgt|enc|dec|pos|[kQKVOU])\b/g,(m,a,b)=>'<span class="sym"><i>'+a+'</i><sub>'+(b.length===1?'<i>'+b+'</i>':b)+'</sub></span>');
+const sym=t=>t.replace(/\b([dnTXEW])_(model|ff|vocab|src|tgt|enc|dec|pos|[kQKVOU])\b/g,(m,a,b)=>'<span class="msym"><i>'+a+'</i><sub>'+(b.length===1?'<i>'+b+'</i>':b)+'</sub></span>');
 function renderTex(root){if(!window.katex)return;$$('.tex',root).forEach(e=>{if(e.dataset.done)return;const src=e.dataset.src||e.textContent;e.dataset.src=src;try{window.katex.render(src,e,{displayMode:e.classList.contains('d'),throwOnError:false});e.dataset.done='1';}catch(err){e.textContent=src;}});}
 window.renderAllTex=function(){renderTex(document);};
 window.texFailed=function(){$('#texwarn').hidden=false;};
@@ -4497,6 +4746,28 @@ function initInfer(){
   reg(renderKC);reg(renderIE);
 }
 
+/* ================= GPUs and CUDA: will it fit? ================= */
+const HW_GPUS=[['RTX 4090',24e9,1008e9,165.2e12],['L4',24e9,300e9,121e12],['A100',80e9,2039e9,312e12],['H100 SXM',80e9,3350e9,989.5e12]];
+const sh={m:2,prec:2,g:0,n:1,T:4096,B:1};
+function renderHW(){
+  const M=IE_MODELS[sh.m],N=M[1],L=M[2],d=M[3],G=HW_GPUS[sh.g],W=N*sh.prec,kv=2*L*sh.T*d*2*sh.B,extra=0.2*(W+kv),need=W+kv+extra,cap=sh.n*G[1],fits=need<=cap,span=Math.max(need,cap);
+  const seg=(cls,v,label,tip)=>'<span class="'+cls+'" style="width:'+100*v/span+'%" tabindex="0" data-tip="'+esc(tip+': '+bytes(v))+'">'+(v/span>0.12?label:'')+'</span>';
+  $('#hw-bar').innerHTML=seg('p0',W,'weights','Weights')+seg('p2',kv,'KV cache','KV cache')+seg('p4',extra,'+20%','Allowance for the CUDA context, activations and fragmentation')+(fits?'<span style="width:'+100*(cap-need)/span+'%;color:var(--muted)">'+((cap-need)/span>0.12?'free':'')+'</span>':'');
+  const fewest=Math.ceil(need/G[1]),gpus=sh.n+' × '+G[0];
+  $('#hw-fit').innerHTML='<span class="badge '+(fits?'ok':'bad')+'">'+(fits?'fits':'does not fit')+'</span> Needs '+bytes(need)+'; '+gpus+' '+(sh.n>1?'have':'has')+' '+bytes(cap)+'.'+(fits?'':' The fewest '+G[0]+' GPUs that fit: '+fewest+(fewest>8?', more than one server holds':'')+'.')
+    +(state.exact?'<br>1.2 × (weights '+bytes(W)+' + KV cache '+bytes(kv)+') = '+bytes(need)+'<br>KV cache = 2 × '+L+' layers × '+sh.T.toLocaleString('en-US')+' tokens × '+d+' × 2 bytes × '+sh.B+' request'+(sh.B>1?'s':'')+' = '+kv.toLocaleString('en-US')+' bytes':'');
+  const tBw=(W+kv)/(sh.n*G[2]),tFl=2*N*sh.B/(sh.n*G[3]),step=Math.max(tBw,tFl),per=1/step;
+  const rate=x=>x>=100?Math.round(x).toLocaleString('en-US'):x>=10?x.toFixed(1):x.toFixed(2);
+  $('#hw-stats').innerHTML=[['Weights',bytes(W)],['KV cache',bytes(kv)],['Needed',bytes(need)],['Available',bytes(cap)],['Speed per request',fits?'≤ '+rate(per)+' tok/s':'–'],['Total throughput',fits?'≤ '+rate(per*sh.B)+' tok/s':'–'],['Limited by',fits?(tBw>=tFl?'bandwidth':'compute'):'memory'],['To train it',bytes(16*N)+' + activations']].map(x=>'<div><span>'+x[0]+'</span><b style="font-size:.95rem">'+x[1]+'</b></div>').join('');
+}
+function initHW(){
+  $('#hw-model').innerHTML=IE_MODELS.map((m,i)=>'<option value="'+i+'"'+(i===sh.m?' selected':'')+'>'+m[0]+'</option>').join('');
+  [['hw-model','m'],['hw-prec','prec'],['hw-gpu','g'],['hw-n','n']].forEach(([id,k])=>$('#'+id).addEventListener('change',e=>{sh[k]=+e.target.value;renderHW();}));
+  slider('hw-T',v=>Math.pow(2,v).toLocaleString('en-US'),v=>{sh.T=Math.pow(2,v);renderHW();});
+  slider('hw-B',v=>Math.pow(2,v),v=>{sh.B=Math.pow(2,v);renderHW();});
+  reg(renderHW);
+}
+
 /* ================= Section 13: the 2017 paper ================= */
 const sp={d:512,w:4000,s:4000,n:64,cd:512};
 const lrate=(d,w,s)=>Math.pow(d,-0.5)*Math.min(Math.pow(s,-0.5),s*Math.pow(w,-1.5));
@@ -4582,7 +4853,7 @@ function initSelects(){
     paint();
   });
 }
-[initGuide,initCode,initChrome,initNext,initTok,initPE,initAttn,initMH,initBlock,initArch,initTrain,initGen,initScale,initCross,initInfer,initPaper,initA11y,initGloss,initSelects].forEach(f=>{try{f();}catch(e){console.error(f.name,e);}});
+[initGuide,initCode,initChrome,initNext,initTok,initPE,initAttn,initMH,initBlock,initArch,initTrain,initGen,initHW,initScale,initCross,initInfer,initPaper,initA11y,initGloss,initSelects].forEach(f=>{try{f();}catch(e){console.error(f.name,e);}});
 renderTex(document);
 </script>
 <script async src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous" onload="renderAllTex()" onerror="texFailed()"></script>
