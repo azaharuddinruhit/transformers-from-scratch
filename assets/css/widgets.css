@@ -28,7 +28,7 @@
 table.numt .vec .c{min-width:2.5em;padding:4px 2px}
 .stepper{display:flex;flex-wrap:wrap;gap:4px;list-style:none;margin:0;padding:0}
 .stepper button{min-height:36px;padding:4px 10px;font-size:.78rem;border-radius:999px}
-.stepper button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.stepper button.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .stepper button.done{border-color:var(--accent);color:var(--accent)}
 /* tokenizer */
 .onehot{display:flex;gap:1px;margin:4px 0;max-width:100%}

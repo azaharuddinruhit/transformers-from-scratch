@@ -5,13 +5,14 @@ const PARTS=[
   {id:'b',name:'Building the model',goal:'Every layer of a decoder-only Transformer, from text to the probabilities of the next token.',secs:['tokens','position','attention','multihead','block','architecture']},
   {id:'c',name:'Training and using it',goal:'How the model learns, how it generates text, and what it takes to run it.',secs:['training','generation','hardware','inference','openmodels','scaling']},
   {id:'d',name:'The wider picture',goal:'The original encoder–decoder Transformer and the 2017 paper that introduced it.',secs:['encdec','paper']}];
-/* title, then study minutes for Full depth and Quick tour: words / 110 + 3 per interactive, rounded to 5, code boxes left out
-   (Full depth drops .s-only; Quick tour drops .opt and .x-only).
-   Recount when a section changes a lot. */
-const SECS={intro:['What is an LLM?',10,10],why:['Why Transformers?',10,10],tokens:['Tokenization and embeddings',15,10],position:['Positional information',15,15],
-  attention:['Self-attention from scratch',15,15],multihead:['Multi-head attention',10,10],block:['FFN, residuals and normalization',20,15],architecture:['Full decoder-only architecture',15,10],
-  training:['Training an LLM',15,10],generation:['Generation and decoding',10,10],hardware:['GPUs and CUDA',20,20],inference:['Inference in practice',20,10],openmodels:['Open-weight models',15,15],scaling:['Scaling and practicalities',10,10],
-  encdec:['Encoder–decoder and cross-attention',15,10],paper:['The 2017 paper in detail',10,10]};
+/* title, study minutes for Full depth and Quick tour, then the level (an index into LEVELS).
+   Minutes: words / 110 + 3 per interactive, rounded to 5, code boxes left out (Full depth drops .s-only; Quick tour
+   drops .opt and .x-only). Recount when a section changes a lot. */
+const SECS={intro:['What is an LLM?',10,10,0],why:['Why Transformers?',10,10,0],tokens:['Tokenization and embeddings',15,10,0],position:['Positional information',15,15,1],
+  attention:['Self-attention from scratch',15,15,1],multihead:['Multi-head attention',10,10,1],block:['FFN, residuals and normalization',20,15,1],architecture:['Full decoder-only architecture',15,10,1],
+  training:['Training an LLM',15,10,1],generation:['Generation and decoding',10,10,0],hardware:['GPUs and CUDA',20,20,1],inference:['Inference in practice',20,10,2],openmodels:['Open-weight models',15,15,0],scaling:['Scaling and practicalities',10,10,2],
+  encdec:['Encoder–decoder and cross-attention',15,10,1],paper:['The 2017 paper in detail',10,10,2]};
+const LEVELS=['Foundation','Core','Deep dive'];
 const TOPICS={'iv-core':'Transformer fundamentals','iv-rag':'RAG and embeddings','iv-ft':'Fine-tuning and alignment','iv-agents':'Agents and tool use','iv-prod':'Evaluation and production','iv-hw':'Hardware'};
 const PATHS={full:{name:'Full depth',desc:'Exact worked examples, every interactive, the maths detail and the Python code.'},
   quick:{name:'Quick tour',desc:'Simplified worked examples; optional material is hidden. You can switch at any time.'}};
@@ -49,9 +50,16 @@ function initSettings(){
   try{const t=localStorage.getItem('tfs-theme');if(t)root.setAttribute('data-theme',t);}catch(e){}
   $$('.thBtn').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.t===(root.getAttribute('data-theme')||'auto'));b.addEventListener('click',()=>applyTheme(b.dataset.t));});
   $$('.pathBtn').forEach(b=>b.addEventListener('click',()=>setPath(b.dataset.p)));
-  $('#pgReset').addEventListener('click',()=>{if(window.confirm('Clear all saved progress: finished sections, quiz answers and drill marks?')){P.done={};P.quiz={};P.drill={};P.last=null;store.save();location.reload();}});
   const setBtn=$('#setBtn'),setMenu=$('#setMenu');
   const closeSet=ret=>{if(setMenu.hidden)return;setMenu.hidden=true;setBtn.setAttribute('aria-expanded','false');if(ret)setBtn.focus();};
+  /* reset asks first in a modal <dialog>: it traps focus, closes on Escape and returns "reset" only from its button */
+  const dlg=document.createElement('dialog');dlg.className='dlg';dlg.setAttribute('aria-labelledby','rsTitle');
+  dlg.innerHTML='<form method="dialog"><h2 id="rsTitle">Reset progress?</h2><p>This clears the finished sections, quiz answers and drill marks saved in this browser. Your path, theme and code settings stay. You cannot undo this.</p>'
+    +'<div class="acts"><button class="btn" value="cancel" autofocus>Cancel</button><button class="btn danger" value="reset">Reset progress</button></div></form>';
+  document.body.append(dlg);
+  dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close('cancel');});
+  dlg.addEventListener('close',()=>{if(dlg.returnValue==='reset'){P.done={};P.quiz={};P.drill={};P.last=null;store.save();location.reload();}else setBtn.focus();});
+  $('#pgReset').addEventListener('click',()=>{closeSet(false);dlg.returnValue='';dlg.showModal();});
   setBtn.addEventListener('click',()=>{if(setMenu.hidden){setMenu.hidden=false;setBtn.setAttribute('aria-expanded','true');const f=setMenu.querySelector('[aria-pressed="true"]')||setMenu.querySelector('button');if(f)f.focus();}else closeSet(true);});
   document.addEventListener('click',e=>{if(!setMenu.hidden&&!e.target.closest('.setwrap'))closeSet(false);});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!setMenu.hidden)closeSet(true);});
@@ -104,7 +112,7 @@ function initPart(){
   function paint(){
     const st=partStats(part),pos=secs.findIndex(s=>s.id===cur);
     secs.forEach((s,i)=>{const on=!!P.done[s.id],q=quizScore(s);
-      $('.rt',s).textContent='Part '+L+' · '+(i+1)+' of '+secs.length+' · about '+minsOf(s.id)+' min';
+      $('.rt',s).innerHTML='Part '+L+' · '+(i+1)+' of '+secs.length+' · about '+minsOf(s.id)+' min <span class="lvl">'+LEVELS[SECS[s.id][3]]+'</span>';
       const b=$('.doneBtn',s);b.setAttribute('aria-pressed',on);b.classList.toggle('on',on);b.textContent=on?'✓ Done':'Mark as done';
       const qs=$('.qscore',s);if(qs&&q)qs.textContent=q.got?q.got+' of '+q.n+' correct':'';});
     toc.innerHTML='<div class="tochead"><a href="index.html" class="tochome">← All parts</a><button type="button" class="btn tiny" id="tocClose">Close</button></div>'
@@ -128,7 +136,7 @@ function initPart(){
     const st=partStats(part);let got=0,n=0;secs.forEach(s=>{const q=quizScore(s);if(q){got+=q.got;n+=q.n;}});
     $('#partDone').innerHTML='<p class="kicker">Part '+L+'</p><h1>'+(st.n===st.total?'Part '+L+' complete':st.n+' of '+st.total+' sections done')+'</h1>'
       +'<p class="lede">'+(n?'You have answered '+got+' of '+n+' check questions correctly.':'')+(st.n<st.total?' Sections not yet done: '+secs.filter(s=>!P.done[s.id]).map(s=>'<a href="#'+s.id+'">'+SECS[s.id][0]+'</a>').join(', ')+'.':'')+'</p>'
-      +'<p>'+(next?'<a class="btn pri big" href="'+partUrl(next)+'">Start Part '+next.id.toUpperCase()+': '+next.name+' →</a>':'<a class="btn pri big" href="interview.html">Go to the interview drill →</a>')+' <a class="btn big" href="index.html">All parts</a></p>'
+      +'<p class="acts">'+(next?'<a class="btn pri big" href="'+partUrl(next)+'">Start Part '+next.id.toUpperCase()+': '+next.name+' →</a>':'<a class="btn pri big" href="interview.html">Go to the interview drill →</a>')+' <a class="btn big" href="index.html">All parts</a></p>'
       +'<h2>Key takeaways</h2>'+secs.map(s=>'<h3>'+SECS[s.id][0]+'</h3>'+$('ul.take',s).outerHTML).join('');
     renderTex($('#partDone'));
   }
