@@ -162,3 +162,8 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 .rpt{font:700 13px var(--sans)}.rpt.q{fill:var(--q)}.rpt.k{fill:var(--k)}
 .heads{display:grid;grid-template-columns:repeat(16,1fr);gap:4px;margin:8px 0 12px;max-width:520px}
 .heads span{aspect-ratio:1;border-radius:4px}
+/* tiny neural network (Part A) */
+#nn-svg{display:block;width:100%;max-width:320px;aspect-ratio:1;margin:12px auto 6px;border-radius:10px;background:var(--panel);overflow:hidden}
+.np{stroke-width:1.6}
+.np1.t{fill:var(--accent);stroke:var(--surface)}.np0.t{fill:var(--ink);stroke:var(--surface)}
+.np1.v{fill:none;stroke:var(--accent)}.np0.v{fill:none;stroke:var(--ink)}

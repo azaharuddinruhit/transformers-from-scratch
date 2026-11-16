@@ -153,6 +153,10 @@
   <div class="term"><dt>Temperature</dt><dd>A divisor applied to logits before softmax; low values sharpen the distribution, high values flatten it.</dd></div>
   <div class="term"><dt>Top-k</dt><dd>Sampling restricted to the k most probable tokens.</dd></div>
   <div class="term"><dt>Top-p</dt><dd>Sampling restricted to the smallest set of top tokens whose probabilities total at least p. Also called nucleus sampling.</dd></div>
+  <div class="term"><dt>Neural network</dt><dd>A function built from layers of neurons, each a weighted sum followed by an activation, whose weights are found by training.</dd></div>
+  <div class="term"><dt>Activation function</dt><dd>The non-linear function applied after a layer’s weighted sums (tanh, ReLU, GELU). Without it, stacked layers collapse into one.</dd></div>
+  <div class="term"><dt>Backpropagation</dt><dd>The method that computes the gradient of the loss for every weight, by applying the chain rule backwards through the layers.</dd></div>
+  <div class="term"><dt>Overfitting</dt><dd>Memorising the training examples instead of the pattern: training loss falls while validation loss rises.</dd></div>
   <div class="term"><dt>Loss</dt><dd>A single number measuring how wrong the model’s predictions were; training tries to lower it.</dd></div>
   <div class="term"><dt>Gradient</dt><dd>For every parameter, the rate at which the loss changes when that parameter changes.</dd></div>
   <div class="term"><dt>Optimizer</dt><dd>The algorithm that converts gradients into parameter updates, for example SGD or AdamW.</dd></div>

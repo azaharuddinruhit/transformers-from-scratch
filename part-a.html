@@ -170,7 +170,98 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
 <fieldset><legend>3. Two logits differ by 1. How do their probabilities compare?</legend><button type="button" class="qo" data-ok="1">One is e ≈ 2.72 times the other</button><button type="button" class="qo">One is 1 percentage point higher</button><button type="button" class="qo">It depends on the other logits</button><p class="qx" hidden aria-live="polite"><b></b> A gap of 1 in logits is always a ratio of e in probability, whatever the other logits are.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>If the model only ever predicts the next token, where does the appearance of “planning” in a long answer come from?</li><li>Which parts of our own product would be affected by the fact that the output is a probability distribution and not a single answer?</li></ul></details>
-<p class="bridge">You have seen the function from the outside. Before opening it up, <a class="xref" data-ref="why"></a> explains why it is built from attention at all.</p>
+<p class="bridge">You have seen the function from the outside. It is a neural network: <a class="xref" data-ref="nn"></a> explains what that means and how such a network learns.</p>
+</div>
+</section>
+<section class="ch" id="nn" data-title="Neural networks in 15 minutes">
+<h2>Neural networks in 15 minutes</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Say what a neuron computes, and how neurons form layers.</li><li>Explain why a network needs a non-linear activation, and what “deep” means.</li><li>Describe the training loop: predict, measure the loss, adjust the weights.</li><li>Tell overfitting from learning, using training and validation loss.</li></ul></div><p class="needs"><b>Builds on</b> <a class="xref" data-ref="intro"></a>. If dot products or slopes are rusty, read <a class="xref" data-ref="maths"></a> first. If you already know neural networks, skip to <a class="xref" data-ref="why"></a>.</p></div>
+<div class="story"><p>To predict “mat” after “the cat sat on the”, a model has to turn numbers into other numbers, and it has to learn how from examples, because nobody can write the rules by hand. A neural network is the simplest machine that does both. An LLM is a very large one.</p></div>
+<p>A <b>neural network</b> is a function built from many small, identical pieces. Each piece does almost nothing. What the network computes depends on its <b>weights</b>: numbers that start out random and are adjusted, a little at a time, until the outputs are right. This section covers the pieces, then the adjusting.</p>
+<div class="flow" role="img" aria-label="Diagram: inputs pass through layers of neurons to an output; the loss compares the output with the right answer; gradients flow back and the weights are updated">
+  <div><b>Inputs</b><small>numbers</small></div><i>→</i>
+  <div class="fa"><b>Layers</b><small>weights, then an activation</small></div><i>→</i>
+  <div><b>Output</b><small>a prediction</small></div><i>→</i>
+  <div class="fa"><b>Loss</b><small>how wrong was it?</small></div><i>→</i>
+  <div><b>Update</b><small>nudge every weight, repeat</small></div>
+</div>
+
+<h3>One neuron</h3>
+<p>A <b>neuron</b> takes a list of numbers and returns one number. It multiplies each input by a weight, adds the results, adds one more number called the <b>bias</b>, and passes the total through an <b>activation function</b>:</p>
+<div class="tex d">\text{output}=\tanh(x\cdot w+b)</div>
+<p class="sym"><span class="tex">x</span> is the list of inputs. <span class="tex">w</span> is the list of weights, one per input. <span class="tex">b</span> is the bias. <span class="tex">x\cdot w</span> is their dot product. <span class="tex">\tanh</span> is one common activation: it squeezes any number into the range −1 to 1.</p>
+<p>The weights say how much each input matters, and in which direction. The bias shifts the point at which the neuron switches from low to high.</p>
+<div class="worked">
+<h4>Worked example: one neuron</h4>
+<p class="x-only">Inputs <span class="tex">x=[1,2]</span>, weights <span class="tex">w=[0.5,-1]</span>, bias <span class="tex">b=0.5</span>. The weighted sum is <span class="tex">1\times0.5+2\times(-1)+0.5=-1</span>, and the output is <span class="tex">\tanh(-1)=-0.762</span>. Raise the second weight from −1 to 0 and the sum becomes 1, so the output flips to 0.762.</p>
+<p class="s-only">With inputs 1 and 2, weights 0.5 and −1 and a bias of 0.5, the neuron adds up to −1 and outputs about −0.76. Change one weight and the output can flip to +0.76. Learning means finding good weights.</p>
+</div>
+
+<h3>Layers, and why depth helps</h3>
+<p>A <b>layer</b> is many neurons reading the same inputs, each with its own weights. Their weights stack into a matrix <span class="tex">W</span>, so a whole layer is one matrix multiplication followed by the activation:</p>
+<div class="tex d">h=\tanh(xW+b)</div>
+<p class="sym"><span class="tex">W</span> has one column of weights per neuron. <span class="tex">b</span> now holds one bias per neuron. <span class="tex">h</span> is the list of the neurons’ outputs, which becomes the input of the next layer.</p>
+<p>A network with layers between its input and its output is called <b>deep</b>, and those middle layers are <b>hidden layers</b>. Early layers detect simple patterns, and later layers combine them into more complex ones. Every model in this guide is built this way: a Transformer is a few dozen layers of a particular design.</p>
+<details class="why"><summary>Why is the activation needed?</summary><div class="whyb">Without it, two layers would compute <span class="tex">(xW_1)W_2=x(W_1W_2)</span>, which is just one matrix. A stack of any depth would then do no more than a single layer: it could only draw straight lines through the data. The activation bends the output of each layer, and that is what lets a network fit curved patterns. The interactive below shows the difference.</div></details>
+
+<h3>How a network learns</h3>
+<p>Training is one loop, repeated many times:</p>
+<ol>
+  <li><b>Predict.</b> Feed in some examples and compute the outputs. This is the <b>forward pass</b>.</li>
+  <li><b>Measure.</b> Compare the outputs with the right answers. The <b>loss</b> is one number that says how wrong they were: 0 is perfect, larger is worse.</li>
+  <li><b>Find the slopes.</b> For every weight, work out whether nudging it up would raise or lower the loss, and by how much. This list of slopes is the <b>gradient</b>, and the method that computes it, working back from the loss through each layer, is <b>backpropagation</b>.</li>
+  <li><b>Update.</b> Move every weight a small step in the direction that lowers the loss. This is <b>gradient descent</b>.</li>
+</ol>
+<div class="tex d">\theta\leftarrow\theta-\eta\,\nabla_\theta\mathcal{L}</div>
+<p class="sym"><span class="tex">\theta</span> stands for all the weights and biases. <span class="tex">\mathcal{L}</span> is the loss. <span class="tex">\nabla_\theta\mathcal{L}</span> is the gradient. <span class="tex">\eta</span> is the <b>learning rate</b>, the size of the step.</p>
+<p>No step is clever. Each one makes the network slightly less wrong on the examples it just saw, and thousands of them add up to a network that works.</p>
+
+<h3>Training in practice</h3>
+<ul>
+  <li><b>Training and validation data.</b> Keep some examples aside and never train on them. The loss on those <b>validation</b> examples tells you whether the network has learned the pattern or only memorised its training examples.</li>
+  <li><b>Overfitting.</b> If the training loss keeps falling while the validation loss rises, the network is memorising, noise included. More data is the best cure; a smaller network or stopping earlier also helps.</li>
+  <li><b>Batches and epochs.</b> Real datasets are too large to use all at once, so each step uses a small random <b>batch</b>. One pass through the whole dataset is an <b>epoch</b>.</li>
+  <li><b>Learning rate.</b> Too small and training crawls. Too large and the loss jumps around or blows up.</li>
+</ul>
+
+<div class="widget" id="w-nn">
+  <h4 class="wt">Interactive · train a tiny neural network</h4>
+  <p class="look"><b>The point:</b> A network starts random and learns a pattern by small steps, and it needs an activation to learn a curved one. <b>Do this:</b> Press Train on the ring. Then set the activation to None and train again. Then choose 12 training points with 16 hidden neurons. <b>Watch for:</b> The shaded region closing round the inner points, and the two loss curves parting when there is too little data.</p>
+  <div class="controls">
+    <div class="ctl"><span>Data</span><div class="chips" id="nn-data" role="group" aria-label="Data set"></div></div>
+    <div class="ctl"><span>Hidden neurons</span><div class="chips" id="nn-h" role="group" aria-label="Number of hidden neurons"></div></div>
+    <div class="ctl"><span>Activation</span><div class="chips" id="nn-act" role="group" aria-label="Activation function"></div></div>
+    <div class="ctl"><span>Training points</span><div class="chips" id="nn-n" role="group" aria-label="Number of training points"></div></div>
+  </div>
+  <div class="controls"><button class="pri" id="nn-play">▶ Train</button><button id="nn-step">Step ›</button><button id="nn-reset">Reset</button></div>
+  <svg id="nn-svg" viewBox="0 0 240 240" role="img" aria-label="The two classes of points, with the area the network assigns to the second class shaded"></svg>
+  <div class="lg"><span>● training point</span><span>○ validation point</span><span>shaded = the network’s answer for the coloured class</span></div>
+  <div class="stats" id="nn-stats" aria-live="polite"></div>
+  <svg id="nn-chart" role="img" aria-label="Training loss and validation loss against training step"></svg>
+  <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> training loss (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> validation loss (dashed)</span></div>
+  <small>What is simplified: two inputs, one hidden layer and one output, trained on all the training points at every step, where a real network uses batches. One label in ten is deliberately wrong, as in real data, so about 90% accuracy is the best possible. The network is trained here, in your browser, from random weights.</small>
+  <div class="wjh"><b>What just happened?</b> Each step ran the loop above: predict, measure the loss, find the slopes, nudge the weights. With tanh and four neurons, the shaded region closes round the inner points and both losses fall together. With no activation the network can only draw a straight line, so on the ring its loss stays near 0.69, the loss of plain guessing, however long it trains. With 12 training points and 16 neurons, the training loss keeps falling while the validation loss climbs past 1: the network has memorised its few examples, wrong labels and all. That is overfitting.</div>
+</div>
+<div class="callout try opt"><b>Try this</b><p>On the ring with tanh, compare 1, 2 and 4 hidden neurons: each neuron adds one bend to the boundary, and one or two bends cannot close a loop. Then try “Two groups”: a straight line is enough there, so the activation makes no difference.</p></div>
+<div class="callout note"><b>From this to an LLM</b><p>An LLM is the same loop at a very different scale. Its inputs are tokens, its layers are Transformer blocks, its output is a probability for every possible next token, and its loss measures how surprised it was by the token that really came next. <a class="xref" data-ref="training"></a> covers that loss.</p></div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“A neural network works like a brain.”</b> The name is historical. A neuron here is a weighted sum and a squashing function, nothing more.</li>
+  <li><b>“Someone programs what each neuron detects.”</b> Nobody sets the weights. They start random, and training finds them.</li>
+  <li><b>“A training loss near zero means the network is good.”</b> It may have memorised the training data. Only the validation loss tells you.</li>
+  <li><b>Pitfall:</b> judging a model on the data it was trained on.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>A neuron computes a weighted sum of its inputs plus a bias, then applies an activation.</li><li>A layer is many neurons at once: a matrix multiplication followed by the activation. Stacked layers make a deep network.</li><li>Without a non-linear activation, any number of layers collapses into one.</li><li>Training repeats one loop: predict, measure the loss, compute the gradient by backpropagation, step the weights downhill.</li><li>Validation loss rising while training loss falls is overfitting.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. A neuron has inputs [1, 2], weights [0.5, −1] and bias 0.5. What is its weighted sum, before the activation?</legend><button type="button" class="qo">2</button><button type="button" class="qo" data-ok="1">−1</button><button type="button" class="qo">0.5</button><p class="qx" hidden aria-live="polite"><b></b> 1 × 0.5 + 2 × (−1) + 0.5 = −1.</p></fieldset>
+<fieldset><legend>2. What happens if you remove the activation function from every layer of a deep network?</legend><button type="button" class="qo">It trains faster and works as well</button><button type="button" class="qo" data-ok="1">The whole network can do no more than a single layer</button><button type="button" class="qo">It can no longer be trained</button><p class="qx" hidden aria-live="polite"><b></b> Matrices multiplied together are just one matrix, so the network can only fit straight-line patterns.</p></fieldset>
+<fieldset><legend>3. Training loss is falling, but validation loss has started to rise. What is happening?</legend><button type="button" class="qo">The learning rate is too small</button><button type="button" class="qo" data-ok="1">The network is memorising its training examples (overfitting)</button><button type="button" class="qo">The network has finished learning</button><p class="qx" hidden aria-live="polite"><b></b> It is getting better at examples it has seen and worse at ones it has not.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>In the interactive, one label in ten is wrong. Where would wrong labels come from in our own data, and what would overfitting to them look like?</li><li>Nobody programs what a neuron detects. What does that mean for explaining a model’s decision to a customer or an auditor?</li></ul></details>
+<p class="bridge">Any network learns this way. <a class="xref" data-ref="why"></a> looks at which kind of network suits text, and why the Transformer replaced the ones before it.</p>
 </div>
 </section>
 <section class="ch" id="why" data-title="Why Transformers?">
@@ -179,6 +270,17 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
 <div class="story"><p>In an RNN, information from “cat” must survive three updates to influence the prediction after “the cat sat on the”. In a Transformer the last position can look at “cat” directly.</p></div>
 <p>Everything in this guide descends from one eleven-page paper by Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser and Polosukhin, presented at the NIPS conference in 2017. It was not about chatbots. It was about machine translation, and its claim was narrow and bold: you can drop recurrence and convolution entirely and build a translation model from attention alone, and it will be both better and much faster to train.</p>
 <p>You do not need to understand the paper yet. This section explains the problem it solved, so that the components in the following sections have a purpose. The paper’s own model is covered in <a class="xref" data-ref="encdec"></a>, once you know all the parts.</p>
+<h3>What came before</h3>
+<p>The Transformer was not the first kind of neural network (<a class="xref" data-ref="nn"></a>) used for language. Each earlier kind was built for a different shape of data:</p>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th>Network</th><th>Built for</th><th>How it reads its input</th><th>Limit for text</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">MLP (fully connected)</th><td>Inputs of a fixed size, such as a row of a table</td><td>All inputs at once, each with its own weight</td><td>No sense of order, and no way to take text of any length</td></tr>
+    <tr><th scope="row">CNN (convolutional)</th><td>Images</td><td>Slides small filters over neighbouring values</td><td>Each layer sees only a small window, so distant words need many layers to meet</td></tr>
+    <tr><th scope="row">RNN (recurrent), including the LSTM</th><td>Sequences: text and speech</td><td>One item at a time, carrying a memory vector forward</td><td>Slow to train, and early tokens fade from the memory</td></tr>
+    <tr><th scope="row">Transformer</th><td>Sequences, and now most kinds of data</td><td>Every position looks at every other position directly</td><td>Work grows with the square of the length</td></tr>
+  </tbody>
+</table></div>
 <h3>The problem it solved</h3>
 <p>Before 2017 the standard tool for sequences was the recurrent neural network (RNN, usually an LSTM). An RNN reads one token at a time and carries a single “memory” vector forward. That has two costs. Training cannot be parallelised along the sequence, because step 50 needs the result of step 49. And information from an early word has to survive dozens of updates to reach a late one. Attention had already been added to RNNs as a helper (Bahdanau et al., 2014). The 2017 paper kept the helper and removed the RNN.</p>
 <div class="flow" role="img" aria-label="Diagram: in a recurrent network, information from word 1 reaches word n through n minus 1 sequential steps. In a Transformer, every word reaches every other word in one attention step, and all positions are computed in parallel.">

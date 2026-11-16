@@ -8,7 +8,7 @@ An interactive visual guide to how GPT-style language models work, from tokens t
 
 | Page | Sections | What you learn |
 | --- | --- | --- |
-| Part A · The big picture | 2 | What an LLM computes, and why Transformers replaced recurrent networks |
+| Part A · The big picture | 3 | What an LLM computes, neural networks in 15 minutes (neurons, layers, training, overfitting), and why Transformers replaced earlier networks |
 | Part B · Building the model | 6 | Tokens, positions, self-attention, multi-head attention, the Transformer block, the full model |
 | Part C · Training and using it | 6 | Cross-entropy training and how it scales, from base model to assistant (fine-tuning and the chat template), preference tuning and reasoning models (RLHF, DPO), decoding, inference in practice, GPUs and CUDA |
 | Part D · The wider picture | 2 | Encoder–decoder models and the 2017 paper, and what modern LLMs change (RoPE, RMSNorm, SwiGLU, GQA, mixture of experts) |
@@ -25,8 +25,8 @@ Each section in Parts A to D shows its level (Foundation, Core or Deep dive) and
 
 ## Highlights
 
-- Two paths: **Full depth** (about 4 h 5 min) and **Quick tour** (about 3 h 20 min, simplified worked examples, optional material hidden). You can switch at any time.
-- A tiny Transformer (about 9,600 parameters) that trains in your browser, plus a generation playground with temperature, top-k and top-p.
+- Two paths: **Full depth** (about 4 h 20 min) and **Quick tour** (about 3 h 35 min, simplified worked examples, optional material hidden). You can switch at any time.
+- A tiny neural network and a tiny Transformer (about 9,600 parameters) that both train in your browser, plus a generation playground with temperature, top-k and top-p.
 - Step-by-step attention, KV-cache, GPU-memory, parameter-count and inference-cost calculators, plus interactives for the chat template, preference tuning, rotary positions and grouped-query attention.
 - "In Python" boxes with runnable NumPy and PyTorch code and its real output, collapsed by default.
 - The interview drill hides each answer behind "Show answer"; mark questions "Got it" or "Review again" and filter by topic or status.

@@ -21,7 +21,7 @@ An interactive guide used to learn Transformers and LLMs, train an engineering t
 
 ## Structure
 
-- **Part A, the big picture**: `intro`, `why`
+- **Part A, the big picture**: `intro`, `nn` (the neural-network primer, with a network trained in the browser), `why` (includes the MLP, CNN, RNN and Transformer comparison)
 - **Part B, building the model**: `tokens`, `position`, `attention`, `multihead`, `block`, `architecture`
 - **Part C, training and using it**: `training` (includes scale: compute and tokens per parameter), `posttrain`, `prefs`, `generation`, `inference`, `hardware`
 - **Part D, the wider picture**: `encdec` (includes the 2017 paper), `modern`
