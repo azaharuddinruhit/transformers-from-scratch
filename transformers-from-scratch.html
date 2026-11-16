@@ -70,7 +70,6 @@ mark{background:var(--mark);color:inherit;border-radius:4px;padding:0 .25em}
 #toc a.on{color:var(--ink);background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
 main{padding:0 clamp(16px,4vw,56px) 80px;max-width:940px;min-width:0}
 .hero{padding:56px 0 20px;border-bottom:1px solid var(--line)}
-.eyebrow{font:700 .78rem var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
 .lede{font-size:1.16rem;color:var(--muted);max-width:60ch}
 section.ch{padding:64px 0 28px;border-bottom:1px solid var(--line);scroll-margin-top:56px}
 .num{font:700 .8rem var(--mono);color:var(--accent);letter-spacing:.1em}
@@ -91,6 +90,15 @@ section.ch{padding:64px 0 28px;border-bottom:1px solid var(--line);scroll-margin
 .callout p{margin:.35em 0}
 .callout.math{--c:var(--q)}.callout.mistake{--c:var(--warn)}.callout.try{--c:var(--v)}.callout.note{--c:var(--accent)}
 details.callout summary{cursor:pointer;font:700 .76rem var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--c)}
+/* Python snippets */
+.callout.code{--c:var(--accent)}
+.cbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:10px 0 6px}
+.cbar small{font-size:.8rem}
+/* Dracula palette (draculatheme.com), the same in light and dark page themes; comments lightened from #6272a4 to #8a96c8 for 4.9:1 contrast */
+pre.py{margin:0;padding:12px 14px;background:#282a36;color:#f8f8f2;border:1px solid #44475a;border-radius:8px;overflow-x:auto;font:.8rem/1.6 var(--mono);tab-size:4;scrollbar-color:#6272a4 #282a36;color-scheme:dark}
+pre.py ::selection{background:#44475a}
+pre.py code{background:none;border:0;padding:0;font:inherit;white-space:pre}
+.py .k{color:#ff79c6}.py .s{color:#f1fa8c}.py .n{color:#bd93f9}.py .f,.py .d{color:#50fa7b}.py .b{color:#8be9fd}.py .c{color:#8a96c8}
 .worked{background:var(--panel);border:1px dashed var(--line);border-radius:12px;padding:14px 18px;margin:18px 0}
 .wjh{border-top:1px solid var(--line);margin-top:16px;padding-top:12px;font-size:.96rem}
 .wjh>b{color:var(--accent)}
@@ -324,7 +332,6 @@ table.cmp th{white-space:normal}
   #mbar{display:grid}
   body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
   main{padding-bottom:30px}
-  .map{display:none}
   .lgt{display:none}.sm{display:inline}
   .brand{font-size:.92rem}
   .arch{grid-template-columns:minmax(0,1fr)}
@@ -335,11 +342,6 @@ table.cmp th{white-space:normal}
 /* learning scaffolding */
 .sym{font-size:.93rem;color:var(--muted);margin-top:-.15em}
 .why{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:10px 14px;margin:14px 0;font-size:.96rem;overflow-x:auto;position:relative}
-.map{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 14px;font:600 .72rem var(--sans)}
-.map a{text-decoration:none;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap;background:var(--surface)}
-.map a.done{color:var(--ink)}
-.map a.here{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
-.map i{width:10px}
 .start{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:10px;margin:14px 0 22px}
 @media (max-width:700px){.start{grid-template-columns:minmax(0,1fr)}}
 .start>div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:.93rem;min-width:0}
@@ -371,8 +373,6 @@ ul.take li,ul.talk li{margin:.4em 0}
 .pbar i,.mpb i{display:block;height:100%;width:0;background:var(--v);border-radius:99px;transition:width .3s}
 #toc li.done a::before{content:"✓";color:var(--v);opacity:1;font-weight:700}
 #toc li.done a{color:var(--ink)}
-#pgReset{margin:14px 0 0;width:100%}
-.map a.fin{border-color:var(--v)}.map a.fin::after{content:" ✓";color:var(--v)}
 .donebar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:26px;padding:12px 14px;border:1.5px dashed var(--line);border-radius:12px;background:var(--surface)}
 .doneBtn{font:600 .95rem var(--sans);display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:8px 16px;border-radius:10px;border:1.5px solid var(--accent);background:var(--bg);color:var(--ink);cursor:pointer}
 .doneBtn:hover{background:var(--accent-soft)}
@@ -398,7 +398,6 @@ ul.take li,ul.talk li{margin:.4em 0}
 #mbar button:disabled{opacity:.3;cursor:default}
 #mbar button:disabled:active{background:transparent}
 .essBtn[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
-#toc .essBtn{width:100%;margin:0 0 10px;font-size:.82rem}
 #toc .tpart{font:700 .68rem var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:12px 10px 3px;counter-increment:none}
 a.xref{white-space:nowrap}
 body.ess .opt{display:none!important}
@@ -475,8 +474,13 @@ select.dd-native{display:none}
       <div class="sgrp"><span class="slab">Reading</span>
         <button type="button" class="btn essBtn full" aria-pressed="false">Essentials only: off</button>
         <small class="shint">Hides optional widgets, asides and misconception lists.</small></div>
+      <div class="sgrp"><span class="slab" id="lab-code">Python code</span>
+        <div class="seg full" role="group" aria-labelledby="lab-code">
+          <button type="button" class="codeBtn" data-c="open" aria-pressed="true">Expanded</button>
+          <button type="button" class="codeBtn" data-c="closed" aria-pressed="false">Collapsed</button>
+        </div></div>
       <div class="sgrp"><span class="slab">Progress</span>
-        <button type="button" class="btn full" id="pgReset2">Reset progress</button></div>
+        <button type="button" class="btn full" id="pgReset">Reset progress</button></div>
     </div>
   </div>
   <div class="progress" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progBar"></div></div>
@@ -491,13 +495,12 @@ select.dd-native{display:none}
   <button type="button" id="mNext" aria-label="Next section"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
 </nav>
 <nav id="toc" aria-label="Table of contents"><div class="tochead"><h4>Contents</h4><button type="button" class="btn tiny" id="tocClose">Close</button></div>
-<div class="prog" aria-label="Your progress"><div class="pline"><b id="pgTxt"></b><span id="pgPct"></span></div><div class="pbar" role="progressbar" aria-label="Sections completed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="pgFill"></i></div><p class="pleft" id="pgLeft" aria-live="polite"></p></div><button type="button" class="btn essBtn" aria-pressed="false">Essentials only: off</button><ol id="tocList"></ol><button type="button" class="btn tiny" id="pgReset">Reset progress</button></nav>
+<div class="prog" aria-label="Your progress"><div class="pline"><b id="pgTxt"></b><span id="pgPct"></span></div><div class="pbar" role="progressbar" aria-label="Sections completed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="pgFill"></i></div><p class="pleft" id="pgLeft" aria-live="polite"></p></div><ol id="tocList"></ol></nav>
 <main id="main">
 <header class="hero">
-  <div class="eyebrow">An interactive visual guide</div>
   <h1>Transformers and LLMs from Scratch</h1>
-  <p class="lede">How a GPT-style language model turns raw text into a prediction for the next token, and how it learns to do that. Every idea comes with a picture, the equation, a small worked example and something you can play with.</p>
-  <p>You need programming experience and basic linear algebra (vectors, matrices, dot products). Having seen a neural network trained once helps, but every idea is introduced from the start. Every number in the interactive widgets is computed in your browser from the inputs shown, and the worked examples use the same inputs, so you can check any of them by hand. Use the switch in the top bar to move between <b>exact numbers</b> and a <b>simplified explanation</b>.</p>
+  <p class="lede">How a GPT-style model turns text into a next-token prediction, and how it learns to. Each idea comes with a diagram, the equation, a worked example and an interactive.</p>
+  <p>You need programming and basic linear algebra. Every widget number is computed in your browser, so you can check it by hand.</p>
   <div class="legend" aria-label="Colour legend used throughout">
     <span><i class="sw q"></i>Query (Q)</span><span><i class="sw k"></i>Key (K)</span><span><i class="sw v"></i>Value (V)</span><span><i class="sw r"></i>Residual path</span><span><i class="sw vir"></i>Attention weight, 0 → 1</span>
   </div>
@@ -505,11 +508,7 @@ select.dd-native{display:none}
 </header>
 <section class="howto" id="howto" aria-labelledby="howto-h">
 <h2 id="howto-h">How to use this guide</h2>
-<p>The sections form one path. Each builds on the one before it, and each opens by saying what it needs and closes by saying where it leads. Follow them in order the first time. Part E (interview prep) is different: it is a question bank to drill once you have worked through Parts A to D. If a symbol in an equation is unfamiliar, the notation table at the end of this box lists every one.</p>
-<div class="start">
-  <div><b>Every section has the same shape</b><ul><li><b>Before / after</b>: what you need and what you will be able to do.</li><li><b>The idea</b> in words and a diagram.</li><li><b>The equations</b>, each built up from a question, with every symbol named.</li><li><b>A worked example</b> with small numbers you can check by hand.</li><li><b>Interactives</b>, each with a line saying what to do and what to watch for.</li><li><b>Key takeaways, a short quiz and discussion questions.</b></li></ul></div>
-  <div><b>Two passes work better than one</b><p><b>First pass:</b> switch on <i>Essentials only</i>. It hides the optional interactives, the “try this” boxes, the maths asides and the misconception lists, so you can follow the main line. Do the quiz at the end of each section.</p><p><b>Second pass:</b> switch it off, work through the worked examples with pen and paper, and try every interactive.</p><p><button type="button" class="btn essBtn" aria-pressed="false">Essentials only: off</button></p></div>
-</div>
+<p>Read Parts A to D in order; Part E is a question bank for afterwards. On a first pass, turn on <i>Essentials only</i> in Settings to hide the optional material. Settings also switches between exact numbers and a simplified explanation.</p>
 <details class="callout note" id="plan"><summary>Teaching this to a team: a five-session plan</summary>
 <div class="scroll"><table class="numt cmp">
   <thead><tr><th>Session (60 to 75 min)</th><th>Sections</th><th>The one thing people should leave with</th></tr></thead>
@@ -558,7 +557,6 @@ select.dd-native{display:none}
 <section class="ch" id="intro" data-title="What is an LLM?">
 <div class="num">SECTION 1 · PART A: THE BIG PICTURE</div>
 <h2>Introduction: what is an LLM?</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="here" aria-current="step">1 LLM</a><a href="#why">2 Why</a><i aria-hidden="true"></i><a href="#tokens">3 Tokens</a><a href="#position">4 Position</a><a href="#attention">5 Attention</a><a href="#multihead">6 Heads</a><a href="#block">7 Block</a><a href="#architecture">8 Model</a><i aria-hidden="true"></i><a href="#training">9 Train</a><a href="#generation">10 Generate</a><a href="#inference">11 Serve</a><a href="#scaling">12 Scale</a><i aria-hidden="true"></i><a href="#encdec">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>Nothing. This is the starting point.</p></div>
   <div><b>After it, you can</b><ul><li>Say in one sentence what an LLM computes.</li><li>Turn a list of scores (logits) into probabilities with softmax, by hand.</li><li>Explain why predicting one token at a time is enough to model whole texts.</li></ul></div>
@@ -597,6 +595,46 @@ select.dd-native{display:none}
   <p>Check the “gap” rule: the first two logits differ by 1, and <span class="tex">0.6590/0.2424=2.72</span>.</p></div>
   <p class="s-only">Three candidate tokens get scores 2.0, 1.0 and 0.1. Softmax turns those into roughly 66%, 24% and 10%. The gaps between scores matter, not the scores themselves: adding 5 to every score changes nothing.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: softmax, then sampling</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def softmax(z):
+    z = np.asarray(z, dtype=float)
+    e = np.exp(z - z.max())  # subtracting the max changes nothing but avoids overflow
+    return e / e.sum()
+
+
+z = np.array([2.0, 1.0, 0.1])
+p = softmax(z)
+print("p              =", p.round(4))
+print("sum            =", round(p.sum(), 6))
+print("p[0] / p[1]    =", round(p[0] / p[1], 4))  # a gap of 1 gives a ratio of e
+print("softmax(z + 5) =", softmax(z + 5).round(4))  # only the gaps matter
+
+# Why subtract the max: exp(1000) overflows to infinity
+big = np.array([1000.0, 999.0])
+with np.errstate(over="ignore", invalid="ignore"):
+    naive = np.exp(big) / np.exp(big).sum()
+print("naive          =", naive)
+print("stable         =", softmax(big).round(4))
+
+# Sampling: draw tokens in proportion to their probabilities
+rng = np.random.default_rng(0)
+tokens = np.array(["mat", "sofa", "floor"])
+draws = rng.choice(tokens, size=1000, p=p)
+print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
+
+# Output:
+# p              = [0.659  0.2424 0.0986]
+# sum            = 1.0
+# p[0] / p[1]    = 2.7183
+# softmax(z + 5) = [0.659  0.2424 0.0986]
+# naive          = [nan nan]
+# stable         = [0.7311 0.2689]
+# 1000 draws     = {'mat': 637, 'sofa': 268, 'floor': 95}</code></pre></details>
+
 <div class="widget" id="w-next">
   <h4 class="wt">Interactive · next-token probabilities</h4>
   <p class="look"><b>The point:</b> The model’s output is a full distribution, and sampling from it gives different tokens on different tries. <b>Do this:</b> Pick a prompt, press “Sample a token” several times, then move the temperature slider. <b>Watch for:</b> How often each token is chosen matches the height of its bar, and the ranking of the bars never changes with temperature.</p>
@@ -638,7 +676,6 @@ select.dd-native{display:none}
 <section class="ch" id="why" data-title="Why Transformers?">
 <div class="num">SECTION 2 · PART A: THE BIG PICTURE</div>
 <h2>Why Transformers? The idea behind the 2017 paper</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="here" aria-current="step">2 Why</a><i aria-hidden="true"></i><a href="#tokens">3 Tokens</a><a href="#position">4 Position</a><a href="#attention">5 Attention</a><a href="#multihead">6 Heads</a><a href="#block">7 Block</a><a href="#architecture">8 Model</a><i aria-hidden="true"></i><a href="#training">9 Train</a><a href="#generation">10 Generate</a><a href="#inference">11 Serve</a><a href="#scaling">12 Scale</a><i aria-hidden="true"></i><a href="#encdec">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>The idea of next-token prediction from <a class="xref" data-ref="intro"></a>. It helps to have heard of recurrent networks (RNNs), but it is not required.</p></div>
   <div><b>After it, you can</b><ul><li>Explain the two limits of recurrent networks that the Transformer removed.</li><li>Compare the cost of self-attention and recurrence as sequence length grows.</li><li>Name the parts of a Transformer and where this guide covers each.</li></ul></div>
@@ -715,7 +752,6 @@ select.dd-native{display:none}
 <section class="ch" id="tokens" data-title="Tokenization and embeddings">
 <div class="num">SECTION 3 · PART B: BUILDING THE MODEL</div>
 <h2>Text to numbers: tokenization and embeddings</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="here" aria-current="step">3 Tokens</a><a href="#position">4 Position</a><a href="#attention">5 Attention</a><a href="#multihead">6 Heads</a><a href="#block">7 Block</a><a href="#architecture">8 Model</a><i aria-hidden="true"></i><a href="#training">9 Train</a><a href="#generation">10 Generate</a><a href="#inference">11 Serve</a><a href="#scaling">12 Scale</a><i aria-hidden="true"></i><a href="#encdec">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>Vectors and matrices; the vocabulary idea from <a class="xref" data-ref="intro"></a>.</p></div>
   <div><b>After it, you can</b><ul><li>Explain why models use subword tokens and not characters or whole words.</li><li>Describe an embedding as a row lookup in a learned table.</li><li>State the shape of the embedding table and of the model’s input.</li></ul></div>
@@ -753,6 +789,67 @@ select.dd-native{display:none}
   <p>Rows are counted from 0, so ID 2 is the third row.</p></div>
   <p class="s-only">Think of the embedding table as a spreadsheet with one row per token. Token ID 2 means “use row 2”. That row of numbers is the token’s vector.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: a greedy subword tokenizer and the embedding lookup</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+# A toy WordPiece-style vocabulary. "##" marks a piece that continues a word.
+letters = "abcdefghijklmnopqrstuvwxyz"
+vocab = (["[UNK]", "the", "cat", "sat", "on", "mat", "play", "jump", "un",
+          "##s", "##ed", "##ing", "##happy", "##ly"]
+         + list(letters) + ["##" + c for c in letters])
+token_id = {tok: i for i, tok in enumerate(vocab)}
+
+
+def tokenize_word(word):
+    """Greedy longest match from the left, as WordPiece does."""
+    pieces, start = [], 0
+    while start &lt; len(word):
+        for end in range(len(word), start, -1):  # try the longest piece first
+            piece = word[start:end] if start == 0 else "##" + word[start:end]
+            if piece in token_id:
+                pieces.append(piece)
+                start = end
+                break
+        else:
+            return ["[UNK]"]  # no piece fits, not even one letter
+    return pieces
+
+
+def tokenize(text):
+    return [p for word in text.lower().split() for p in tokenize_word(word)]
+
+
+for text in ["the cats played", "unhappy", "zebra"]:
+    toks = tokenize(text)
+    print(f"{text!r:18} -&gt; {toks} -&gt; ids {[token_id[t] for t in toks]}")
+
+# Embedding lookup: each ID selects one row of the table E
+E = np.array([[0.1, 0.3], [-0.2, 0.5], [0.7, -0.4], [0.0, 0.9], [0.6, 0.6]])
+w_t = 2
+print("E[2]            =", E[w_t])
+
+one_hot = np.zeros(len(E))
+one_hot[w_t] = 1
+print("onehot(2) @ E   =", one_hot @ E)  # the same row, by a matrix product
+
+# The model's input: one row per token, shape [T, d_model]
+rng = np.random.default_rng(0)
+E_big = rng.normal(0, 0.02, size=(len(vocab), 8))  # untrained: random numbers
+ids = [token_id[t] for t in tokenize("the cat sat on the mat")]
+X = E_big[ids]
+print("X.shape         =", X.shape)
+print("both 'the' rows equal:", np.array_equal(X[0], X[4]))
+
+# Output:
+# 'the cats played'  -&gt; ['the', 'cat', '##s', 'play', '##ed'] -&gt; ids [1, 2, 58, 6, 10]
+# 'unhappy'          -&gt; ['un', '##happy'] -&gt; ids [8, 12]
+# 'zebra'            -&gt; ['z', '##e', '##b', '##r', '##a'] -&gt; ids [39, 44, 41, 57, 40]
+# E[2]            = [ 0.7 -0.4]
+# onehot(2) @ E   = [ 0.7 -0.4]
+# X.shape         = (6, 8)
+# both 'the' rows equal: True</code></pre></details>
+
 <div class="widget" id="w-tok">
   <h4 class="wt">Interactive · a toy subword tokenizer</h4>
   <p class="look"><b>The point:</b> Text becomes pieces, pieces become IDs, IDs select rows of the embedding table. <b>Do this:</b> Type a sentence with one common and one unusual word, then click a token. <b>Watch for:</b> Common words stay whole; rare words break into several pieces. Each piece has one ID and one row of numbers.</p>
@@ -802,7 +899,6 @@ select.dd-native{display:none}
 <section class="ch" id="position" data-title="Positional information">
 <div class="num">SECTION 4 · PART B: BUILDING THE MODEL</div>
 <h2>Positional information</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="here" aria-current="step">4 Position</a><a href="#attention">5 Attention</a><a href="#multihead">6 Heads</a><a href="#block">7 Block</a><a href="#architecture">8 Model</a><i aria-hidden="true"></i><a href="#training">9 Train</a><a href="#generation">10 Generate</a><a href="#inference">11 Serve</a><a href="#scaling">12 Scale</a><i aria-hidden="true"></i><a href="#encdec">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>Embeddings from <a class="xref" data-ref="tokens"></a>; sine and cosine.</p></div>
   <div><b>After it, you can</b><ul><li>Explain why a Transformer needs explicit position information.</li><li>Read the sinusoidal formula as “waves of different speeds”.</li><li>Explain why the position vector is added to the token vector.</li></ul></div>
@@ -836,6 +932,43 @@ select.dd-native{display:none}
   <p>The first two numbers change a lot from one position to the next. The last two barely move; they only become informative across hundreds of positions.</p></div>
   <p class="s-only">Picture a row of clock hands turning at different speeds. The fast hands distinguish position 3 from position 4. The slow hands distinguish position 30 from position 300. Read together, they give every position a unique fingerprint.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: sinusoidal position vectors</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def sinusoidal_pe(T, d_model):
+    t = np.arange(T)[:, None]                 # positions, shape [T, 1]
+    i = np.arange(d_model // 2)[None, :]      # pair index, shape [1, d_model/2]
+    angle = t / 10000 ** (2 * i / d_model)    # shape [T, d_model/2]
+    pe = np.zeros((T, d_model))
+    pe[:, 0::2] = np.sin(angle)               # even dimensions: sine
+    pe[:, 1::2] = np.cos(angle)               # odd dimensions: cosine
+    return pe
+
+
+print(sinusoidal_pe(3, 4).round(4))
+
+# Add positions to token vectors: x_t = E[w_t] + PE(t)
+rng = np.random.default_rng(0)
+vocab = ["the", "cat", "sat", "on", "mat"]
+E = rng.normal(0, 0.5, size=(len(vocab), 8))
+ids = [0, 1, 2, 3, 0]                         # "the cat sat on the"
+X_tokens = E[ids]
+X = X_tokens + sinusoidal_pe(len(ids), 8)
+
+print("'the' rows equal without positions:", np.allclose(X_tokens[0], X_tokens[4]))
+print("'the' rows equal with positions:   ", np.allclose(X[0], X[4]))
+print("shape is unchanged:", X.shape)
+
+# Output:
+# [[ 0.      1.      0.      1.    ]
+#  [ 0.8415  0.5403  0.01    1.    ]
+#  [ 0.9093 -0.4161  0.02    0.9998]]
+# 'the' rows equal without positions: True
+# 'the' rows equal with positions:    False
+# shape is unchanged: (5, 8)</code></pre></details>
+
 <div class="widget" id="w-pe">
   <h4 class="wt">Interactive · sinusoidal positional-encoding heatmap</h4>
   <p class="look"><b>The point:</b> Every position gets a unique pattern, built from waves of different speeds. <b>Do this:</b> Read the heatmap row by row (one row = one position), then hover or use the arrow keys on a cell. <b>Watch for:</b> The left columns flicker quickly from row to row; the right columns change slowly.</p>
@@ -882,7 +1015,6 @@ select.dd-native{display:none}
 <section class="ch" id="attention" data-title="Self-attention from scratch">
 <div class="num">SECTION 5 · PART B: BUILDING THE MODEL</div>
 <h2>Self-attention from scratch</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="here" aria-current="step">5 Attention</a><a href="#multihead">6 Heads</a><a href="#block">7 Block</a><a href="#architecture">8 Model</a><i aria-hidden="true"></i><a href="#training">9 Train</a><a href="#generation">10 Generate</a><a href="#inference">11 Serve</a><a href="#scaling">12 Scale</a><i aria-hidden="true"></i><a href="#encdec">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>The input matrix <span class="tex">X</span> from <a class="xref" data-ref="position"></a>; dot products; softmax from <a class="xref" data-ref="intro"></a>.</p></div>
   <div><b>After it, you can</b><ul><li>Explain what queries, keys and values are for.</li><li>Compute attention weights and a context vector by hand for one query.</li><li>Justify each part of the formula: the dot product, the division by √d_k, the softmax.</li><li>Explain what the causal mask does and why GPT-style models need it.</li></ul></div>
@@ -930,6 +1062,39 @@ select.dd-native{display:none}
   <p>For instance, the second dot product is <span class="tex">1\cdot0+2\cdot2+0\cdot1+0\cdot0=4</span>, and the first entry of <span class="tex">c</span> is <span class="tex">0.1020\cdot0.5+0.4570\cdot1+0.2772\cdot0+0.0618\cdot0+0.1020\cdot2=0.7119</span>.</p></div>
   <p class="s-only">The token “sat” asks, in effect, “who did the sitting?”. Its query matches the key of “cat” best, so “cat” gets about 46% of the attention, “sat” itself 28%, and the rest share what is left. The new vector for “sat” is mostly cat-flavoured.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: attention for the query “sat”, step by step</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+tokens = ["the", "cat", "sat", "on", "mat"]
+K = np.array([[1, 0, 0, 1], [0, 2, 1, 0], [1, 1, 0, -1],
+              [0, 0, 2, 1], [-1, 1, 1, 0]], dtype=float)
+V = np.array([[0.5, 0, 0, 1], [1, 2, 0, 0], [0, 1, 1, 0],
+              [0, 0, 1, 2], [2, 0, 1, 1]], dtype=float)
+q = np.array([1, 2, 0, 0], dtype=float)  # the query of "sat"
+d_k = q.size
+
+scores = K @ q                      # 1. one dot product per key
+scaled = scores / np.sqrt(d_k)      # 2. divide by sqrt(d_k)
+e = np.exp(scaled)                  # 3. exponentiate ...
+alpha = e / e.sum()                 #    ... and normalise: softmax
+c = alpha @ V                       # 4. weighted sum of the values
+
+print("dot products  =", scores)
+print("scaled        =", scaled)
+print("exp           =", e.round(4), " sum =", round(e.sum(), 4))
+print("alpha         =", alpha.round(4))
+print("context c     =", c.round(4))
+print("most attended =", tokens[alpha.argmax()])
+
+# Output:
+# dot products  = [1. 4. 3. 0. 1.]
+# scaled        = [0.5 2.  1.5 0.  0.5]
+# exp           = [1.6487 7.3891 4.4817 1.     1.6487]  sum = 16.1682
+# alpha         = [0.102  0.457  0.2772 0.0618 0.102 ]
+# context c     = [0.7119 1.1912 0.441  0.3276]
+# most attended = cat</code></pre></details>
+
 <div class="widget" id="w-attn">
   <h4 class="wt">Interactive · attention, one step at a time</h4>
   <p class="look"><b>The point:</b> The attention formula is five small steps you can check by hand. <b>Do this:</b> Choose a query token and press Step until all five steps are shown. Then switch on the causal mask. <b>Watch for:</b> Which key gets the largest score, how softmax turns scores into weights, and how the mask removes later tokens.</p>
@@ -954,6 +1119,67 @@ select.dd-native{display:none}
 <h3>The whole attention matrix, and the causal mask</h3>
 <p>Running every token as a query gives a square table: row <span class="tex">i</span> shows where token <span class="tex">i</span> looks. A GPT-style model has one more rule. It is trained to predict the next token, so a token must not be allowed to look at tokens that come after it, or it could simply read the answer. The <b>causal mask</b> enforces this by setting the score to <span class="tex">-\infty</span> wherever <span class="tex">j \gt i</span>, before softmax. Since <span class="tex">e^{-\infty}=0</span>, those positions receive exactly zero weight.</p>
 <div class="tex d">s_{ij}\leftarrow\begin{cases}s_{ij}&amp; j\le i\\-\infty&amp; j\gt i\end{cases}\qquad\text{then}\qquad \alpha_{i}=\mathrm{softmax}(s_{i})</div>
+
+<details class="callout code opt" open><summary>In Python: the attention matrix and the causal mask</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def softmax(S, axis=-1):
+    e = np.exp(S - S.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+def attention(Q, K, V, causal=False):
+    d_k = Q.shape[-1]
+    S = Q @ K.T / np.sqrt(d_k)                      # [T, T] scores
+    if causal:
+        T = S.shape[0]
+        future = np.triu(np.ones((T, T), dtype=bool), k=1)  # j &gt; i
+        S = np.where(future, -np.inf, S)            # mask BEFORE softmax
+    A = softmax(S)                                  # each row sums to 1
+    return A @ V, A
+
+
+Q = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [1, 2, 0, 0],
+              [0, 0, 1, 1], [0, 1, 2, 0]], dtype=float)
+K = np.array([[1, 0, 0, 1], [0, 2, 1, 0], [1, 1, 0, -1],
+              [0, 0, 2, 1], [-1, 1, 1, 0]], dtype=float)
+V = np.array([[0.5, 0, 0, 1], [1, 2, 0, 0], [0, 1, 1, 0],
+              [0, 0, 1, 2], [2, 0, 1, 1]], dtype=float)
+
+np.set_printoptions(precision=3, suppress=True)
+out, A = attention(Q, K, V)
+print("weights, no mask (rows = queries):\n", A)
+out, A = attention(Q, K, V, causal=True)
+print("weights, causal mask:\n", A)
+print("row sums:", A.sum(axis=1))
+print("output shape:", out.shape)
+
+# In a real model Q, K and V are projections of the same input X
+rng = np.random.default_rng(0)
+T, d_model, d_k = 5, 8, 4
+X = rng.normal(size=(T, d_model))
+W_Q, W_K, W_V = (rng.normal(size=(d_model, d_k)) for _ in range(3))
+out, A = attention(X @ W_Q, X @ W_K, X @ W_V, causal=True)
+print("X", X.shape, "-&gt; weights", A.shape, "-&gt; output", out.shape)
+
+# Output:
+# weights, no mask (rows = queries):
+#  [[0.19  0.19  0.19  0.314 0.115]
+#  [0.19  0.314 0.115 0.19  0.19 ]
+#  [0.102 0.457 0.277 0.062 0.102]
+#  [0.164 0.164 0.06  0.447 0.164]
+#  [0.046 0.337 0.075 0.337 0.205]]
+# weights, causal mask:
+#  [[1.    0.    0.    0.    0.   ]
+#  [0.378 0.622 0.    0.    0.   ]
+#  [0.122 0.547 0.331 0.    0.   ]
+#  [0.197 0.197 0.072 0.534 0.   ]
+#  [0.046 0.337 0.075 0.337 0.205]]
+# row sums: [1. 1. 1. 1. 1.]
+# output shape: (5, 4)
+# X (5, 8) -&gt; weights (5, 5) -&gt; output (5, 4)</code></pre></details>
 <div class="widget" id="w-mat">
   <h4 class="wt">Interactive · attention matrix and causal mask</h4>
   <p class="look"><b>The point:</b> All queries at once form a square table, and the causal mask blanks its upper triangle. <b>Do this:</b> Tick the mask and compare one row before and after. <b>Watch for:</b> Every row still sums to 1; the weight that was on later tokens is redistributed to earlier ones.</p>
@@ -992,7 +1218,6 @@ select.dd-native{display:none}
 <section class="ch" id="multihead" data-title="Multi-head attention">
 <div class="num">SECTION 6 · PART B: BUILDING THE MODEL</div>
 <h2>Multi-head attention</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="here" aria-current="step">6 Heads</a><a href="#block">7 Block</a><a href="#architecture">8 Model</a><i aria-hidden="true"></i><a href="#training">9 Train</a><a href="#generation">10 Generate</a><a href="#inference">11 Serve</a><a href="#scaling">12 Scale</a><i aria-hidden="true"></i><a href="#encdec">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>The single-head formula from <a class="xref" data-ref="attention"></a>.</p></div>
   <div><b>After it, you can</b><ul><li>Explain why one attention pattern per token is not enough.</li><li>Describe how d_model is split between heads and put back together.</li><li>Follow the tensor shapes through a multi-head layer.</li></ul></div>
@@ -1028,6 +1253,63 @@ select.dd-native{display:none}
   <p class="x-only">With <span class="tex">d_{\text{model}}=8</span> and <span class="tex">h=2</span>, each head works with <span class="tex">d_k=4</span>. Head 1 produces 4 numbers per token, head 2 another 4; concatenated they give 8 again. Parameters for the query, key and value projections: one head needs <span class="tex">3\times(8\times8)=192</span> weights; two heads need <span class="tex">2\times3\times(8\times4)=192</span>. The same.</p>
   <p class="s-only">Splitting an 8-number vector between 2 heads gives each head 4 numbers to work with. You get two independent “where should I look?” decisions for the price of one.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: multi-head attention: split, attend, concatenate</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def softmax(S, axis=-1):
+    e = np.exp(S - S.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+rng = np.random.default_rng(0)
+B, T, d_model, h = 2, 5, 8, 2
+d_k = d_model // h                       # 4 dimensions per head
+
+X = rng.normal(size=(B, T, d_model))
+W_Q, W_K, W_V, W_O = (rng.normal(size=(d_model, d_model)) / np.sqrt(d_model)
+                      for _ in range(4))
+
+
+def split_heads(M):                      # [B, T, d_model] -&gt; [B, h, T, d_k]
+    return M.reshape(B, T, h, d_k).transpose(0, 2, 1, 3)
+
+
+Q, K, V = split_heads(X @ W_Q), split_heads(X @ W_K), split_heads(X @ W_V)
+S = Q @ K.transpose(0, 1, 3, 2) / np.sqrt(d_k)          # [B, h, T, T]
+S = np.where(np.triu(np.ones((T, T), dtype=bool), k=1), -np.inf, S)
+heads = softmax(S) @ V                                  # [B, h, T, d_k]
+concat = heads.transpose(0, 2, 1, 3).reshape(B, T, d_model)
+out = concat @ W_O                                      # [B, T, d_model]
+
+for name, arr in [("X", X), ("Q per head", Q), ("scores", S),
+                  ("heads", heads), ("concat", concat), ("output", out)]:
+    print(f"{name:11} {arr.shape}")
+
+# One big matrix, sliced, is the same as separate per-head matrices
+m = 1                                                   # check head 2
+cols = slice(m * d_k, (m + 1) * d_k)
+q, k, v = X @ W_Q[:, cols], X @ W_K[:, cols], X @ W_V[:, cols]
+s = q @ k.transpose(0, 2, 1) / np.sqrt(d_k)
+s = np.where(np.triu(np.ones((T, T), dtype=bool), k=1), -np.inf, s)
+print("head 2 matches:", np.allclose(softmax(s) @ v, heads[:, m]))
+
+# Same parameter count whatever h is
+print("1 head :", 3 * d_model * d_model, "weights in W_Q, W_K, W_V")
+print("2 heads:", h * 3 * d_model * d_k, "weights in W_Q, W_K, W_V")
+
+# Output:
+# X           (2, 5, 8)
+# Q per head  (2, 2, 5, 4)
+# scores      (2, 2, 5, 5)
+# heads       (2, 2, 5, 4)
+# concat      (2, 5, 8)
+# output      (2, 5, 8)
+# head 2 matches: True
+# 1 head : 192 weights in W_Q, W_K, W_V
+# 2 heads: 192 weights in W_Q, W_K, W_V</code></pre></details>
+
 <div class="widget" id="w-mh">
   <h4 class="wt">Interactive · one head, two heads, four heads</h4>
   <p class="look"><b>The point:</b> Several heads can each attend to something different in the same sentence. <b>Do this:</b> Switch between 1, 2 and 4 heads. <b>Watch for:</b> With one head the patterns blur together; with four, each head shows one clean pattern.</p>
@@ -1068,7 +1350,6 @@ select.dd-native{display:none}
 <section class="ch" id="block" data-title="FFN, residuals and normalization">
 <div class="num">SECTION 7 · PART B: BUILDING THE MODEL</div>
 <h2>Feed-forward network, residuals and normalization</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="here" aria-current="step">7 Block</a><a href="#architecture">8 Model</a><i aria-hidden="true"></i><a href="#training">9 Train</a><a href="#generation">10 Generate</a><a href="#inference">11 Serve</a><a href="#scaling">12 Scale</a><i aria-hidden="true"></i><a href="#encdec">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>Multi-head attention from <a class="xref" data-ref="multihead"></a>; the idea of a hidden layer and an activation function.</p></div>
   <div><b>After it, you can</b><ul><li>Describe what the feed-forward network does and why it needs a non-linearity.</li><li>Explain how residual connections keep signal and gradient alive in deep stacks.</li><li>Compute LayerNorm by hand and say what problem it solves.</li><li>Write down the two lines that define a pre-norm Transformer block.</li></ul></div>
@@ -1098,6 +1379,51 @@ select.dd-native{display:none}
   <p>The first entry of <span class="tex">xW_1</span> is <span class="tex">1\cdot1+2\cdot(-1)=-1</span>. The first output is <span class="tex">-0.1587+0.8413</span> and the second is <span class="tex">4.5000-0.8413</span>. Results are computed at full precision and rounded for display, which is why a last digit can differ by one from adding the rounded terms.</p></div>
   <p class="s-only">The two input numbers are stretched into three, bent by GELU (big positives pass through, negatives are mostly squashed), then recombined into two. The bending is what lets the network compute things a single matrix cannot.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: the tiny FFN, GELU and ReLU</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import math
+import numpy as np
+
+
+def gelu(a):
+    # a * Phi(a), where Phi is the standard normal CDF
+    return a * 0.5 * (1 + np.vectorize(math.erf)(a / math.sqrt(2)))
+
+
+def relu(a):
+    return np.maximum(0, a)
+
+
+def ffn(x, W1, b1, W2, b2):
+    return gelu(x @ W1 + b1) @ W2 + b2
+
+
+x = np.array([1.0, 2.0])
+W1 = np.array([[1, 0.5, -1], [-1, 2, 1]])
+W2 = np.array([[1, 0], [0, 1], [1, -1]])
+b1, b2 = np.zeros(3), np.zeros(2)
+
+print("x W1      =", x @ W1)
+print("GELU      =", gelu(x @ W1).round(4))
+print("FFN(x)    =", ffn(x, W1, b1, W2, b2).round(4))
+
+# Without the non-linearity, two matrices collapse into one
+print("linear only = one matrix:", np.allclose((x @ W1) @ W2, x @ (W1 @ W2)))
+
+a = np.array([-3, -1, -0.5, 0, 0.5, 1, 3])
+print("a         =", a)
+print("GELU(a)   =", gelu(a).round(4))
+print("ReLU(a)   =", relu(a))
+
+# Output:
+# x W1      = [-1.   4.5  1. ]
+# GELU      = [-0.1587  4.5     0.8413]
+# FFN(x)    = [0.6827 3.6586]
+# linear only = one matrix: True
+# a         = [-3.  -1.  -0.5  0.   0.5  1.   3. ]
+# GELU(a)   = [-0.004  -0.1587 -0.1543  0.      0.3457  0.8413  2.996 ]
+# ReLU(a)   = [0.  0.  0.  0.  0.5 1.  3. ]</code></pre></details>
+
 <div class="widget opt" id="w-act">
   <h4 class="wt">Interactive · GELU versus ReLU</h4>
   <p class="look"><b>The point:</b> GELU is a smooth version of ReLU. <b>Do this:</b> Drag the input from −3 to 3. <b>Watch for:</b> They agree for large positive inputs and differ near zero, where GELU lets a little negative signal through.</p>
@@ -1133,6 +1459,41 @@ select.dd-native{display:none}
   <div class="tex d">\mathrm{LayerNorm}(x)=\left[\tfrac{-3}{2.2361},\tfrac{-1}{2.2361},\tfrac{1}{2.2361},\tfrac{3}{2.2361}\right]=[-1.3416,\ -0.4472,\ 0.4472,\ 1.3416]</div></div>
   <p class="s-only">Subtract the average so the numbers centre on zero, then divide by their spread. [2, 4, 6, 8] and [200, 400, 600, 800] come out identical: only the pattern survives, not the scale.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: LayerNorm</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def layer_norm(x, gamma=1.0, beta=0.0, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)          # 1. mean
+    var = x.var(axis=-1, keepdims=True)          # 2. variance
+    x_hat = (x - mu) / np.sqrt(var + eps)        # 3. normalise
+    return gamma * x_hat + beta                  # 4. learned scale and shift
+
+
+x = np.array([2.0, 4.0, 6.0, 8.0])
+print("mean, variance =", x.mean(), x.var())
+print("LayerNorm(x)   =", layer_norm(x, eps=0).round(4))
+
+# Scale and offset disappear: only the pattern survives
+print("x * 100        =", layer_norm(x * 100, eps=0).round(4))
+print("x + 7          =", layer_norm(x + 7, eps=0).round(4))
+
+# Applied to every token's vector independently: shape [T, d_model]
+rng = np.random.default_rng(0)
+X = rng.normal(5, 3, size=(3, 8))
+Y = layer_norm(X)
+print("per-token means:", Y.mean(axis=-1).round(6))
+print("per-token stds: ", Y.std(axis=-1).round(4))
+
+# Output:
+# mean, variance = 5.0 5.0
+# LayerNorm(x)   = [-1.3416 -0.4472  0.4472  1.3416]
+# x * 100        = [-1.3416 -0.4472  0.4472  1.3416]
+# x + 7          = [-1.3416 -0.4472  0.4472  1.3416]
+# per-token means: [0. 0. 0.]
+# per-token stds:  [1. 1. 1.]</code></pre></details>
+
 <div class="widget opt" id="w-ln">
   <h4 class="wt">Interactive · LayerNorm, before and after</h4>
   <p class="look"><b>The point:</b> LayerNorm removes scale and offset and keeps the pattern. <b>Do this:</b> Multiply the input, then add to it. <b>Watch for:</b> The “before” chart changes; the “after” chart does not.</p>
@@ -1154,6 +1515,70 @@ select.dd-native{display:none}
 <div class="tex d">\begin{aligned}x' &amp;= x + \mathrm{MultiHead}(\mathrm{LayerNorm}(x))\\ y &amp;= x' + \mathrm{FFN}(\mathrm{LayerNorm}(x'))\end{aligned}</div>
 <p class="sym"><span class="tex">x</span> is the block’s input, <span class="tex">x'</span> the stream after the attention update and <span class="tex">y</span> the block’s output. <span class="tex">\mathrm{MultiHead}</span> is the self-attention of <a class="xref" data-ref="multihead"></a>, with the causal mask.</p>
 <p>The shape never changes, which is what makes blocks stackable. Tensor shapes are written <code>[batch, sequence_length, d_model]</code>, shortened to <code>[B, T, d_model]</code>: <code>B</code> independent sequences processed together, <code>T</code> tokens in each, <code>d_model</code> numbers per token.</p>
+
+<details class="callout code opt" open><summary>In Python: a pre-norm Transformer block</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import math
+import numpy as np
+
+
+def softmax(S, axis=-1):
+    e = np.exp(S - S.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+def layer_norm(x, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    return (x - mu) / np.sqrt(x.var(axis=-1, keepdims=True) + eps)
+
+
+def gelu(a):
+    return a * 0.5 * (1 + np.vectorize(math.erf)(a / math.sqrt(2)))
+
+
+def multi_head(x, p, h):
+    T, d_model = x.shape
+    d_k = d_model // h
+    split = lambda M: M.reshape(T, h, d_k).transpose(1, 0, 2)  # [h, T, d_k]
+    Q, K, V = split(x @ p["W_Q"]), split(x @ p["W_K"]), split(x @ p["W_V"])
+    S = Q @ K.transpose(0, 2, 1) / np.sqrt(d_k)
+    S = np.where(np.triu(np.ones((T, T), dtype=bool), k=1), -np.inf, S)
+    heads = softmax(S) @ V
+    return heads.transpose(1, 0, 2).reshape(T, d_model) @ p["W_O"]
+
+
+def ffn(x, p):
+    return gelu(x @ p["W1"]) @ p["W2"]
+
+
+def block(x, p, h=2):
+    x = x + multi_head(layer_norm(x), p, h)   # x' = x + MultiHead(LN(x))
+    x = x + ffn(layer_norm(x), p)             # y  = x' + FFN(LN(x'))
+    return x
+
+
+rng = np.random.default_rng(0)
+T, d_model, d_ff, L = 5, 8, 32, 4
+
+
+def init(shape):
+    return rng.normal(0, 0.02, size=shape)
+
+
+layers = [{"W_Q": init((d_model, d_model)), "W_K": init((d_model, d_model)),
+           "W_V": init((d_model, d_model)), "W_O": init((d_model, d_model)),
+           "W1": init((d_model, d_ff)), "W2": init((d_ff, d_model))}
+          for _ in range(L)]
+
+x = rng.normal(size=(T, d_model))
+print("input  shape:", x.shape)
+for p in layers:
+    x = block(x, p)
+print("output shape:", x.shape, f"after {L} blocks: the shape never changes")
+
+# Output:
+# input  shape: (5, 8)
+# output shape: (5, 8) after 4 blocks: the shape never changes</code></pre></details>
 <div class="widget" id="w-block">
   <h4 class="wt">Interactive · block data flow and signal stability</h4>
   <p class="look"><b>The point:</b> Residual connections and LayerNorm are what make deep stacks trainable. <b>Do this:</b> Untick “Residual connections”, then “LayerNorm”, and raise the depth. <b>Watch for:</b> Whether the signal and gradient curves stay level, shrink to zero or blow up as depth grows.</p>
@@ -1221,7 +1646,6 @@ select.dd-native{display:none}
 <section class="ch" id="architecture" data-title="Full decoder-only architecture">
 <div class="num">SECTION 8 · PART B: BUILDING THE MODEL</div>
 <h2>The full decoder-only Transformer</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="here" aria-current="step">8 Model</a><i aria-hidden="true"></i><a href="#training">9 Train</a><a href="#generation">10 Generate</a><a href="#inference">11 Serve</a><a href="#scaling">12 Scale</a><i aria-hidden="true"></i><a href="#encdec">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>Everything from <a class="xref" data-ref="tokens" data-to="block"></a>.</p></div>
   <div><b>After it, you can</b><ul><li>Trace a prompt from text to next-token probabilities and name every stage.</li><li>Give the tensor shape after each stage.</li><li>Estimate a model’s parameter count from its configuration.</li></ul></div>
@@ -1233,6 +1657,82 @@ select.dd-native{display:none}
 <p class="sym">The superscript <span class="tex">(\ell)</span> counts blocks: <span class="tex">x^{(0)}</span> is the input to the first block and <span class="tex">x^{(L)}</span> the output of the last. <span class="tex">E_{\text{pos}}</span> is the learned position table (or the sinusoidal <span class="tex">PE</span> of <a class="xref" data-ref="position"></a>). <span class="tex">W_U</span> has shape <code>[d_model, n_vocab]</code>, so <span class="tex">z</span> holds one logit per vocabulary entry.</p>
 <div class="why"><b>Why does <span class="tex">W_U</span> look like that?</b> Each logit is the dot product of the final vector with one column of <span class="tex">W_U</span>, so there is one column per vocabulary entry, and the entry whose column best matches the vector scores highest. It is the embedding lookup run in reverse, from vector back to token, which is why many models reuse the embedding table <span class="tex">E</span> for it (“weight tying”).</div>
 <p>One detail makes training efficient: the model produces a next-token prediction at <b>every</b> position at once. Position 3’s output predicts token 4, and thanks to the causal mask it was computed without seeing token 4.</p>
+
+<details class="callout code opt" open><summary>In Python: the whole decoder-only forward pass</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import math
+import numpy as np
+
+
+def softmax(S, axis=-1):
+    e = np.exp(S - S.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+def layer_norm(x, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    return (x - mu) / np.sqrt(x.var(axis=-1, keepdims=True) + eps)
+
+
+def gelu(a):
+    return a * 0.5 * (1 + np.vectorize(math.erf)(a / math.sqrt(2)))
+
+
+def multi_head(x, p, h):
+    T, d_model = x.shape
+    d_k = d_model // h
+    split = lambda M: M.reshape(T, h, d_k).transpose(1, 0, 2)
+    Q, K, V = split(x @ p["W_Q"]), split(x @ p["W_K"]), split(x @ p["W_V"])
+    S = Q @ K.transpose(0, 2, 1) / np.sqrt(d_k)
+    S = np.where(np.triu(np.ones((T, T), dtype=bool), k=1), -np.inf, S)
+    return (softmax(S) @ V).transpose(1, 0, 2).reshape(T, d_model) @ p["W_O"]
+
+
+def block(x, p, h):
+    x = x + multi_head(layer_norm(x), p, h)
+    return x + gelu(layer_norm(x) @ p["W1"]) @ p["W2"]
+
+
+def gpt_forward(ids, params, h=2):
+    T = len(ids)
+    x = params["E"][ids] + params["E_pos"][:T]  # x(0) = E[w_t] + E_pos[t]
+    for p in params["blocks"]:                  # x(l) = Block_l(x(l-1))
+        x = block(x, p, h)
+    z = layer_norm(x) @ params["W_U"]           # z = LayerNorm(x(L)) W_U
+    return softmax(z)                           # p = softmax(z)
+
+
+vocab = ["the", "cat", "sat", "on", "mat", "sofa", "dog", "."]
+n_vocab, d_model, d_ff, L, T_max = len(vocab), 8, 32, 2, 16
+rng = np.random.default_rng(0)
+
+
+def init(*shape):
+    return rng.normal(0, 0.02, size=shape)
+
+
+params = {
+    "E": init(n_vocab, d_model), "E_pos": init(T_max, d_model),
+    "blocks": [{"W_Q": init(d_model, d_model), "W_K": init(d_model, d_model),
+                "W_V": init(d_model, d_model), "W_O": init(d_model, d_model),
+                "W1": init(d_model, d_ff), "W2": init(d_ff, d_model)}
+               for _ in range(L)],
+    "W_U": init(d_model, n_vocab),
+}
+
+ids = [vocab.index(w) for w in "the cat sat on the".split()]
+probs = gpt_forward(ids, params)
+print("probabilities shape:", probs.shape, "(one row per position)")
+print("each row sums to 1: ", np.allclose(probs.sum(axis=1), 1))
+# The weights are random, so this is close to uniform (1/8 = 0.125)
+print("next-token distribution after the last position:")
+print({w: round(float(p), 3) for w, p in zip(vocab, probs[-1])})
+
+# Output:
+# probabilities shape: (5, 8) (one row per position)
+# each row sums to 1:  True
+# next-token distribution after the last position:
+# {'the': 0.121, 'cat': 0.126, 'sat': 0.12, 'on': 0.132, 'mat': 0.122, 'sofa': 0.125, 'dog': 0.13, '.': 0.124}</code></pre></details>
 <div class="widget" id="w-arch">
   <h4 class="wt">Interactive · click through the architecture</h4>
   <p class="look"><b>The point:</b> The whole model is a short pipeline of stages you already know. <b>Do this:</b> Press Play, or click each stage in turn. <b>Watch for:</b> The shape shown under each stage, and which stages have parameters.</p>
@@ -1262,6 +1762,40 @@ select.dd-native{display:none}
   <p>Total: <span class="tex">400+128+288+552+32+16+400=1816</span> parameters.</p></div>
   <p class="s-only">Two kinds of term dominate. Embeddings grow with vocabulary size × width. The blocks grow with layers × width². Doubling the width roughly quadruples the cost of the blocks.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: counting parameters</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>def count_params(n_vocab, d_model, T, L, d_ff, tied=False):
+    token_emb = n_vocab * d_model
+    pos_emb = T * d_model
+    attention = 4 * (d_model * d_model + d_model)          # W_Q, W_K, W_V, W_O
+    mlp = d_model * d_ff + d_ff + d_ff * d_model + d_model  # W1, b1, W2, b2
+    block_norms = 2 * 2 * d_model                           # two LayerNorms
+    final_norm = 2 * d_model
+    output = 0 if tied else d_model * n_vocab
+    total = token_emb + pos_emb + L * (attention + mlp + block_norms) \
+        + final_norm + output
+    return {"token emb": token_emb, "position emb": pos_emb,
+            "blocks": L * (attention + mlp + block_norms),
+            "final norm": final_norm, "output": output, "total": total}
+
+
+print(count_params(n_vocab=50, d_model=8, T=16, L=1, d_ff=32))
+
+gpt2_small = count_params(n_vocab=50257, d_model=768, T=1024, L=12,
+                          d_ff=3072, tied=True)
+print(f"GPT-2 small: {gpt2_small['total']:,} parameters")
+
+# Doubling the width roughly quadruples the cost of the blocks
+for d in (768, 1536):
+    blocks = count_params(50257, d, 1024, 12, 4 * d, tied=True)["blocks"]
+    print(f"d_model={d}: blocks hold {blocks:,} parameters")
+
+# Output:
+# {'token emb': 400, 'position emb': 128, 'blocks': 872, 'final norm': 16, 'output': 400, 'total': 1816}
+# GPT-2 small: 124,439,808 parameters
+# d_model=768: blocks hold 85,054,464 parameters
+# d_model=1536: blocks hold 339,978,240 parameters</code></pre></details>
+
 <div class="widget opt" id="w-params">
   <h4 class="wt">Interactive · parameter-count calculator</h4>
   <p class="look"><b>The point:</b> Where a model’s parameters are. <b>Do this:</b> Load a preset, then double d_model. <b>Watch for:</b> The share taken by the blocks, and that the number of heads changes nothing.</p>
@@ -1311,7 +1845,6 @@ select.dd-native{display:none}
 <section class="ch" id="training" data-title="Training an LLM">
 <div class="num">SECTION 9 · PART C: TRAINING AND USING IT</div>
 <h2>Training an LLM</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="done">8 Model</a><i aria-hidden="true"></i><a href="#training" class="here" aria-current="step">9 Train</a><a href="#generation">10 Generate</a><a href="#inference">11 Serve</a><a href="#scaling">12 Scale</a><i aria-hidden="true"></i><a href="#encdec">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>The full model from <a class="xref" data-ref="architecture"></a>; the chain rule from <a class="xref" data-ref="intro"></a>; gradients and gradient descent in outline.</p></div>
   <div><b>After it, you can</b><ul><li>Derive the cross-entropy loss from “make real text probable”.</li><li>Explain teacher forcing and why one sequence gives many training examples.</li><li>Describe one training step: forward, loss, backward, update.</li><li>Read a loss curve and recognise overfitting and divergence.</li></ul></div>
@@ -1355,6 +1888,139 @@ select.dd-native{display:none}
   <p>The uniform baseline for the 21-character model below is <span class="tex">\ln 21=3.0445</span>.</p></div>
   <p class="s-only">Loss measures surprise. A confident correct guess costs almost nothing, an unsure guess costs a little, and a confident wrong guess costs a lot. Training rolls downhill on that number in small steps.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: teacher forcing, cross-entropy and its gradient</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def softmax(z):
+    e = np.exp(z - z.max())
+    return e / e.sum()
+
+
+# Teacher forcing: the targets are the inputs shifted by one place
+tokens = "the cat sat on the mat".split()
+inputs, targets = tokens[:-1], tokens[1:]
+for i in range(len(inputs)):
+    print(f"given {' '.join(inputs[:i + 1])!r:26} predict {targets[i]!r}")
+
+# Cross-entropy: the average of -log p(correct next token)
+p_correct = np.array([0.5, 0.25, 0.9])
+per_token = -np.log(p_correct)
+print("per-token losses:", per_token.round(4))
+print("mean loss       :", round(per_token.mean(), 4))
+print("uniform baseline, 21 symbols: ln 21 =", round(np.log(21), 4))
+
+# The gradient of the loss with respect to the logits is p - onehot(target)
+rng = np.random.default_rng(0)
+z, y = rng.normal(size=5), 2
+loss = lambda z: -np.log(softmax(z)[y])
+
+analytic = softmax(z)
+analytic[y] -= 1
+h = 1e-6
+numeric = np.array([(loss(z + h * np.eye(5)[i]) - loss(z - h * np.eye(5)[i]))
+                    / (2 * h) for i in range(5)])
+print("p - onehot      :", analytic.round(4))
+print("finite diffs    :", numeric.round(4))
+
+# One gradient-descent step on a single weight
+theta, grad, eta = 2.0, 0.5, 0.1
+print("theta after one step:", theta - eta * grad)
+
+# Output:
+# given 'the'                      predict 'cat'
+# given 'the cat'                  predict 'sat'
+# given 'the cat sat'              predict 'on'
+# given 'the cat sat on'           predict 'the'
+# given 'the cat sat on the'       predict 'mat'
+# per-token losses: [0.6931 1.3863 0.1054]
+# mean loss       : 0.7283
+# uniform baseline, 21 symbols: ln 21 = 3.0445
+# p - onehot      : [ 0.2024  0.1564 -0.6614  0.1982  0.1045]
+# finite diffs    : [ 0.2024  0.1564 -0.6614  0.1982  0.1045]
+# theta after one step: 1.95</code></pre></details>
+<details class="callout code opt" open><summary>In Python: a complete training loop</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import math
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+torch.manual_seed(0)
+
+# Training text: sentences like the toy model's, read character by character
+subjects = ["the cat", "the dog", "a bird", "the fox"]
+verbs = ["sat on", "saw", "ran to", "likes"]
+objects = ["the mat", "a box", "the tree", "the sofa"]
+text = " ".join(f"{s} {v} {o}." for s in subjects for v in verbs for o in objects)
+chars = sorted(set(text))
+stoi = {c: i for i, c in enumerate(chars)}
+data = torch.tensor([stoi[c] for c in text])
+n_vocab, T, B = len(chars), 16, 32
+
+
+class TinyGPT(nn.Module):
+    def __init__(self, d_model=48, n_head=2, n_layer=2):
+        super().__init__()
+        self.tok = nn.Embedding(n_vocab, d_model)
+        self.pos = nn.Embedding(T, d_model)
+        layer = nn.TransformerEncoderLayer(
+            d_model, n_head, 4 * d_model, dropout=0.0, activation="gelu",
+            batch_first=True, norm_first=True)          # pre-norm block
+        self.blocks = nn.TransformerEncoder(layer, n_layer,
+                                            enable_nested_tensor=False)
+        self.ln = nn.LayerNorm(d_model)
+        self.head = nn.Linear(d_model, n_vocab)        # W_U
+
+    def forward(self, idx):                            # idx: [B, T]
+        t = idx.shape[1]
+        x = self.tok(idx) + self.pos(torch.arange(t))
+        mask = nn.Transformer.generate_square_subsequent_mask(t)
+        x = self.blocks(x, mask=mask, is_causal=True)
+        return self.head(self.ln(x))                   # logits: [B, T, n_vocab]
+
+
+def get_batch():
+    starts = torch.randint(len(data) - T - 1, (B,))
+    x = torch.stack([data[s:s + T] for s in starts])
+    y = torch.stack([data[s + 1:s + T + 1] for s in starts])  # shifted by one
+    return x, y
+
+
+model = TinyGPT()
+opt = torch.optim.AdamW(model.parameters(), lr=3e-3, weight_decay=0.01)
+print(f"{sum(p.numel() for p in model.parameters()):,} parameters,",
+      f"uniform baseline ln {n_vocab} = {math.log(n_vocab):.3f}")
+
+for step in range(601):
+    x, y = get_batch()
+    logits = model(x)                                         # 1. forward
+    loss = F.cross_entropy(logits.reshape(-1, n_vocab), y.reshape(-1))  # 2. loss
+    opt.zero_grad()
+    loss.backward()                                           # 3. backward
+    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)   # cap the gradient
+    opt.step()                                                # 4. update
+    if step % 150 == 0:
+        print(f"step {step:3}  loss {loss.item():.3f}")
+
+# Greedy generation from the trained model
+idx = torch.tensor([[stoi[c] for c in "the "]])
+with torch.no_grad():
+    for _ in range(40):
+        next_id = model(idx[:, -T:])[0, -1].argmax()
+        idx = torch.cat([idx, next_id.view(1, 1)], dim=1)
+print("sample:", "".join(chars[i] for i in idx[0]))
+
+# Output (exact numbers can differ slightly between PyTorch versions):
+# 59,445 parameters, uniform baseline ln 21 = 3.045
+# step   0  loss 3.374
+# step 150  loss 0.303
+# step 300  loss 0.324
+# step 450  loss 0.256
+# step 600  loss 0.293
+# sample: the mat. the fox sat on the tree. the fox sa</code></pre></details>
+
 <div class="widget" id="w-train">
   <h4 class="wt">Interactive · train a tiny Transformer in your browser</h4>
   <p class="look"><b>The point:</b> Training is nothing more than repeating one small step, and you can watch it work. <b>Do this:</b> Press Train and watch the loss curve and the sample text. Then try the smallest training set. <b>Watch for:</b> Loss starts near ln 21 ≈ 3.04 and falls; the sample turns from noise into words. On the small set, validation loss turns upward.</p>
@@ -1413,7 +2079,6 @@ select.dd-native{display:none}
 <section class="ch" id="generation" data-title="Generation and decoding">
 <div class="num">SECTION 10 · PART C: TRAINING AND USING IT</div>
 <h2>Generation and decoding</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="done">8 Model</a><i aria-hidden="true"></i><a href="#training" class="done">9 Train</a><a href="#generation" class="here" aria-current="step">10 Generate</a><a href="#inference">11 Serve</a><a href="#scaling">12 Scale</a><i aria-hidden="true"></i><a href="#encdec">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>Softmax and the generation loop from <a class="xref" data-ref="intro"></a>; a trained model from <a class="xref" data-ref="training"></a>.</p></div>
   <div><b>After it, you can</b><ul><li>Explain how temperature reshapes the distribution and why.</li><li>Describe greedy decoding, top-k and top-p and when each is useful.</li><li>Predict qualitatively what a change of settings does to the output.</li></ul></div>
@@ -1430,7 +2095,7 @@ select.dd-native{display:none}
 <ul>
   <li><b>Context window</b>: the maximum number of tokens the model can take in. Older tokens beyond it are simply not seen.</li>
   <li><b>Greedy decoding</b>: always take the most probable token. Deterministic, but prone to dull, repetitive text.</li>
-  <li><b>Temperature</b> <span class="tex">T</span>: divide the logits by <span class="tex">T</span> before softmax. Below 1 sharpens the distribution, above 1 flattens it.</li>
+  <li><b>Temperature</b> <span class="tex">\tau</span>: divide the logits by <span class="tex">\tau</span> before softmax. Below 1 sharpens the distribution, above 1 flattens it.</li>
   <li><b>Top-k</b>: keep only the <span class="tex">k</span> most probable tokens, then renormalise.</li>
   <li><b>Top-p</b> (nucleus): keep the smallest set of top tokens whose probabilities add up to at least <span class="tex">p</span>, then renormalise. The set shrinks when the model is confident and widens when it is unsure.</li>
   <li><b>Repetition penalty</b>: lower the logits of tokens already present in the context, to discourage loops.</li>
@@ -1452,6 +2117,73 @@ select.dd-native{display:none}
   <p>Top-k and top-p on probabilities <span class="tex">[0.5,\ 0.3,\ 0.15,\ 0.05]</span>: top-k with <span class="tex">k=2</span> keeps the first two and rescales to <span class="tex">[0.625,\ 0.375]</span>. Top-p with <span class="tex">p=0.9</span> keeps tokens until the running total reaches 0.9: <span class="tex">0.5,\ 0.8,\ 0.95</span>, so three tokens survive and rescale to <span class="tex">[0.5263,\ 0.3158,\ 0.1579]</span>.</p></div>
   <p class="s-only">With scores 2.0, 1.0 and 0.1, the top token wins 66% of the time at temperature 1, 86% at temperature 0.5 and only 50% at temperature 2. Top-k and top-p then cut off the unlikely tail so that a rare unlucky draw cannot derail the text.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: temperature, top-k, top-p and the generation loop</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>from collections import Counter
+import numpy as np
+
+
+def softmax(z):
+    e = np.exp(z - z.max())
+    return e / e.sum()
+
+
+def next_token_probs(logits, tau=1.0, top_k=None, top_p=None):
+    p = softmax(np.asarray(logits, dtype=float) / tau)    # temperature
+    order = np.argsort(-p)                                # most probable first
+    keep = np.ones(p.size, dtype=bool)
+    if top_k is not None:
+        keep[order[top_k:]] = False                       # top-k
+    if top_p is not None:
+        cum = np.cumsum(p[order])
+        n = np.searchsorted(cum, top_p) + 1               # smallest set &gt;= p
+        keep[order[n:]] = False                           # top-p
+    p = np.where(keep, p, 0.0)
+    return p / p.sum()                                    # renormalise
+
+
+z = [2.0, 1.0, 0.1]
+for tau in (1, 0.5, 2):
+    print(f"tau={tau:&lt;3}", next_token_probs(z, tau).round(4))
+
+probs = np.array([0.5, 0.3, 0.15, 0.05])
+logits = np.log(probs)              # logits whose softmax is exactly `probs`
+print("top-k=2  ", next_token_probs(logits, top_k=2).round(4))
+print("top-p=0.9", next_token_probs(logits, top_p=0.9).round(4))
+
+# The generation loop. The "model" here is a table of character counts that
+# looks at the last two characters. It stands in for a trained Transformer.
+text = "the cat sat on the mat. the dog sat on the sofa. a cat saw the dog. "
+chars = sorted(set(text))
+counts = Counter((text[i:i + 2], text[i + 2]) for i in range(len(text) - 2))
+model = lambda context: np.log(                     # logits for the next char
+    np.array([counts[(context[-2:], c)] for c in chars]) + 0.01)
+
+
+def generate(prompt, n, rng, greedy=False, **settings):
+    out = prompt
+    for _ in range(n):
+        p = next_token_probs(model(out), **settings)
+        i = p.argmax() if greedy else rng.choice(len(p), p=p)
+        out += chars[i]                                   # append, repeat
+    return out
+
+
+rng = np.random.default_rng(0)
+print("greedy:   ", repr(generate("the ", 30, rng, greedy=True)))
+print("tau=0.7:  ", repr(generate("the ", 30, rng, tau=0.7, top_p=0.9)))
+print("tau=2.0:  ", repr(generate("the ", 30, rng, tau=2.0)))
+
+# Output:
+# tau=1   [0.659  0.2424 0.0986]
+# tau=0.5 [0.8638 0.1169 0.0193]
+# tau=2   [0.5017 0.3043 0.194 ]
+# top-k=2   [0.625 0.375 0.    0.   ]
+# top-p=0.9 [0.5263 0.3158 0.1579 0.    ]
+# greedy:    'the dog sat on the dog sat on the '
+# tau=0.7:   'the dog sofa. the mat on the dog. '
+# tau=2.0:   'the macngdgtwehdhe sat soet odfoc '</code></pre></details>
+
 <div class="widget" id="w-gen">
   <h4 class="wt">Interactive · generation playground (uses the toy model from <a class="xref" data-ref="training"></a>)</h4>
   <p class="look"><b>The point:</b> Decoding settings change the output without changing the model. <b>Do this:</b> Generate with the defaults, then with greedy, then with a high temperature. Click a step in the timeline. <b>Watch for:</b> Greedy repeats itself; high temperature produces misspellings. The bar chart shows what the model offered at that step.</p>
@@ -1504,7 +2236,6 @@ select.dd-native{display:none}
 <section class="ch" id="inference" data-title="Inference in practice">
 <div class="num">SECTION 11 · PART C: TRAINING AND USING IT</div>
 <h2>Inference in practice</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="done">8 Model</a><i aria-hidden="true"></i><a href="#training" class="done">9 Train</a><a href="#generation" class="done">10 Generate</a><a href="#inference" class="here" aria-current="step">11 Serve</a><a href="#scaling">12 Scale</a><i aria-hidden="true"></i><a href="#encdec">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>The generation loop from <a class="xref" data-ref="generation"></a>; keys and values from <a class="xref" data-ref="attention"></a>; parameter counts from <a class="xref" data-ref="architecture"></a>.</p></div>
   <div><b>After it, you can</b><ul><li>Explain what the KV cache stores and why it is valid to reuse it.</li><li>Count the work with and without a cache.</li><li>Estimate KV-cache memory and response time from a model’s configuration.</li><li>Distinguish time to first token from tokens per second.</li></ul></div>
@@ -1554,6 +2285,96 @@ select.dd-native{display:none}
   <p><b>Response time.</b> Time to first token 0.4 s, then 50 tokens per second, for a 200-token answer: <span class="tex">0.4+200/50=4.4</span> seconds.</p></div>
   <p class="s-only">Generating 5 tokens after a 3-token prompt takes 25 units of work if the model starts over each time, and 7 if it remembers its earlier work. The memory for that remembering is modest for a small model and several gigabytes per conversation for a large model with a long context.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: a KV cache gives identical outputs with less work</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def softmax(s):
+    e = np.exp(s - s.max())
+    return e / e.sum()
+
+
+rng = np.random.default_rng(0)
+d_model, P, n = 8, 3, 5               # prompt of 3 tokens, generate 5
+W_Q, W_K, W_V = (rng.normal(size=(d_model, d_model)) for _ in range(3))
+X = rng.normal(size=(P + n - 1, d_model))  # token vectors that will be processed
+
+
+def attend(q, K, V):
+    return softmax(K @ q / np.sqrt(d_model)) @ V
+
+
+# Without a cache: every pass recomputes keys and values for all positions
+no_cache, work_no_cache = [], 0
+for t in range(P - 1, P + n - 1):     # one pass per generated token
+    seen = X[:t + 1]
+    K, V = seen @ W_K, seen @ W_V     # recomputed every time
+    work_no_cache += len(seen)
+    no_cache.append(attend(X[t] @ W_Q, K, V))
+
+# With a cache: prefill the prompt once, then add one row per step
+K_cache, V_cache = X[:P] @ W_K, X[:P] @ W_V
+work_cache = P
+with_cache = [attend(X[P - 1] @ W_Q, K_cache, V_cache)]
+for t in range(P, P + n - 1):
+    K_cache = np.vstack([K_cache, X[t] @ W_K])        # append the new key
+    V_cache = np.vstack([V_cache, X[t] @ W_V])        # append the new value
+    work_cache += 1
+    with_cache.append(attend(X[t] @ W_Q, K_cache, V_cache))
+
+print("identical outputs:", np.allclose(no_cache, with_cache))
+print("positions computed without cache:", work_no_cache,
+      "=", P * n + n * (n - 1) // 2)
+print("positions computed with cache:   ", work_cache, "=", P + n - 1)
+
+# Output:
+# identical outputs: True
+# positions computed without cache: 25 = 25
+# positions computed with cache:    7 = 7</code></pre></details>
+<details class="callout code opt" open><summary>In Python: memory and speed estimates</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>def kv_cache_bytes(L, T, d_model, bytes_per_number=2, B=1):
+    return 2 * L * T * d_model * bytes_per_number * B  # 2 = keys and values
+
+
+def weight_bytes(N, bytes_per_param=2):
+    return N * bytes_per_param
+
+
+def response_seconds(t_first_token, n_tokens, tokens_per_second):
+    return t_first_token + n_tokens / tokens_per_second
+
+
+def rough_speed(N, P, B, F, R, bytes_per_param=2):
+    """Order-of-magnitude bounds; real systems are slower."""
+    m_weights = weight_bytes(N, bytes_per_param)
+    throughput = min(F / (2 * N), B * R / m_weights)    # tokens/s, all requests
+    t_first = max(2 * N * P * B / F, m_weights / R)     # seconds
+    return throughput, throughput / B, t_first
+
+
+print(f"KV cache, GPT-2 small, T=1024: {kv_cache_bytes(12, 1024, 768):,} bytes")
+print(f"weights, GPT-2 small:          {weight_bytes(124_439_808):,} bytes")
+print(f"KV cache, L=32, d=4096, T=8192: {kv_cache_bytes(32, 8192, 4096):,} bytes")
+print("response time:", response_seconds(0.4, 200, 50), "s")
+
+# Generic hardware numbers, not a specific product
+F, R = 100e12, 1e12            # 100 TFLOP/s of compute, 1 TB/s of bandwidth
+for B in (1, 16, 256):
+    total, per_request, ttft = rough_speed(N=7e9, P=1000, B=B, F=F, R=R)
+    print(f"7B model, batch {B:3}: {total:7.0f} tok/s total, "
+          f"{per_request:5.1f} tok/s per request, first token ~{ttft:.2f} s")
+
+# Output:
+# KV cache, GPT-2 small, T=1024: 37,748,736 bytes
+# weights, GPT-2 small:          248,879,616 bytes
+# KV cache, L=32, d=4096, T=8192: 4,294,967,296 bytes
+# response time: 4.4 s
+# 7B model, batch   1:      71 tok/s total,  71.4 tok/s per request, first token ~0.14 s
+# 7B model, batch  16:    1143 tok/s total,  71.4 tok/s per request, first token ~2.24 s
+# 7B model, batch 256:    7143 tok/s total,  27.9 tok/s per request, first token ~35.84 s</code></pre></details>
+
 <div class="widget" id="w-kc">
   <h4 class="wt">Interactive · the KV cache, pass by pass</h4>
   <p class="look"><b>The point:</b> The KV cache replaces repeated work with a lookup. <b>Do this:</b> Press Play with the cache on, reset, then untick the cache and play again. <b>Watch for:</b> How many cells are freshly computed (●) in each pass, and the two totals at the bottom.</p>
@@ -1629,7 +2450,6 @@ select.dd-native{display:none}
 <section class="ch" id="scaling" data-title="Scaling and practicalities">
 <div class="num">SECTION 12 · PART C: TRAINING AND USING IT</div>
 <h2>Scaling laws and LLM practicalities</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="done">8 Model</a><i aria-hidden="true"></i><a href="#training" class="done">9 Train</a><a href="#generation" class="done">10 Generate</a><a href="#inference" class="done">11 Serve</a><a href="#scaling" class="here" aria-current="step">12 Scale</a><i aria-hidden="true"></i><a href="#encdec">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>Parameter counts from <a class="xref" data-ref="architecture"></a> and the loss from <a class="xref" data-ref="training"></a>.</p></div>
   <div><b>After it, you can</b><ul><li>Estimate training compute from parameters and tokens.</li><li>Explain why parameters and data must grow together.</li><li>Relate model size to memory and to the effect of quantization.</li></ul></div>
@@ -1667,6 +2487,39 @@ select.dd-native{display:none}
   <p class="x-only">A model with <span class="tex">N=10^{9}</span> parameters trained on <span class="tex">D=2\times10^{10}</span> tokens needs about <span class="tex">6\times10^{9}\times2\times10^{10}=1.2\times10^{20}</span> FLOPs. Stored at 16 bits (2 bytes) per weight, it occupies <span class="tex">2\times10^{9}</span> bytes, or 2 GB; quantized to 4 bits, 0.5 GB.</p>
   <p class="s-only">A 1-billion-parameter model reading 20 billion tokens costs on the order of a hundred billion billion arithmetic operations to train. Its weights take about 2 GB, or a quarter of that after 4-bit quantization.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: compute, memory and the scaling-law curve</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>N = 1e9        # parameters
+D = 2e10       # training tokens
+
+print(f"training compute ~ 6ND = {6 * N * D:.1e} FLOPs")
+print(f"weights at 16 bits: {N * 2 / 1e9:.1f} GB, at 4 bits: {N * 0.5 / 1e9:.1f} GB")
+print(f"inference ~ 2N = {2 * N:.0e} FLOPs per generated token")
+print(f"tokens per parameter: {D / N:.0f} (the Chinchilla rule of thumb is ~20)")
+
+
+def loss(N, D, L_inf=1.69, a=406.4, r=0.34, b=410.7, s=0.28):
+    # Hoffmann et al. (2022), Appendix D.2, Eq. 10: their fitted constants
+    return L_inf + a / N ** r + b / D ** s
+
+
+# Growing only N leaves the data term untouched, so the loss stops improving
+for n in (1e8, 1e9, 1e10, 1e11, 1e12):
+    print(f"N={n:.0e}, D=2e10: loss {loss(n, 2e10):.3f}")
+print(f"floor with D=2e10 however large N is: {loss(float('inf'), 2e10):.3f}")
+
+# Output:
+# training compute ~ 6ND = 1.2e+20 FLOPs
+# weights at 16 bits: 2.0 GB, at 4 bits: 0.5 GB
+# inference ~ 2N = 2e+09 FLOPs per generated token
+# tokens per parameter: 20 (the Chinchilla rule of thumb is ~20)
+# N=1e+08, D=2e10: loss 3.000
+# N=1e+09, D=2e10: loss 2.580
+# N=1e+10, D=2e10: loss 2.388
+# N=1e+11, D=2e10: loss 2.300
+# N=1e+12, D=2e10: loss 2.260
+# floor with D=2e10 however large N is: 2.226</code></pre></details>
+
 <div class="widget" id="w-scale">
   <h4 class="wt">Interactive · model size, data and compute (conceptual)</h4>
   <p class="look"><b>The point:</b> Parameters and data must grow together. <b>Do this:</b> Fix the data slider and raise the model size; then do the reverse. <b>Watch for:</b> The curve flattens when one of the two runs out, and the “Bottleneck” reading says which.</p>
@@ -1706,7 +2559,6 @@ select.dd-native{display:none}
 <section class="ch" id="encdec" data-title="Encoder–decoder and cross-attention">
 <div class="num">SECTION 13 · PART D: THE WIDER PICTURE</div>
 <h2>Encoder–decoder Transformers and cross-attention</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="done">8 Model</a><i aria-hidden="true"></i><a href="#training" class="done">9 Train</a><a href="#generation" class="done">10 Generate</a><a href="#inference" class="done">11 Serve</a><a href="#scaling" class="done">12 Scale</a><i aria-hidden="true"></i><a href="#encdec" class="here" aria-current="step">13 Enc–dec</a><a href="#paper">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>Self-attention and the causal mask from <a class="xref" data-ref="attention"></a>; the block from <a class="xref" data-ref="block"></a>.</p></div>
   <div><b>After it, you can</b><ul><li>Describe the roles of the encoder and the decoder.</li><li>Explain cross-attention as attention with queries from one sequence and keys and values from another.</li><li>Compare encoder–decoder and decoder-only designs and say when each fits.</li></ul></div>
@@ -1760,6 +2612,48 @@ select.dd-native{display:none}
   <p>Parameter cost, with <span class="tex">d_{\text{model}}=8,\ d_{\text{ff}}=32</span> and the formulas of <a class="xref" data-ref="architecture"></a>: an encoder block, like a decoder-only block, has <span class="tex">288+552+32=872</span> parameters. A decoder block adds a second attention layer and a third LayerNorm: <span class="tex">872+288+16=1176</span>.</p></div>
   <p class="s-only">To write “black”, the decoder asks the encoder “which source word should I translate now?”. The answer is mostly “noir” (61%), with some weight on “chat” (22%), the noun that “noir” describes. French puts the adjective after the noun and English before it, and cross-attention handles the swap without any special rule.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: cross-attention</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def softmax(S, axis=-1):
+    e = np.exp(S - S.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+def attention(Q, K, V):              # the same function as self-attention
+    A = softmax(Q @ K.T / np.sqrt(Q.shape[-1]))
+    return A @ V, A
+
+
+source = ["le", "chat", "noir", "dort"]           # encoder side
+written = ["&lt;s&gt;", "the", "black"]                 # decoder input so far
+Q_dec = np.array([[2, 1, 0, 0], [0, 0, 2, 0], [0, 2, 0, 0]], dtype=float)
+K_enc = np.array([[2, 0, 0, 0], [0, 2, 1, 0], [0, 1, 2, 0], [0, 0, 0, 2]],
+                 dtype=float)
+V_enc = np.array([[1, 0, 0, 0.5], [0, 2, 0, 1], [0, 0, 2, -1], [0.5, 1, 0, 2]])
+
+# Queries from the decoder; keys and values from the encoder. No causal mask.
+context, weights = attention(Q_dec, K_enc, V_enc)
+print("weights shape:", weights.shape, "= [T_tgt, T_src], a rectangle")
+
+i = 1                                             # decoder has written "the"
+print("after 'the', alpha =", weights[i].round(4))
+print("context c         =", context[i].round(4))
+print("most attended     =", source[weights[i].argmax()])
+for word, row in zip(written, weights):
+    print(f"query from {word!r:8} attends most to {source[row.argmax()]!r}")
+
+# Output:
+# weights shape: (3, 4) = [T_tgt, T_src], a rectangle
+# after 'the', alpha = [0.0826 0.2245 0.6103 0.0826]
+# context c         = [ 0.1239  0.5316  1.2206 -0.1793]
+# most attended     = noir
+# query from '&lt;s&gt;'    attends most to 'le'
+# query from 'the'    attends most to 'noir'
+# query from 'black'  attends most to 'chat'</code></pre></details>
+
 <div class="widget" id="w-cross">
   <h4 class="wt">Interactive · cross-attention visualizer</h4>
   <p class="look"><b>The point:</b> Cross-attention lets each output word look at the relevant input words. <b>Do this:</b> Click each decoder step in turn. <b>Watch for:</b> Which French word gets the most weight, and that the order is not simply left to right.</p>
@@ -1778,7 +2672,7 @@ select.dd-native{display:none}
   <small>As in <a class="xref" data-ref="attention"></a>, Q, K and V are small hand-picked numbers so that every step can be checked, not the output of a trained translation model. Line thickness and the printed percentage both show the attention weight. Click a decoder word in the diagram or a row of the table on the right to change the step.</small>
   <div class="wjh"><b>What just happened?</b> One decoder position asked a question, and the answer was assembled entirely from the encoder’s vectors. Step through the four positions and the strongest link moves le → noir → chat → dort: the middle two cross over, because the two languages order adjective and noun differently. In the full table the bright cells are not on the diagonal, which is the signature of reordering.</div>
 </div>
-<div class="callout try opt"><b>Try this</b><p>Select “predict cat” and read the dot-product column: the query scores 4 against “chat” and 2 against “noir”. Then switch to the simplified explanation in the top bar and compare the bars for “predict black” and “predict cat”. They are mirror images.</p></div>
+<div class="callout try opt"><b>Try this</b><p>Select “predict cat” and read the dot-product column: the query scores 4 against “chat” and 2 against “noir”. Then switch to the simplified explanation in Settings and compare the bars for “predict black” and “predict cat”. They are mirror images.</p></div>
 <h3>Contrast with the decoder-only design</h3>
 <p>A decoder-only model has no encoder and no cross-attention. To translate, it puts the source and the target in <b>one</b> sequence, “le chat noir dort &lt;s&gt; the black cat …”, and relies on ordinary causal self-attention. The target tokens can still look back at the source tokens, so the job cross-attention did is absorbed into self-attention. The widget below shows who may attend to whom in each design.</p>
 <div class="widget opt" id="w-contrast">
@@ -1831,7 +2725,6 @@ select.dd-native{display:none}
 <section class="ch" id="paper" data-title="The 2017 paper in detail">
 <div class="num">SECTION 14 · PART D: THE WIDER PICTURE</div>
 <h2>The 2017 paper in detail: “Attention Is All You Need”</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="done">8 Model</a><i aria-hidden="true"></i><a href="#training" class="done">9 Train</a><a href="#generation" class="done">10 Generate</a><a href="#inference" class="done">11 Serve</a><a href="#scaling" class="done">12 Scale</a><i aria-hidden="true"></i><a href="#encdec" class="done">13 Enc–dec</a><a href="#paper" class="here" aria-current="step">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <div class="start">
   <div><b>Before this section</b><p>Every earlier section, especially <a class="xref" data-ref="block"></a> and <a class="xref" data-ref="encdec"></a>.</p></div>
   <div><b>After it, you can</b><ul><li>List the details in which the 2017 model differs from GPT-style models.</li><li>Explain the warm-up learning-rate schedule and why it is shaped that way.</li><li>Place the paper in the line from RNNs to today’s LLMs.</li></ul></div>
@@ -1875,6 +2768,51 @@ select.dd-native{display:none}
   <p>At step 100,000: <span class="tex">100000^{-0.5}=0.0031623</span>, so <span class="tex">\eta=0.044194\times0.0031623=1.398\times10^{-4}</span>, one fifth of the peak.</p></div>
   <p class="s-only">The learning rate starts almost at zero, climbs in a straight line for 4,000 steps to about 0.0007, then slides down slowly. By the end of training it is a fifth of its peak.</p>
 </div>
+<details class="callout code opt" open><summary>In Python: the learning-rate schedule, post-norm and pre-norm</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def paper_lr(step, d_model=512, warmup=4000):
+    return d_model ** -0.5 * min(step ** -0.5, step * warmup ** -1.5)
+
+
+for step in (1, 4000, 100_000):
+    print(f"step {step:&gt;7,}: lr = {paper_lr(step):.4g}")
+print("peak = (d_model * warmup) ** -0.5 =", round((512 * 4000) ** -0.5, 7))
+
+
+def layer_norm(x, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    return (x - mu) / np.sqrt(x.var(axis=-1, keepdims=True) + eps)
+
+
+def post_norm(x, sublayer):          # 2017 paper: normalise after the add
+    return layer_norm(x + sublayer(x))
+
+
+def pre_norm(x, sublayer):           # GPT-style: normalise a copy first
+    return x + sublayer(layer_norm(x))
+
+
+rng = np.random.default_rng(0)
+W = rng.normal(0, 0.1, size=(8, 8))
+sublayer = lambda x: np.tanh(x @ W)
+x = rng.normal(3, 2, size=(4, 8))
+
+print("post-norm stream: mean", post_norm(x, sublayer).mean().round(3),
+      "std", post_norm(x, sublayer).std().round(3), "(rescaled every layer)")
+print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
+      "std", pre_norm(x, sublayer).std().round(3), "(the input passes through)")
+
+# Output:
+# step       1: lr = 1.747e-07
+# step   4,000: lr = 0.0006988
+# step 100,000: lr = 0.0001398
+# peak = (d_model * warmup) ** -0.5 = 0.0006988
+# post-norm stream: mean 0.0 std 1.0 (rescaled every layer)
+# pre-norm stream:  mean 3.391 std 1.99 (the input passes through)</code></pre></details>
+
 <div class="widget opt" id="w-lr">
   <h4 class="wt">Interactive · the paper’s learning-rate schedule</h4>
   <p class="look"><b>The point:</b> The schedule is a straight rise followed by a slow fall. <b>Do this:</b> Move the warm-up slider, then the inspect-step slider. <b>Watch for:</b> The peak sits exactly at the warm-up step and gets lower as warm-up gets longer.</p>
@@ -1927,7 +2865,6 @@ select.dd-native{display:none}
 <section class="ch" id="iv-core" data-title="Interview prep: Transformer fundamentals">
 <div class="num">SECTION 15 · PART E: INTERVIEW PREP</div>
 <h2>Interview prep: Transformer fundamentals</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="done">8 Model</a><i aria-hidden="true"></i><a href="#training" class="done">9 Train</a><a href="#generation" class="done">10 Generate</a><a href="#inference" class="done">11 Serve</a><a href="#scaling" class="done">12 Scale</a><i aria-hidden="true"></i><a href="#encdec" class="done">13 Enc–dec</a><a href="#paper" class="done">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core" class="here" aria-current="step">15 Q: Core</a><a href="#iv-rag">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <p>Part E turns the guide into interview answers for a mid-level AI engineer role that mixes model internals with applied LLM work. Every answer is a short list of bullets: the points an interviewer listens for, in the order you would say them. The first section covers the material of Parts A to D; the next four cover applied topics the guide has not yet discussed: retrieval, fine-tuning, agents and production.</p>
 <div class="callout note"><b>How to answer any technical question</b><ul>
 <li><b>Define</b> it in one sentence.</li>
@@ -1940,15 +2877,175 @@ select.dd-native{display:none}
 <h3>Architecture</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q1</span>Walk me through what happens when a prompt goes into a decoder-only LLM.</h4><ul><li><b>Tokenize</b>: text becomes <span class="tex">T</span> integer IDs.</li><li><b>Embed</b>: each ID selects a row of <span class="tex">E</span>; add position information. Shape <code>[T, d_model]</code>.</li><li><b><span class="tex">L</span> blocks</b>, each: masked multi-head attention, then an MLP, each wrapped in LayerNorm and a residual add. Shape never changes.</li><li><b>Output</b>: final LayerNorm, then <span class="tex">W_U</span> gives logits <code>[T, n_vocab]</code>; softmax at the last position gives the next-token distribution.</li><li><b>Decode</b>: choose a token (greedy or sampling), append it, repeat. The KV cache avoids recomputing earlier positions.</li></ul><p class="fu"><b>Likely follow-up:</b> “Where are most of the parameters?” In the MLPs: with <span class="tex">d_{\text{ff}}=4d_{\text{model}}</span> an MLP has about <span class="tex">8d_{\text{model}}^2</span> weights, attention about <span class="tex">4d_{\text{model}}^2</span>. <b>Review:</b> <a class="xref" data-ref="architecture"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q2</span>Explain self-attention. Why divide by √d_k?</h4><ul><li>Each token is projected to a query, a key and a value.</li><li>Score of token <span class="tex">j</span> for token <span class="tex">i</span> is <span class="tex">q_i\cdot k_j</span>; softmax over <span class="tex">j</span> gives weights that sum to 1; the output is the weighted sum of values.</li><li>Matrix form: <span class="tex">\mathrm{softmax}(QK^{\top}/\sqrt{d_k})\,V</span>.</li><li>A dot product of <span class="tex">d_k</span> terms has a spread of about <span class="tex">\sqrt{d_k}</span>. Unscaled, large scores saturate softmax into near one-hot outputs with vanishing gradients. Dividing keeps the spread near 1.</li></ul><p class="fu"><b>Trap:</b> “attention weights explain the model’s decision.” They show where information was read from, not why the output was produced. <b>Review:</b> <a class="xref" data-ref="attention"></a></p></div>
-<div class="qa"><h4 class="q"><span class="qn">Q3</span>Why multi-head attention? What are MQA and GQA?</h4><ul><li>One head gives each token one softmax, so one pattern of focus. Several heads capture several relationships at once (syntax, coreference, nearby tokens).</li><li>Each head works in <span class="tex">d_k=d_{\text{model}}/h</span> dimensions, so the cost and parameter count match one wide head.</li><li>Head outputs are concatenated and mixed by <span class="tex">W_O</span>.</li><li><b>MQA</b> (multi-query): all heads share one key and value head. <b>GQA</b> (grouped-query): groups of query heads share a key and value head.</li><li>Why: the KV cache shrinks by the sharing factor, which cuts inference memory and speeds up decoding, with little quality loss.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="multihead"></a>, <a class="xref" data-ref="inference"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q3</span>Why multi-head attention? What are MQA and GQA?</h4><ul><li>One head gives each token one softmax, so one pattern of focus. Several heads capture several relationships at once (syntax, coreference, nearby tokens).</li><li>Each head works in <span class="tex">d_k=d_{\text{model}}/h</span> dimensions, so the cost and parameter count match one wide head.</li><li>Head outputs are concatenated and mixed by <span class="tex">W_O</span>.</li><li><b>MQA</b> (multi-query): all heads share one key and value head. <b>GQA</b> (grouped-query): groups of query heads share a key and value head.</li><li>Why: the KV cache shrinks by the sharing factor, which cuts inference memory and speeds up decoding, with little quality loss.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="multihead"></a>, <a class="xref" data-ref="inference"></a></p><details class="callout code opt" open><summary>In Python: grouped-query attention and its KV cache</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def softmax(S, axis=-1):
+    e = np.exp(S - S.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+rng = np.random.default_rng(0)
+B, T, d_k = 1, 6, 16
+n_q_heads, n_kv_heads = 8, 2            # GQA: 4 query heads share each KV head
+group = n_q_heads // n_kv_heads
+
+Q = rng.normal(size=(B, n_q_heads, T, d_k))
+K = rng.normal(size=(B, n_kv_heads, T, d_k))   # only these are cached
+V = rng.normal(size=(B, n_kv_heads, T, d_k))
+
+# Repeat each KV head so it lines up with its group of query heads
+K_full = np.repeat(K, group, axis=1)            # [B, 8, T, d_k]
+V_full = np.repeat(V, group, axis=1)
+S = Q @ K_full.transpose(0, 1, 3, 2) / np.sqrt(d_k)
+S = np.where(np.triu(np.ones((T, T), dtype=bool), k=1), -np.inf, S)
+out = softmax(S) @ V_full
+print("Q", Q.shape, " cached K", K.shape, " output", out.shape)
+
+
+def kv_cache_bytes(L, T, kv_heads, d_k, bytes_per_number=2):
+    return 2 * L * T * kv_heads * d_k * bytes_per_number
+
+
+L, T_ctx, heads, d_k = 32, 8192, 32, 128
+for name, kv in [("MHA", heads), ("GQA (8 KV heads)", 8), ("MQA", 1)]:
+    gb = kv_cache_bytes(L, T_ctx, kv, d_k) / 1e9
+    print(f"{name:17} KV cache per request: {gb:.2f} GB")
+
+# Output:
+# Q (1, 8, 6, 16)  cached K (1, 2, 6, 16)  output (1, 8, 6, 16)
+# MHA               KV cache per request: 4.29 GB
+# GQA (8 KV heads)  KV cache per request: 1.07 GB
+# MQA               KV cache per request: 0.13 GB</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q4</span>What does the causal mask do, and why does training still run in parallel?</h4><ul><li>It sets the scores for later positions to −∞ before softmax, so position <span class="tex">t</span> only sees positions ≤ <span class="tex">t</span>.</li><li>Training feeds the true text (teacher forcing) and predicts every next token in one pass; the mask makes every position’s prediction honest.</li><li>It matches generation, where the future does not exist yet.</li><li>It is also why the KV cache is exact: earlier positions never change when tokens are appended.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="attention"></a>, <a class="xref" data-ref="training"></a></p></div>
-<div class="qa"><h4 class="q"><span class="qn">Q5</span>Why do Transformers need positional encodings? What options exist?</h4><ul><li>Attention without a mask treats its input as a set: shuffle the tokens and the outputs shuffle with them. Order must be supplied.</li><li><b>Sinusoidal</b> (2017 paper): fixed waves of different frequencies added to the embeddings.</li><li><b>Learned absolute</b> (GPT-2): a trainable table, one row per position, with a hard maximum length.</li><li><b>RoPE</b> (rotary): rotates queries and keys by a position-dependent angle so <span class="tex">q\cdot k</span> depends on the relative offset. Common in recent open models; context can be extended by rescaling its frequencies.</li><li><b>ALiBi</b>: adds a distance-proportional penalty to attention scores.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="position"></a></p></div>
-<div class="qa"><h4 class="q"><span class="qn">Q6</span>Why residual connections and LayerNorm? Pre-norm or post-norm?</h4><ul><li><b>Residual</b> (<span class="tex">x+f(x)</span>): layers learn corrections; the gradient has a path to early layers that bypasses all weights, so deep stacks train.</li><li><b>LayerNorm</b>: resets each token vector to mean 0 and spread 1, plus a learned scale and shift, so activations do not drift.</li><li><b>Post-norm</b> (2017): normalise after the add. <b>Pre-norm</b> (GPT-style): normalise a copy before each sublayer; easier to train at depth.</li><li><b>RMSNorm</b>, used in many recent models, drops the mean subtraction and the bias: cheaper and about as good.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="block"></a>, <a class="xref" data-ref="paper"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q5</span>Why do Transformers need positional encodings? What options exist?</h4><ul><li>Attention without a mask treats its input as a set: shuffle the tokens and the outputs shuffle with them. Order must be supplied.</li><li><b>Sinusoidal</b> (2017 paper): fixed waves of different frequencies added to the embeddings.</li><li><b>Learned absolute</b> (GPT-2): a trainable table, one row per position, with a hard maximum length.</li><li><b>RoPE</b> (rotary): rotates queries and keys by a position-dependent angle so <span class="tex">q\cdot k</span> depends on the relative offset. Common in recent open models; context can be extended by rescaling its frequencies.</li><li><b>ALiBi</b>: adds a distance-proportional penalty to attention scores.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="position"></a></p><details class="callout code opt" open><summary>In Python: rotary position embedding (RoPE)</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def rope(x, t, base=10000):
+    """Rotate each pair of dimensions (2i, 2i+1) by the angle t * theta_i."""
+    d = x.shape[-1]
+    theta = base ** (-2 * np.arange(d // 2) / d)   # one speed per pair
+    cos, sin = np.cos(t * theta), np.sin(t * theta)
+    x1, x2 = x[0::2], x[1::2]
+    out = np.empty_like(x)
+    out[0::2] = x1 * cos - x2 * sin
+    out[1::2] = x1 * sin + x2 * cos
+    return out
+
+
+rng = np.random.default_rng(0)
+q, k = rng.normal(size=8), rng.normal(size=8)
+
+# The score depends only on the offset between the two positions
+print("q at 5,  k at 3 :", round(rope(q, 5) @ rope(k, 3), 6))
+print("q at 12, k at 10:", round(rope(q, 12) @ rope(k, 10), 6))
+print("q at 12, k at 3 :", round(rope(q, 12) @ rope(k, 3), 6))
+
+# A rotation never changes a vector's length
+print("length kept:", np.isclose(np.linalg.norm(rope(q, 7)), np.linalg.norm(q)))
+
+# Output:
+# q at 5,  k at 3 : -1.763129
+# q at 12, k at 10: -1.763129
+# q at 12, k at 3 : -1.417411
+# length kept: True</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q6</span>Why residual connections and LayerNorm? Pre-norm or post-norm?</h4><ul><li><b>Residual</b> (<span class="tex">x+f(x)</span>): layers learn corrections; the gradient has a path to early layers that bypasses all weights, so deep stacks train.</li><li><b>LayerNorm</b>: resets each token vector to mean 0 and spread 1, plus a learned scale and shift, so activations do not drift.</li><li><b>Post-norm</b> (2017): normalise after the add. <b>Pre-norm</b> (GPT-style): normalise a copy before each sublayer; easier to train at depth.</li><li><b>RMSNorm</b>, used in many recent models, drops the mean subtraction and the bias: cheaper and about as good.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="block"></a>, <a class="xref" data-ref="paper"></a></p><details class="callout code opt" open><summary>In Python: RMSNorm next to LayerNorm</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def layer_norm(x, gamma=1.0, beta=0.0, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    return gamma * (x - mu) / np.sqrt(x.var(axis=-1, keepdims=True) + eps) + beta
+
+
+def rms_norm(x, gamma=1.0, eps=1e-5):
+    # No mean subtraction and no beta: divide by the root mean square
+    rms = np.sqrt((x ** 2).mean(axis=-1, keepdims=True) + eps)
+    return gamma * x / rms
+
+
+x = np.array([2.0, 4.0, 6.0, 8.0])
+print("LayerNorm:", layer_norm(x).round(4))
+print("RMSNorm:  ", rms_norm(x).round(4))
+
+# On a vector that already has mean 0 the two agree
+x0 = x - x.mean()
+print("same when the mean is 0:", np.allclose(layer_norm(x0), rms_norm(x0)))
+
+# Output:
+# LayerNorm: [-1.3416 -0.4472  0.4472  1.3416]
+# RMSNorm:   [0.3651 0.7303 1.0954 1.4606]
+# same when the mean is 0: True</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q7</span>What is the cost of attention, and how do models handle long context?</h4><ul><li>Compute grows as <span class="tex">T^2 d_{\text{model}}</span>; a naive implementation stores a <span class="tex">T\times T</span> score matrix per head.</li><li><b>FlashAttention</b>: exact attention computed in tiles held in fast on-chip memory, never storing the full matrix. Same result, much less memory traffic, faster.</li><li><b>Approximate or restricted</b> attention: sliding windows, sparse patterns.</li><li>At inference, the KV cache grows linearly with <span class="tex">T</span>: GQA, paged KV memory and KV quantization address that.</li><li>Quality also matters: models often use information in the middle of a long context less reliably than at the start or end.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="why"></a>, <a class="xref" data-ref="inference"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q8</span>Encoder-only, decoder-only, encoder–decoder: when would you use each?</h4><ul><li><b>Encoder-only</b> (BERT family): bidirectional; classification, tagging, and embedding models for search.</li><li><b>Decoder-only</b> (GPT family): causal; generation and general-purpose assistants. The dominant LLM design.</li><li><b>Encoder–decoder</b> (T5, the 2017 model): a separate input and output, linked by cross-attention; translation and summarisation.</li><li>A decoder-only model can do seq2seq tasks by putting input and output in one sequence.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="encdec"></a></p></div>
-<div class="qa"><h4 class="q"><span class="qn">Q9</span>What is a mixture of experts (MoE)?</h4><ul><li>The MLP in each block is replaced by many expert MLPs plus a small router.</li><li>The router sends each token to its top-<span class="tex">k</span> experts (often 1 or 2).</li><li>Result: many more total parameters with roughly the compute per token of a much smaller dense model.</li><li>Costs: all experts must sit in memory, an auxiliary loss is needed to balance load across experts, training can be less stable, and serving is more complex.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q9</span>What is a mixture of experts (MoE)?</h4><ul><li>The MLP in each block is replaced by many expert MLPs plus a small router.</li><li>The router sends each token to its top-<span class="tex">k</span> experts (often 1 or 2).</li><li>Result: many more total parameters with roughly the compute per token of a much smaller dense model.</li><li>Costs: all experts must sit in memory, an auxiliary loss is needed to balance load across experts, training can be less stable, and serving is more complex.</li></ul><details class="callout code opt" open><summary>In Python: a mixture-of-experts layer with a top-2 router</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import numpy as np
+
+
+def softmax(z, axis=-1):
+    e = np.exp(z - z.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+rng = np.random.default_rng(0)
+T, d_model, d_ff, n_experts, top_k = 6, 8, 16, 4, 2
+
+W_router = rng.normal(size=(d_model, n_experts))
+experts = [(rng.normal(0, 0.3, size=(d_model, d_ff)),
+            rng.normal(0, 0.3, size=(d_ff, d_model))) for _ in range(n_experts)]
+
+
+def expert_mlp(x, e):
+    W1, W2 = experts[e]
+    return np.maximum(0, x @ W1) @ W2
+
+
+def moe_layer(X):
+    logits = X @ W_router                              # [T, n_experts]
+    chosen = np.argsort(-logits, axis=1)[:, :top_k]    # top-k experts per token
+    out = np.zeros_like(X)
+    for t in range(len(X)):
+        gates = softmax(logits[t, chosen[t]])          # weights over the chosen
+        for g, e in zip(gates, chosen[t]):
+            out[t] += g * expert_mlp(X[t], e)          # only k experts run
+    return out, chosen
+
+
+X = rng.normal(size=(T, d_model))
+out, chosen = moe_layer(X)
+print("output shape:", out.shape)
+print("experts chosen per token:", chosen.tolist())
+print("tokens per expert (load):", np.bincount(chosen.ravel(), minlength=n_experts))
+print(f"each token runs {top_k} of {n_experts} expert MLPs")
+
+# Output:
+# output shape: (6, 8)
+# experts chosen per token: [[0, 2], [0, 2], [0, 2], [1, 0], [1, 3], [1, 3]]
+# tokens per expert (load): [4 3 3 2]
+# each token runs 2 of 4 expert MLPs</code></pre></details></div>
 <h3>Training</h3>
-<div class="qa"><h4 class="q"><span class="qn">Q10</span>What is the pretraining objective? What is perplexity?</h4><ul><li>Next-token prediction with cross-entropy: the average of <span class="tex">-\log p</span>(correct next token) over all positions.</li><li>Self-supervised: the targets are the text itself shifted by one, so any raw text is training data.</li><li><b>Perplexity</b> = <span class="tex">e^{\mathcal{L}}</span>: the effective number of tokens the model is choosing between. Lower is better.</li><li>Sanity check: an untrained model has loss near <span class="tex">\ln n_{\text{vocab}}</span>, perplexity near <span class="tex">n_{\text{vocab}}</span>.</li></ul><p class="fu"><b>Trap:</b> comparing perplexity across models with different tokenizers. The numbers are per token, and tokens differ. <b>Review:</b> <a class="xref" data-ref="training"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q10</span>What is the pretraining objective? What is perplexity?</h4><ul><li>Next-token prediction with cross-entropy: the average of <span class="tex">-\log p</span>(correct next token) over all positions.</li><li>Self-supervised: the targets are the text itself shifted by one, so any raw text is training data.</li><li><b>Perplexity</b> = <span class="tex">e^{\mathcal{L}}</span>: the effective number of tokens the model is choosing between. Lower is better.</li><li>Sanity check: an untrained model has loss near <span class="tex">\ln n_{\text{vocab}}</span>, perplexity near <span class="tex">n_{\text{vocab}}</span>.</li></ul><p class="fu"><b>Trap:</b> comparing perplexity across models with different tokenizers. The numbers are per token, and tokens differ. <b>Review:</b> <a class="xref" data-ref="training"></a></p><details class="callout code opt" open><summary>In Python: perplexity</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import math
+
+p_correct = [0.5, 0.25, 0.9]           # probability given to each true token
+loss = -sum(math.log(p) for p in p_correct) / len(p_correct)
+print(f"loss {loss:.4f}  -&gt;  perplexity {math.exp(loss):.3f}")
+
+# An untrained model guesses uniformly: loss ln(n_vocab), perplexity n_vocab
+n_vocab = 21
+print(f"uniform: loss {math.log(n_vocab):.4f}  -&gt;  perplexity "
+      f"{math.exp(math.log(n_vocab)):.1f}")
+
+# Output:
+# loss 0.7283  -&gt;  perplexity 2.071
+# uniform: loss 3.0445  -&gt;  perplexity 21.0</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q11</span>How does a base model become a chat assistant?</h4><ul><li><b>Pretraining</b> on a very large text corpus: knowledge and language.</li><li><b>Supervised fine-tuning (SFT)</b> on prompt–response examples: follows instructions, uses a chat format.</li><li><b>Preference tuning</b> (RLHF or DPO) on pairs of better and worse answers: helpfulness, tone, safety.</li><li>Throughout: evaluation, red-teaming, safety data. Some models add training for reasoning or tool use.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-ft"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q12</span>Why AdamW, warm-up and gradient clipping?</h4><ul><li><b>Adam</b> keeps running averages of each parameter’s gradient and squared gradient, giving every parameter its own step size.</li><li><b>AdamW</b> applies weight decay directly to the weights, separate from the adaptive step.</li><li><b>Warm-up</b>: early gradients are noisy and Adam’s estimates are poor, so the learning rate starts small, then decays.</li><li><b>Gradient clipping</b> caps the gradient norm, preventing one bad batch from causing a loss spike.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="training"></a>, <a class="xref" data-ref="paper"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q13</span>The loss curve misbehaves. How do you diagnose it?</h4><ul><li><b>Loss spikes or NaN</b>: learning rate too high, missing warm-up, bad data batch, precision overflow. Lower the LR, clip gradients, use bf16, inspect the batch.</li><li><b>Flat from the start</b>: bug. Overfit one small batch first; check that labels are shifted and that the mask is right.</li><li><b>Train falls, validation rises</b>: overfitting. More data, dropout or weight decay, early stopping.</li><li><b>Both plateau high</b>: model too small or LR too low.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="training"></a></p></div>
@@ -1968,7 +3065,6 @@ select.dd-native{display:none}
 <section class="ch" id="iv-rag" data-title="Interview prep: RAG and embeddings">
 <div class="num">SECTION 16 · PART E: INTERVIEW PREP</div>
 <h2>Interview prep: retrieval-augmented generation (RAG) and embeddings</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="done">8 Model</a><i aria-hidden="true"></i><a href="#training" class="done">9 Train</a><a href="#generation" class="done">10 Generate</a><a href="#inference" class="done">11 Serve</a><a href="#scaling" class="done">12 Scale</a><i aria-hidden="true"></i><a href="#encdec" class="done">13 Enc–dec</a><a href="#paper" class="done">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core" class="done">15 Q: Core</a><a href="#iv-rag" class="here" aria-current="step">16 Q: RAG</a><a href="#iv-ft">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <p>RAG means fetching relevant text at question time and placing it in the prompt, so that the model answers from your documents and not from memory. It is the most common architecture in applied LLM work, and interviewers expect you to discuss each stage and how to evaluate it.</p>
 <div class="flow" role="img" aria-label="Diagram: offline, documents are chunked, embedded and indexed. Online, the query is embedded, the top chunks are retrieved and reranked, placed in the prompt, and the LLM answers with citations.">
   <div><b>Offline</b><small>documents → chunk → embed → index</small></div><i>·</i>
@@ -1979,12 +3075,100 @@ select.dd-native{display:none}
 </div>
 <h3>Concepts</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q1</span>What is RAG, and when would you choose it over fine-tuning?</h4><ul><li>Retrieve relevant passages for each query and include them in the prompt.</li><li>Use RAG for <b>knowledge</b>: private, changing or very large document sets. Updating means re-indexing, not retraining.</li><li>Gives <b>citations</b> and lets you enforce <b>access control</b> per user.</li><li>Use fine-tuning for <b>behaviour</b>: format, style, tone, domain phrasing. The two combine well.</li></ul><p class="fu"><b>Trap:</b> “fine-tune the model on our docs so it knows them.” Fine-tuning is unreliable for adding facts and cannot cite or be updated cheaply.</p></div>
-<div class="qa"><h4 class="q"><span class="qn">Q2</span>What is an embedding model, and how is similarity measured?</h4><ul><li>A model, often encoder-only, that maps a text to one vector; trained contrastively so related texts land close together.</li><li>Similarity is usually <b>cosine similarity</b> (a dot product of normalised vectors).</li><li><b>Bi-encoder</b>: query and documents are embedded separately, so document vectors are computed once and search is fast.</li><li>Different from the token embeddings inside an LLM: one vector per text, not per token.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="tokens"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q2</span>What is an embedding model, and how is similarity measured?</h4><ul><li>A model, often encoder-only, that maps a text to one vector; trained contrastively so related texts land close together.</li><li>Similarity is usually <b>cosine similarity</b> (a dot product of normalised vectors).</li><li><b>Bi-encoder</b>: query and documents are embedded separately, so document vectors are computed once and search is fast.</li><li>Different from the token embeddings inside an LLM: one vector per text, not per token.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="tokens"></a></p><details class="callout code opt" open><summary>In Python: cosine similarity search</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import re
+import numpy as np
+
+docs = [
+    "Reset your password from the account settings page.",
+    "Expense claims must be filed within 30 days of purchase.",
+    "The VPN client needs to be updated before connecting.",
+    "Annual leave requests go to your line manager for approval.",
+    "Forgotten password? Use the self-service reset link.",
+]
+words = lambda text: re.findall(r"[a-z0-9]+", text.lower())
+vocab = sorted({w for d in docs for w in words(d)})
+
+
+def embed(text):
+    # Word counts stand in for a real embedding model here; the search code
+    # below is the same whichever model produces the vectors.
+    v = np.array([words(text).count(w) for w in vocab], dtype=float)
+    return v / (np.linalg.norm(v) or 1.0)          # normalise to length 1
+
+
+doc_vectors = np.stack([embed(d) for d in docs])   # computed once, offline
+
+
+def search(query, k=2):
+    scores = doc_vectors @ embed(query)            # cosine = dot of unit vectors
+    best = np.argsort(-scores)[:k]
+    return [(round(float(scores[i]), 3), docs[i]) for i in best]
+
+
+for score, doc in search("how do I reset my password"):
+    print(score, doc)
+
+# Output:
+# 0.5 Reset your password from the account settings page.
+# 0.5 Forgotten password? Use the self-service reset link.</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q3</span>How do you chunk documents?</h4><ul><li>Chunk size trades precision against context: small chunks match precisely but lose surrounding meaning; large chunks dilute the embedding and waste prompt space.</li><li>A common start: a few hundred tokens with some overlap, then tune on your eval.</li><li>Split on structure (headings, paragraphs, code blocks, table rows), not at a fixed character count.</li><li>Attach metadata: title, section path, date, source URL, permissions.</li><li><b>Parent–child</b>: retrieve small chunks, pass their larger parent section to the model.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q4</span>How does vector search scale to millions of chunks?</h4><ul><li>Exact search compares the query to every vector: too slow at scale.</li><li><b>Approximate nearest neighbour</b> (ANN) indexes trade a little recall for large speed-ups: <b>HNSW</b> (navigable graph), <b>IVF</b> (search only nearby clusters), <b>PQ</b> (compressed vectors).</li><li>Filter on metadata (permissions, date, product) during search.</li><li>Tooling ranges from pgvector or FAISS to dedicated vector databases; choose by scale, filtering needs and operations effort.</li></ul></div>
-<div class="qa"><h4 class="q"><span class="qn">Q5</span>Why hybrid search and reranking?</h4><ul><li>Embeddings capture meaning but miss exact strings: error codes, product IDs, names. <b>Keyword search (BM25)</b> catches those.</li><li>Run both and merge the lists, for example with <b>reciprocal rank fusion</b>.</li><li>A <b>cross-encoder reranker</b> reads query and passage together: much more accurate than a bi-encoder, but too slow for the whole corpus, so apply it to the top 20 to 100.</li><li>Then send only the best few passages to the LLM.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q5</span>Why hybrid search and reranking?</h4><ul><li>Embeddings capture meaning but miss exact strings: error codes, product IDs, names. <b>Keyword search (BM25)</b> catches those.</li><li>Run both and merge the lists, for example with <b>reciprocal rank fusion</b>.</li><li>A <b>cross-encoder reranker</b> reads query and passage together: much more accurate than a bi-encoder, but too slow for the whole corpus, so apply it to the top 20 to 100.</li><li>Then send only the best few passages to the LLM.</li></ul><details class="callout code opt" open><summary>In Python: reciprocal rank fusion</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>from collections import defaultdict
+
+
+def reciprocal_rank_fusion(rankings, k=60):
+    """Merge ranked lists: each list adds 1 / (k + rank) to a document."""
+    scores = defaultdict(float)
+    for ranking in rankings:
+        for rank, doc_id in enumerate(ranking, start=1):
+            scores[doc_id] += 1 / (k + rank)
+    return sorted(scores, key=scores.get, reverse=True)
+
+
+vector_hits = ["doc7", "doc2", "doc9", "doc4"]   # semantic search order
+keyword_hits = ["doc4", "doc7", "doc1"]          # BM25 order (exact terms)
+
+print(reciprocal_rank_fusion([vector_hits, keyword_hits]))
+
+# Output:
+# ['doc7', 'doc4', 'doc2', 'doc9', 'doc1']</code></pre></details></div>
 <h3>Quality and evaluation</h3>
-<div class="qa"><h4 class="q"><span class="qn">Q6</span>How do you evaluate a RAG system?</h4><ul><li>Evaluate <b>retrieval</b> and <b>generation</b> separately, so you know which stage to fix.</li><li>Retrieval: label which chunks answer each query; measure <b>recall@k</b>, <b>MRR</b>, <b>nDCG</b>.</li><li>Generation: <b>faithfulness</b> (every claim supported by the retrieved context), <b>answer relevance</b>, <b>correctness</b> against a reference answer.</li><li>Build the test set from real user questions plus hard cases; score with an LLM judge using a rubric, calibrated against human labels.</li><li>Re-run on every change: chunking, embedder, prompt, model.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-prod"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q6</span>How do you evaluate a RAG system?</h4><ul><li>Evaluate <b>retrieval</b> and <b>generation</b> separately, so you know which stage to fix.</li><li>Retrieval: label which chunks answer each query; measure <b>recall@k</b>, <b>MRR</b>, <b>nDCG</b>.</li><li>Generation: <b>faithfulness</b> (every claim supported by the retrieved context), <b>answer relevance</b>, <b>correctness</b> against a reference answer.</li><li>Build the test set from real user questions plus hard cases; score with an LLM judge using a rubric, calibrated against human labels.</li><li>Re-run on every change: chunking, embedder, prompt, model.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-prod"></a></p><details class="callout code opt" open><summary>In Python: recall@k and MRR</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>def recall_at_k(retrieved, relevant, k):
+    """Share of the relevant chunks that appear in the top k."""
+    return len(set(retrieved[:k]) &amp; relevant) / len(relevant)
+
+
+def reciprocal_rank(retrieved, relevant):
+    """1 / position of the first relevant chunk (0 if none was found)."""
+    for rank, doc_id in enumerate(retrieved, start=1):
+        if doc_id in relevant:
+            return 1 / rank
+    return 0.0
+
+
+# One labelled test query per row: what was retrieved, and what is correct
+eval_set = [
+    (["c3", "c8", "c1", "c5"], {"c1"}),
+    (["c2", "c4", "c9", "c7"], {"c2", "c7"}),
+    (["c6", "c5", "c0", "c3"], {"c4"}),
+]
+
+for k in (1, 3):
+    mean = sum(recall_at_k(r, rel, k) for r, rel in eval_set) / len(eval_set)
+    print(f"recall@{k} = {mean:.3f}")
+mrr = sum(reciprocal_rank(r, rel) for r, rel in eval_set) / len(eval_set)
+print(f"MRR      = {mrr:.3f}")
+
+# Output:
+# recall@1 = 0.167
+# recall@3 = 0.500
+# MRR      = 0.444</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q7</span>Name common RAG failure modes and fixes.</h4><ul><li><b>Right passage not retrieved</b>: improve chunking, add hybrid search, rewrite the query, try a better or domain-tuned embedder.</li><li><b>Retrieved but ignored</b>: too many passages, or the key one buried in the middle. Rerank, send fewer, put the best first.</li><li><b>Answers beyond the context</b>: instruct the model to use only the context, allow “I don’t know”, require citations, check faithfulness.</li><li><b>Stale or conflicting sources</b>: date metadata, de-duplication, prefer the newest.</li><li><b>Multi-part questions</b>: decompose into sub-queries, or retrieve iteratively.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q8</span>How do you handle follow-up questions in a conversation?</h4><ul><li>“What about the second one?” retrieves nothing useful on its own.</li><li><b>Rewrite</b> the latest message into a standalone query using the chat history, then retrieve.</li><li>Other query techniques: generate several query variants; <b>HyDE</b> (write a hypothetical answer and embed that); decompose complex questions.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q9</span>Context windows are huge now. Is RAG still needed?</h4><ul><li>Long context removes the need to retrieve for small, static document sets.</li><li>But cost and latency grow with prompt length, quality drops as irrelevant text is added, and corpora often exceed any window.</li><li>RAG also gives per-user access control and fresh data.</li><li>Common middle ground: retrieve generously, rerank, and let the long context hold more; use prompt caching for content that repeats.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="inference"></a></p></div>
@@ -1996,7 +3180,6 @@ select.dd-native{display:none}
 <section class="ch" id="iv-ft" data-title="Interview prep: fine-tuning and alignment">
 <div class="num">SECTION 17 · PART E: INTERVIEW PREP</div>
 <h2>Interview prep: fine-tuning and alignment</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="done">8 Model</a><i aria-hidden="true"></i><a href="#training" class="done">9 Train</a><a href="#generation" class="done">10 Generate</a><a href="#inference" class="done">11 Serve</a><a href="#scaling" class="done">12 Scale</a><i aria-hidden="true"></i><a href="#encdec" class="done">13 Enc–dec</a><a href="#paper" class="done">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core" class="done">15 Q: Core</a><a href="#iv-rag" class="done">16 Q: RAG</a><a href="#iv-ft" class="here" aria-current="step">17 Q: Tuning</a><a href="#iv-agents">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <p>Fine-tuning continues training a pretrained model on a smaller, targeted dataset. Interviewers want to know when it is the right tool, how parameter-efficient methods work, and how chat models are aligned with human preferences.</p>
 <div class="flow" role="img" aria-label="Diagram: a pretrained base model goes through supervised fine-tuning, then preference tuning, producing an aligned assistant.">
   <div><b>Base model</b><small>next-token pretraining</small></div><i>→</i>
@@ -2006,14 +3189,146 @@ select.dd-native{display:none}
 </div>
 <h3>When and how</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q1</span>Prompting, RAG or fine-tuning: how do you decide?</h4><ul><li>Start with <b>prompting</b>: cheapest, fastest to iterate, establishes a baseline on your eval.</li><li>Add <b>RAG</b> when the gap is missing knowledge.</li><li><b>Fine-tune</b> when the gap is behaviour: consistent format or style, domain jargon, a narrow task done cheaply by a smaller model, or prompts that have grown too long.</li><li>Fine-tuning brings data collection, training, evaluation and maintenance costs; justify it with eval numbers.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-rag"></a></p></div>
-<div class="qa"><h4 class="q"><span class="qn">Q2</span>What is supervised fine-tuning (SFT)?</h4><ul><li>Train on (prompt, ideal response) pairs with the usual next-token loss.</li><li>The loss is usually computed only on the response tokens; prompt tokens are masked out.</li><li>Use the model’s own chat template exactly, or behaviour degrades.</li><li>Quality beats quantity: a few hundred to a few thousand clean, consistent examples often suffice for format and style.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="training"></a></p></div>
-<div class="qa"><h4 class="q"><span class="qn">Q3</span>Full fine-tuning versus LoRA. How does LoRA work?</h4><ul><li><b>Full fine-tuning</b> updates every weight. Memory holds weights, gradients and optimizer state: roughly 16 bytes per parameter with Adam in mixed precision.</li><li><b>LoRA</b> freezes each chosen weight matrix <span class="tex">W</span> and learns a low-rank update: <span class="tex">W'=W+\tfrac{\alpha}{r}BA</span>, with rank <span class="tex">r</span> much smaller than the matrix sides.</li><li>Trainable parameters per matrix: <span class="tex">r\,(d_{\text{in}}+d_{\text{out}})</span>, often well under 1% of the model.</li><li><span class="tex">B</span> starts at zero, so training starts from the original model.</li><li>After training, <span class="tex">BA</span> can be merged into <span class="tex">W</span> (no extra latency), or kept as a swappable per-task adapter.</li></ul><p class="fu"><b>Likely follow-up:</b> “Which matrices get adapters?” Originally the attention projections; applying it to all linear layers often works better. <b>Review:</b> <a class="xref" data-ref="block"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q2</span>What is supervised fine-tuning (SFT)?</h4><ul><li>Train on (prompt, ideal response) pairs with the usual next-token loss.</li><li>The loss is usually computed only on the response tokens; prompt tokens are masked out.</li><li>Use the model’s own chat template exactly, or behaviour degrades.</li><li>Quality beats quantity: a few hundred to a few thousand clean, consistent examples often suffice for format and style.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="training"></a></p><details class="callout code opt" open><summary>In Python: masking the prompt out of the SFT loss</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import torch
+import torch.nn.functional as F
+
+torch.manual_seed(0)
+
+# A character "tokenizer" keeps the example self-contained
+prompt, response = "Q: 2+2? A:", " 4"
+chars = sorted(set(prompt + response))
+ids = torch.tensor([chars.index(c) for c in prompt + response])
+
+# Labels: copy the inputs, then hide the prompt with -100 (ignored by the loss)
+labels = ids.clone()
+labels[:len(prompt)] = -100
+
+# Random logits stand in for a model's output: [T, n_vocab]
+logits = torch.randn(len(ids), len(chars))
+
+# Position t predicts token t+1, so shift logits and labels by one
+loss = F.cross_entropy(logits[:-1], labels[1:], ignore_index=-100)
+full = F.cross_entropy(logits[:-1], ids[1:])
+
+counted = (labels[1:] != -100).sum().item()
+print(f"positions in the loss: {counted} of {len(ids) - 1} (response only)")
+print(f"masked loss {loss.item():.4f}   unmasked loss {full.item():.4f}")
+
+# Check: the masked loss is the mean over response positions only
+manual = -F.log_softmax(logits[:-1], dim=-1)[torch.arange(len(ids) - 1), ids[1:]]
+print("matches manual mean:", torch.isclose(loss, manual[len(prompt) - 1:].mean()).item())
+
+# Output (exact numbers can differ slightly between PyTorch versions):
+# positions in the loss: 2 of 11 (response only)
+# masked loss 3.1089   unmasked loss 2.5491
+# matches manual mean: True</code></pre></details></div>
+<div class="qa"><h4 class="q"><span class="qn">Q3</span>Full fine-tuning versus LoRA. How does LoRA work?</h4><ul><li><b>Full fine-tuning</b> updates every weight. Memory holds weights, gradients and optimizer state: roughly 16 bytes per parameter with Adam in mixed precision.</li><li><b>LoRA</b> freezes each chosen weight matrix <span class="tex">W</span> and learns a low-rank update: <span class="tex">W'=W+\tfrac{\alpha}{r}BA</span>, with rank <span class="tex">r</span> much smaller than the matrix sides.</li><li>Trainable parameters per matrix: <span class="tex">r\,(d_{\text{in}}+d_{\text{out}})</span>, often well under 1% of the model.</li><li><span class="tex">B</span> starts at zero, so training starts from the original model.</li><li>After training, <span class="tex">BA</span> can be merged into <span class="tex">W</span> (no extra latency), or kept as a swappable per-task adapter.</li></ul><p class="fu"><b>Likely follow-up:</b> “Which matrices get adapters?” Originally the attention projections; applying it to all linear layers often works better. <b>Review:</b> <a class="xref" data-ref="block"></a></p><details class="callout code opt" open><summary>In Python: a LoRA layer</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import torch
+import torch.nn as nn
+
+torch.manual_seed(0)
+
+
+class LoRALinear(nn.Module):
+    """W' = W + (alpha / r) * B A, with W frozen and only A, B trained."""
+
+    def __init__(self, base: nn.Linear, r=4, alpha=8):
+        super().__init__()
+        self.base = base
+        self.base.requires_grad_(False)                      # freeze W and b
+        self.A = nn.Parameter(torch.randn(r, base.in_features) * 0.01)
+        self.B = nn.Parameter(torch.zeros(base.out_features, r))  # starts at 0
+        self.scale = alpha / r
+
+    def forward(self, x):
+        return self.base(x) + (x @ self.A.T @ self.B.T) * self.scale
+
+    def merged(self) -&gt; nn.Linear:
+        """Fold B A into W: no extra cost at inference time."""
+        out = nn.Linear(self.base.in_features, self.base.out_features)
+        with torch.no_grad():
+            out.weight.copy_(self.base.weight + self.scale * self.B @ self.A)
+            out.bias.copy_(self.base.bias)
+        return out
+
+
+base = nn.Linear(512, 512)              # PyTorch stores W as [out, in]
+layer = LoRALinear(base, r=4)
+x = torch.randn(3, 512)
+print("same output as base at start:", torch.allclose(layer(x), base(x)))
+
+trainable = sum(p.numel() for p in layer.parameters() if p.requires_grad)
+print(f"trainable {trainable:,} of {trainable + base.weight.numel():,} weights",
+      f"= r * (d_in + d_out) = {4 * (512 + 512):,}")
+
+# A few training steps on a made-up target; only A and B change
+opt = torch.optim.AdamW([layer.A, layer.B], lr=1e-2)
+target = torch.randn(3, 512)
+for _ in range(20):
+    loss = ((layer(x) - target) ** 2).mean()
+    opt.zero_grad()
+    loss.backward()
+    opt.step()
+print("base weights unchanged:", torch.equal(layer.base.weight, base.weight))
+print("merged layer matches adapter:",
+      torch.allclose(layer.merged()(x), layer(x), atol=1e-5))
+
+# Output (exact numbers can differ slightly between PyTorch versions):
+# same output as base at start: True
+# trainable 4,096 of 266,240 weights = r * (d_in + d_out) = 4,096
+# base weights unchanged: True
+# merged layer matches adapter: True</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q4</span>What is QLoRA?</h4><ul><li>The frozen base model is stored in 4-bit precision (the NF4 format); LoRA adapters are trained in higher precision.</li><li>Gradients flow through the dequantised base weights into the adapters.</li><li>Makes fine-tuning large models possible on a single GPU, at a small quality cost.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="scaling"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q5</span>What can go wrong in fine-tuning?</h4><ul><li><b>Overfitting</b>: small datasets overfit within a few epochs. Hold out data, watch validation loss, usually 1 to 3 epochs.</li><li><b>Catastrophic forgetting</b>: general abilities degrade. Use a lower learning rate, LoRA, or mix in general data; test general skills, not only the target task.</li><li><b>Learning rate</b>: LoRA typically uses a higher LR than full fine-tuning.</li><li><b>Data problems</b>: inconsistent formats, duplicates, leakage of test items into training.</li><li><b>No baseline</b>: always compare against the best prompt-only result on the same eval.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="training"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q6</span>How would you build a fine-tuning dataset?</h4><ul><li>Start from real inputs: logs or user requests (with consent and PII handling).</li><li>Write or collect ideal outputs; stronger models can draft synthetic data, then humans review it (check the provider’s terms).</li><li>Clean, de-duplicate, use one format, and cover edge cases and refusals.</li><li>Split off an evaluation set <b>before</b> training and never train on it.</li></ul></div>
 <h3>Alignment</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q7</span>Explain RLHF.</h4><ul><li>Collect human comparisons: for one prompt, which of two responses is better.</li><li>Train a <b>reward model</b> to predict those preferences.</li><li>Optimise the policy (the LLM) with reinforcement learning, classically PPO, to maximise reward.</li><li>Add a <b>KL penalty</b> that keeps the policy close to the SFT model.</li><li>Effective but complex: several models in memory, sensitive hyperparameters, unstable training.</li></ul></div>
-<div class="qa"><h4 class="q"><span class="qn">Q8</span>What is DPO, and why is it popular?</h4><ul><li>Direct Preference Optimization trains directly on preference pairs (chosen, rejected).</li><li>Its loss raises the probability of the chosen response relative to the rejected one, measured against a frozen reference model.</li><li>No separate reward model and no RL loop: simpler and more stable, similar results in many settings.</li><li>Many variants exist; the core idea is preference learning as a classification-style loss.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q8</span>What is DPO, and why is it popular?</h4><ul><li>Direct Preference Optimization trains directly on preference pairs (chosen, rejected).</li><li>Its loss raises the probability of the chosen response relative to the rejected one, measured against a frozen reference model.</li><li>No separate reward model and no RL loop: simpler and more stable, similar results in many settings.</li><li>Many variants exist; the core idea is preference learning as a classification-style loss.</li></ul><details class="callout code opt" open><summary>In Python: the DPO loss</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import torch
+import torch.nn.functional as F
+
+
+def sequence_logprob(logits, labels):
+    """Sum of log p(token) over a response. logits [T, V], labels [T]."""
+    logp = F.log_softmax(logits, dim=-1)
+    return logp[torch.arange(len(labels)), labels].sum()
+
+
+def dpo_loss(pi_chosen, pi_rejected, ref_chosen, ref_rejected, beta=0.1):
+    """Inputs are summed log-probabilities of whole responses, shape [batch]."""
+    margin = (pi_chosen - ref_chosen) - (pi_rejected - ref_rejected)
+    return -F.logsigmoid(beta * margin).mean()
+
+
+torch.manual_seed(0)
+logits, labels = torch.randn(5, 10), torch.randint(0, 10, (5,))
+print(f"log p(response) = {sequence_logprob(logits, labels).item():.3f}")
+
+ref_c, ref_r = torch.tensor([-12.0]), torch.tensor([-11.0])  # frozen reference
+
+# Policy equal to the reference: loss = ln 2
+print(f"policy = reference: {dpo_loss(ref_c, ref_r, ref_c, ref_r).item():.4f}")
+
+# Policy now prefers the chosen answer more than the reference does
+pi_c, pi_r = torch.tensor([-9.0]), torch.tensor([-14.0])
+print(f"policy prefers chosen: {dpo_loss(pi_c, pi_r, ref_c, ref_r).item():.4f}")
+
+# The gradient raises the chosen log-prob and lowers the rejected one
+pi_c = torch.tensor([-12.0], requires_grad=True)
+pi_r = torch.tensor([-11.0], requires_grad=True)
+dpo_loss(pi_c, pi_r, ref_c, ref_r).backward()
+print(f"step direction: chosen {-pi_c.grad.item():+.3f}, "
+      f"rejected {-pi_r.grad.item():+.3f}")
+
+# Output (exact numbers can differ slightly between PyTorch versions):
+# log p(response) = -13.736
+# policy = reference: 0.6931
+# policy prefers chosen: 0.4375
+# step direction: chosen +0.050, rejected -0.050</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q9</span>What is reward hacking, and why the KL penalty?</h4><ul><li>The policy finds outputs the reward model scores highly but people do not actually prefer: excess length, flattery, confident tone.</li><li>The KL penalty limits how far the policy moves from the reference model, restraining that exploitation.</li><li>Related symptom: <b>sycophancy</b>, agreeing with the user rather than being correct.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q10</span>What is distillation?</h4><ul><li>Train a small <b>student</b> model on the outputs (or the full probability distributions) of a larger <b>teacher</b>.</li><li>Gives most of the teacher’s quality on the target task at a fraction of the serving cost.</li><li>The student rarely exceeds the teacher on that task; check licence terms before distilling from a commercial model.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="scaling"></a></p></div>
 <div class="wrapup"><p class="bridge"><b>Next:</b> A fine-tuned or base model still only produces text. <a class="xref" data-ref="iv-agents"></a> covers models that take actions.</p></div>
@@ -2023,7 +3338,6 @@ select.dd-native{display:none}
 <section class="ch" id="iv-agents" data-title="Interview prep: agents and tool use">
 <div class="num">SECTION 18 · PART E: INTERVIEW PREP</div>
 <h2>Interview prep: agents and tool use</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="done">8 Model</a><i aria-hidden="true"></i><a href="#training" class="done">9 Train</a><a href="#generation" class="done">10 Generate</a><a href="#inference" class="done">11 Serve</a><a href="#scaling" class="done">12 Scale</a><i aria-hidden="true"></i><a href="#encdec" class="done">13 Enc–dec</a><a href="#paper" class="done">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core" class="done">15 Q: Core</a><a href="#iv-rag" class="done">16 Q: RAG</a><a href="#iv-ft" class="done">17 Q: Tuning</a><a href="#iv-agents" class="here" aria-current="step">18 Q: Agents</a><a href="#iv-prod">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <p>An agent is an LLM running in a loop: it decides on an action, your code executes it, the result is fed back, and the loop continues until the task is done. Interviewers probe whether you know when an agent is justified, how tool calling works, and how agents fail.</p>
 <div class="flow" role="img" aria-label="Diagram: the user goal goes to the LLM, which emits a tool call; code runs the tool and returns the result to the LLM; the loop repeats until a final answer.">
   <div class="fq"><b>Goal</b><small>user request</small></div><i>→</i>
@@ -2034,11 +3348,118 @@ select.dd-native{display:none}
 </div>
 <h3>Building agents</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q1</span>What is an agent, and when should you not build one?</h4><ul><li>An LLM that chooses its own sequence of actions (tool calls) based on what it observes, until a goal is met.</li><li>A <b>workflow</b> is different: code fixes the steps and calls the LLM at chosen points.</li><li>Prefer the simplest thing that works: one call, then a fixed chain or workflow, then an agent only when the steps cannot be known in advance.</li><li>Agents cost more, are slower and harder to test, and errors compound over steps.</li></ul></div>
-<div class="qa"><h4 class="q"><span class="qn">Q2</span>How does tool (function) calling work?</h4><ul><li>You describe each tool to the model: a name, a description and a JSON schema for its parameters.</li><li>The model replies with a structured call: tool name plus arguments.</li><li><b>Your code</b> validates the arguments, executes the tool and sends back the result; the model never executes anything itself.</li><li>The model then continues: another call, or a final answer.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q2</span>How does tool (function) calling work?</h4><ul><li>You describe each tool to the model: a name, a description and a JSON schema for its parameters.</li><li>The model replies with a structured call: tool name plus arguments.</li><li><b>Your code</b> validates the arguments, executes the tool and sends back the result; the model never executes anything itself.</li><li>The model then continues: another call, or a final answer.</li></ul><details class="callout code opt" open><summary>In Python: a tool-calling loop</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import json
+
+# 1. Describe each tool: name, description and a JSON schema for its arguments
+TOOLS = {
+    "get_order_status": {
+        "description": "Look up the delivery status of an order by its ID.",
+        "parameters": {"type": "object",
+                       "properties": {"order_id": {"type": "string"}},
+                       "required": ["order_id"]},
+        "run": lambda order_id: {"order_id": order_id, "status": "shipped",
+                                 "eta": "2 days"},
+    },
+}
+
+
+def fake_model(messages, tools):
+    """Stands in for an LLM API call. Real providers return the same shape:
+    either a tool call (name + JSON arguments) or a final text answer."""
+    if messages[-1]["role"] == "user":
+        return {"tool_call": {"name": "get_order_status",
+                              "arguments": json.dumps({"order_id": "A-1042"})}}
+    result = json.loads(messages[-1]["content"])
+    return {"text": f"Order {result['order_id']} has {result['status']}; "
+                    f"it should arrive in {result['eta']}."}
+
+
+def validate(args, schema):
+    missing = [k for k in schema["required"] if k not in args]
+    if missing:
+        raise ValueError(f"missing arguments: {missing}")
+
+
+def run_agent(user_message, max_steps=5):
+    messages = [{"role": "user", "content": user_message}]
+    specs = {n: {k: v for k, v in t.items() if k != "run"} for n, t in TOOLS.items()}
+    for step in range(max_steps):                    # always cap the loop
+        reply = fake_model(messages, specs)
+        if "text" in reply:                          # 4. final answer: stop
+            return reply["text"]
+        call = reply["tool_call"]                    # 2. model asks for a tool
+        tool = TOOLS[call["name"]]
+        args = json.loads(call["arguments"])
+        validate(args, tool["parameters"])           # 3. your code checks ...
+        result = tool["run"](**args)                 #    ... and runs it
+        print(f"step {step}: {call['name']}({args}) -&gt; {result}")
+        messages.append({"role": "tool", "content": json.dumps(result)})
+    return "Stopped: step limit reached."
+
+
+print(run_agent("Where is my order A-1042?"))
+
+# Output:
+# step 0: get_order_status({'order_id': 'A-1042'}) -&gt; {'order_id': 'A-1042', 'status': 'shipped', 'eta': '2 days'}
+# Order A-1042 has shipped; it should arrive in 2 days.</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q3</span>What makes a good tool?</h4><ul><li>A clear name and description: the model reads them like documentation.</li><li>A few well-scoped tools instead of many overlapping ones.</li><li>Typed parameters, enums where possible, sensible defaults.</li><li>Concise results and actionable error messages the model can recover from.</li><li>Safe by design: read-only where possible, idempotent, permission-checked. Standards such as the Model Context Protocol (MCP) let one tool server work with many clients.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q4</span>What agent patterns do you know?</h4><ul><li><b>ReAct</b>: alternate reasoning, an action, and the observation it returns.</li><li><b>Plan then execute</b>: draft a plan, then work through its steps, re-planning when needed.</li><li><b>Reflection</b>: the model critiques and revises its own output.</li><li><b>Orchestrator and workers</b>: one agent splits the task and delegates to sub-agents. Useful for independent, parallel subtasks; costs more tokens and coordination.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q5</span>How does an agent remember things?</h4><ul><li><b>Short-term</b>: the context window. Trim, or summarise older turns, as it fills.</li><li><b>Long-term</b>: write facts or past episodes to a store (database, vector index) and retrieve them when relevant.</li><li>Keep authoritative state (orders, tickets, files) in your systems, not in the model’s context.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-rag"></a></p></div>
-<div class="qa"><h4 class="q"><span class="qn">Q6</span>How do you get reliable structured output?</h4><ul><li>Use the provider’s structured-output or JSON mode with a schema.</li><li>Constrained decoding masks out tokens that would break the schema.</li><li>Always validate (for example with a schema library) and retry with the validation error included.</li><li>Keep schemas small and flat; describe each field.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="generation"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q6</span>How do you get reliable structured output?</h4><ul><li>Use the provider’s structured-output or JSON mode with a schema.</li><li>Constrained decoding masks out tokens that would break the schema.</li><li>Always validate (for example with a schema library) and retry with the validation error included.</li><li>Keep schemas small and flat; describe each field.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="generation"></a></p><details class="callout code opt" open><summary>In Python: validate structured output and retry</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import json
+from dataclasses import dataclass
+
+
+@dataclass
+class Ticket:
+    title: str
+    priority: str          # one of PRIORITIES
+    component: str
+
+
+PRIORITIES = {"low", "medium", "high"}
+
+
+def parse_ticket(raw: str) -&gt; Ticket:
+    data = json.loads(raw)                              # may raise on bad JSON
+    missing = {"title", "priority", "component"} - data.keys()
+    if missing:
+        raise ValueError(f"missing fields: {sorted(missing)}")
+    if data["priority"] not in PRIORITIES:
+        raise ValueError(f"priority must be one of {sorted(PRIORITIES)}")
+    return Ticket(data["title"], data["priority"], data["component"])
+
+
+# Stands in for an LLM: two flawed replies, then a valid one
+replies = iter([
+    'Sure! {"title": "Login fails"',                                  # broken
+    '{"title": "Login fails", "priority": "urgent", "component": "auth"}',
+    '{"title": "Login fails", "priority": "high", "component": "auth"}',
+])
+fake_model = lambda prompt: next(replies)
+
+
+def extract_ticket(text, max_attempts=3):
+    prompt = f"Return JSON with title, priority, component for: {text}"
+    for attempt in range(1, max_attempts + 1):
+        raw = fake_model(prompt)
+        try:
+            return parse_ticket(raw)
+        except (json.JSONDecodeError, ValueError) as err:
+            print(f"attempt {attempt} rejected: {err}")
+            prompt += f"\nYour last reply was invalid: {err}. Try again."
+    raise RuntimeError("no valid output")
+
+
+print(extract_ticket("Users cannot log in since this morning's release."))
+
+# Output:
+# attempt 1 rejected: Expecting value: line 1 column 1 (char 0)
+# attempt 2 rejected: priority must be one of ['high', 'low', 'medium']
+# Ticket(title='Login fails', priority='high', component='auth')</code></pre></details></div>
 <h3>Reliability and safety</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q7</span>How do agents fail, and how do you mitigate it?</h4><ul><li><b>Loops</b> and repeated actions: step, time and cost limits; detect repeats.</li><li><b>Wrong tool or invented arguments</b>: clearer tool descriptions, validation, fewer tools.</li><li><b>Errors compound</b> over long tasks: shorter tasks, checkpoints, verification steps.</li><li><b>Context overflow</b>: summarise history, keep tool outputs short.</li><li><b>Stopping too early</b> or claiming success: check the end state with code where possible.</li></ul></div>
 <div class="qa"><h4 class="q"><span class="qn">Q8</span>What are the security risks of agents?</h4><ul><li><b>Prompt injection</b>: web pages, emails or files contain instructions the model may follow. Treat all tool output as untrusted data.</li><li><b>Least privilege</b>: only the tools and permissions the task needs.</li><li><b>Human confirmation</b> for irreversible or outward-facing actions: payments, deletions, sending messages.</li><li><b>Sandbox</b> code execution; keep audit logs of every action.</li><li>Assume an injected instruction will eventually get through, and limit what damage it could do.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-rag"></a></p></div>
@@ -2050,7 +3471,6 @@ select.dd-native{display:none}
 <section class="ch" id="iv-prod" data-title="Interview prep: evaluation and production">
 <div class="num">SECTION 19 · PART E: INTERVIEW PREP</div>
 <h2>Interview prep: evaluation, production and system design</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="done">8 Model</a><i aria-hidden="true"></i><a href="#training" class="done">9 Train</a><a href="#generation" class="done">10 Generate</a><a href="#inference" class="done">11 Serve</a><a href="#scaling" class="done">12 Scale</a><i aria-hidden="true"></i><a href="#encdec" class="done">13 Enc–dec</a><a href="#paper" class="done">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core" class="done">15 Q: Core</a><a href="#iv-rag" class="done">16 Q: RAG</a><a href="#iv-ft" class="done">17 Q: Tuning</a><a href="#iv-agents" class="done">18 Q: Agents</a><a href="#iv-prod" class="here" aria-current="step">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary">20 Glossary</a></nav>
 <p>Mid-level interviews usually include a “how would you ship and run this?” discussion. The questions below cover evaluation, cost, latency, reliability and safety, and end with a worked system-design answer you can adapt.</p>
 <h3>Evaluation</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q1</span>How do you evaluate an LLM feature?</h4><ul><li>Agree on what success means with stakeholders, and turn it into measurable criteria.</li><li>Build an eval set: real user inputs, edge cases, adversarial cases; a reference answer or rubric for each.</li><li>Choose the scorer by output type: exact match or parsing checks for structured output; task metrics; an LLM judge with a rubric for open-ended text; human review for a sample.</li><li>Run it <b>offline</b> on every prompt or model change, like a regression test; measure <b>online</b> after launch (A/B tests, feedback, task completion).</li></ul></div>
@@ -2059,10 +3479,87 @@ select.dd-native{display:none}
 <div class="qa"><h4 class="q"><span class="qn">Q4</span>How do you write and manage prompts?</h4><ul><li>Clear task and role, relevant context, explicit output format, a few examples.</li><li>For complex tasks, ask for step-by-step reasoning, or break the work into several calls.</li><li>Put long documents first and the question and instructions after them.</li><li>Version prompts, review changes like code, and run the eval before each release.</li></ul></div>
 <h3>Production</h3>
 <div class="qa"><h4 class="q"><span class="qn">Q5</span>How do you choose a model?</h4><ul><li>Quality on <b>your</b> eval, not public leaderboards alone.</li><li>Latency (time to first token, tokens per second), price per million input and output tokens, context length, tool-use and multimodal support.</li><li>Data privacy and hosting: a hosted API or self-hosted open weights; licence terms.</li><li>Start with the strongest model to find the quality ceiling, then test cheaper ones; route easy requests to a smaller model.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="scaling"></a></p></div>
-<div class="qa"><h4 class="q"><span class="qn">Q6</span>How do you estimate and reduce cost?</h4><ul><li>Cost ≈ requests × (input tokens × input price + output tokens × output price). Output tokens usually cost more.</li><li>Shorter prompts, capped output length, prompt caching for repeated prefixes, smaller models via routing, batch APIs for offline jobs, caching repeated answers.</li><li>Track cost per request and per user from day one.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="inference"></a></p></div>
+<div class="qa"><h4 class="q"><span class="qn">Q6</span>How do you estimate and reduce cost?</h4><ul><li>Cost ≈ requests × (input tokens × input price + output tokens × output price). Output tokens usually cost more.</li><li>Shorter prompts, capped output length, prompt caching for repeated prefixes, smaller models via routing, batch APIs for offline jobs, caching repeated answers.</li><li>Track cost per request and per user from day one.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="inference"></a></p><details class="callout code opt" open><summary>In Python: estimating monthly cost</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>def monthly_cost(requests_per_day, input_tokens, output_tokens,
+                 price_in_per_m, price_out_per_m, cached_share=0.0,
+                 cached_discount=0.9):
+    """Prices are per million tokens. cached_share: fraction of input tokens
+    served from a prompt cache, billed at (1 - cached_discount)."""
+    effective_in = input_tokens * (1 - cached_share * cached_discount)
+    per_request = (effective_in * price_in_per_m
+                   + output_tokens * price_out_per_m) / 1e6
+    return per_request, per_request * requests_per_day * 30
+
+
+# Example prices only; use your provider's current price list
+prices = dict(price_in_per_m=3.0, price_out_per_m=15.0)
+
+for label, kwargs in [
+    ("baseline", dict(input_tokens=6000, output_tokens=500)),
+    ("shorter prompt", dict(input_tokens=3000, output_tokens=500)),
+    ("+ prompt cache 70%", dict(input_tokens=3000, output_tokens=500,
+                                cached_share=0.7)),
+    ("+ capped output", dict(input_tokens=3000, output_tokens=250,
+                             cached_share=0.7)),
+]:
+    per_req, month = monthly_cost(20_000, **kwargs, **prices)
+    print(f"{label:20} ${per_req:.4f} per request   ${month:,.0f} per month")
+
+# Output:
+# baseline             $0.0255 per request   $15,300 per month
+# shorter prompt       $0.0165 per request   $9,900 per month
+# + prompt cache 70%   $0.0108 per request   $6,498 per month
+# + capped output      $0.0071 per request   $4,248 per month</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q7</span>How do you reduce latency?</h4><ul><li>Time to first token grows with prompt length; total time grows with output length.</li><li><b>Stream</b> the output so users see progress.</li><li>Shorten prompts and outputs; put static content first so it can be cached.</li><li>Run independent calls in parallel; use a smaller model where quality allows; speculative decoding when you host the model.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="inference"></a></p></div>
 <div class="qa"><h4 class="q"><span class="qn">Q8</span>What do you monitor in production?</h4><ul><li>Traces of prompts, responses and tool calls, with PII handling and retention rules.</li><li>Latency, error and timeout rates, token usage and cost, refusal rate.</li><li>User feedback signals and task completion.</li><li>Regular sampled human review; every failure becomes a new eval case.</li></ul></div>
-<div class="qa"><h4 class="q"><span class="qn">Q9</span>How do you make an LLM service reliable?</h4><ul><li>Timeouts; retries with exponential backoff for rate limits and transient errors.</li><li>Fallback to another model or provider; graceful degradation when all fail.</li><li>Validate and parse every structured output; retry on failure.</li><li>Pin model versions; re-run the eval before upgrading.</li></ul></div>
+<div class="qa"><h4 class="q"><span class="qn">Q9</span>How do you make an LLM service reliable?</h4><ul><li>Timeouts; retries with exponential backoff for rate limits and transient errors.</li><li>Fallback to another model or provider; graceful degradation when all fail.</li><li>Validate and parse every structured output; retry on failure.</li><li>Pin model versions; re-run the eval before upgrading.</li></ul><details class="callout code opt" open><summary>In Python: retries with backoff, then a fallback</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="btn tiny cpy">Copy</button></div>
+<pre class="py"><code>import random
+import time
+
+
+class TransientError(Exception):
+    """Rate limit, timeout or 5xx: worth retrying."""
+
+
+def call_with_retries(fn, max_attempts=5, base_delay=0.05, max_delay=2.0):
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return fn()
+        except TransientError as err:
+            if attempt == max_attempts:
+                raise                                  # give up: let a fallback run
+            # Exponential backoff with full jitter spreads retries out
+            delay = random.uniform(0, min(max_delay, base_delay * 2 ** attempt))
+            print(f"attempt {attempt} failed ({err}); retrying in {delay:.3f} s")
+            time.sleep(delay)
+
+
+random.seed(0)
+failures = iter([TransientError("429 rate limited"), TransientError("timeout")])
+
+
+def flaky_llm_call():                                 # stands in for an API call
+    err = next(failures, None)
+    if err:
+        raise err
+    return "answer"
+
+
+def with_fallback(primary, fallback):
+    try:
+        return call_with_retries(primary)
+    except TransientError:
+        return fallback()
+
+
+print(with_fallback(flaky_llm_call, lambda: "answer from the backup model"))
+
+# Output:
+# attempt 1 failed (429 rate limited); retrying in 0.084 s
+# attempt 2 failed (timeout); retrying in 0.152 s
+# answer</code></pre></details></div>
 <div class="qa"><h4 class="q"><span class="qn">Q10</span>What guardrails would you add?</h4><ul><li>Input checks: abuse, prompt injection patterns, off-topic requests.</li><li>Output checks: PII, policy violations, schema validity, groundedness for factual answers.</li><li>Least-privilege tools and confirmation steps for risky actions.</li><li>Red-team before launch and again after major changes.</li></ul><p class="fu"><b>Review:</b> <a class="xref" data-ref="iv-agents"></a></p></div>
 <h3>Worked system-design answer</h3>
 <div class="qa design"><h4 class="q"><span class="qn">Q11</span>System design: “Design a Q&amp;A assistant over our internal documents for 5,000 employees.”</h4><p class="dstep">Clarify (2–3 minutes)</p><ul><li>Who are the users and what do they ask? What document types, how many, how often do they change?</li><li>Do permissions differ per user? Latency and cost targets? Languages?</li><li>How will we know it works: deflected tickets, time saved, answer accuracy?</li></ul><p class="dstep">Ingestion (offline)</p><ul><li>Connectors per source; parse to text while keeping structure.</li><li>Chunk by headings with metadata: title, path, date, owner, access list.</li><li>Embed and index for both vector and keyword search; re-index incrementally on change.</li></ul><p class="dstep">Query path (online)</p><ul><li>Rewrite the question using chat history.</li><li>Hybrid retrieval of the top 50, filtered by the user’s permissions; rerank to the top 5–8.</li><li>Prompt: instructions, passages with IDs, question; require citations and allow “I don’t know”. Stream the answer.</li></ul><p class="dstep">Evaluation</p><ul><li>A golden set of about 200 real questions with answers and source passages from subject experts.</li><li>Retrieval recall@k; answer faithfulness and correctness with a calibrated LLM judge.</li><li>Run on every change; add failures from production.</li></ul><p class="dstep">Operations</p><ul><li>Cost per query estimate; prompt caching; answer caching for frequent questions.</li><li>Tracing, feedback buttons, dashboards for latency, cost and “no answer” rate.</li><li>Fallback model; rate limiting.</li></ul><p class="dstep">Risks and mitigations</p><ul><li>Permission leakage → filter at retrieval. Prompt injection in documents → treat as data, no write tools.</li><li>Stale documents → dates in metadata, prefer newest. Hallucination → citations, abstention, faithfulness checks.</li></ul><p class="dstep">Close</p><ul><li>Ship a simple baseline first, measure each stage, improve the weakest one. Name what you would do with more time.</li></ul></div>
@@ -2075,7 +3572,6 @@ select.dd-native{display:none}
 <section class="ch" id="glossary" data-title="Glossary and further learning">
 <div class="num">SECTION 20 · REFERENCE</div>
 <h2>Glossary and further learning</h2>
-<nav class="map" aria-label="Where you are in the guide"><a href="#intro" class="done">1 LLM</a><a href="#why" class="done">2 Why</a><i aria-hidden="true"></i><a href="#tokens" class="done">3 Tokens</a><a href="#position" class="done">4 Position</a><a href="#attention" class="done">5 Attention</a><a href="#multihead" class="done">6 Heads</a><a href="#block" class="done">7 Block</a><a href="#architecture" class="done">8 Model</a><i aria-hidden="true"></i><a href="#training" class="done">9 Train</a><a href="#generation" class="done">10 Generate</a><a href="#inference" class="done">11 Serve</a><a href="#scaling" class="done">12 Scale</a><i aria-hidden="true"></i><a href="#encdec" class="done">13 Enc–dec</a><a href="#paper" class="done">14 Paper</a><i aria-hidden="true"></i><a href="#iv-core" class="done">15 Q: Core</a><a href="#iv-rag" class="done">16 Q: RAG</a><a href="#iv-ft" class="done">17 Q: Tuning</a><a href="#iv-agents" class="done">18 Q: Agents</a><a href="#iv-prod" class="done">19 Q: Prod</a><i aria-hidden="true"></i><a href="#glossary" class="here" aria-current="step">20 Glossary</a></nav>
 
 <label class="ctl" style="max-width:420px">Filter the glossary<input type="text" id="gl-q" placeholder="e.g. soft, cache, top" autocomplete="off"></label>
 <dl id="gloss">
@@ -2784,10 +4280,38 @@ function initScale(){slider('sc-n',v=>big(Math.pow(10,v))+' params',v=>{s10.n=v;
 
 /* ================= Section 11 + page chrome ================= */
 function initGloss(){$('#gl-q').addEventListener('input',e=>{const q=e.target.value.trim().toLowerCase();let n=0;$$('#gloss .term').forEach(t=>{const hit=!q||t.textContent.toLowerCase().indexOf(q)>=0;t.hidden=!hit;if(hit)n++;});$('#gl-none').hidden=n>0;});}
+function initCode(){
+  const KW=new Set('False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield'.split(' '));
+  const BI=new Set('print range len sum min max int float str list dict set tuple enumerate zip sorted round abs isinstance super next iter any all map repr type self Exception ValueError RuntimeError'.split(' '));
+  const re=/(#[^\n]*)|((?:[rRbBfFuU]{1,2})?(?:"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'))|(@[A-Za-z_][\w.]*)|(\b\d[\d_]*(?:\.\d*)?(?:[eE][+-]?\d+)?\b)|([A-Za-z_]\w*)/g;
+  const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  $$('pre.py code').forEach(code=>{
+    const src=code.textContent;let out='',last=0,prev='',m;re.lastIndex=0;
+    while((m=re.exec(src))){
+      const t=m[0];let c='';
+      if(m[1])c='c';else if(m[2])c='s';else if(m[3])c='d';else if(m[4])c='n';
+      else if(KW.has(t))c='k';else if(prev==='def'||prev==='class')c='f';else if(BI.has(t)&&src[m.index-1]!=='.')c='b';
+      out+=esc(src.slice(last,m.index))+(c?'<span class="'+c+'">'+esc(t)+'</span>':esc(t));
+      last=re.lastIndex;prev=m[5]?t:'';
+    }
+    code.innerHTML=out+esc(src.slice(last));
+  });
+  /* expanded or collapsed: a Settings choice, stored under tfs-code (expanded is the default) */
+  const applyCode=v=>{$$('details.code').forEach(d=>{d.open=v==='open';});$$('.codeBtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.c===v));};
+  let saved='open';try{saved=localStorage.getItem('tfs-code')==='closed'?'closed':'open';}catch(e){}
+  applyCode(saved);
+  $$('.codeBtn').forEach(b=>b.addEventListener('click',()=>{const v=b.dataset.c;applyCode(v);try{if(v==='open')localStorage.removeItem('tfs-code');else localStorage.setItem('tfs-code',v);}catch(e){}}));
+  $$('.cpy').forEach(b=>b.addEventListener('click',()=>{
+    const text=b.closest('details').querySelector('pre code').textContent;
+    const done=()=>{b.textContent='Copied';setTimeout(()=>{b.textContent='Copy';},1500);};
+    const fallback=()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){}ta.remove();};
+    if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(done,fallback);else fallback();
+  }));
+}
 function initChrome(){
   const secs=$$('section.ch');
-  const mins=secs.map(s=>{const c=s.cloneNode(true);c.querySelectorAll('.widget,.tex,svg,.map').forEach(n=>n.remove());const words=(c.textContent.match(/\S+/g)||[]).length,wd=s.querySelectorAll('.widget').length,m=Math.max(1,Math.round((words/110+3*wd)/5)*5),p=document.createElement('p');p.className='rt';p.textContent='Study time: about '+m+' min'+(wd?', including '+wd+' interactive'+(wd>1?'s':''):'');(s.querySelector('.map')||s.querySelector('h2')).insertAdjacentElement('afterend',p);return m;});
-  const totalMin=mins.reduce((x,y)=>x+y,0),rtT=$('#rt-total');if(rtT)rtT.textContent='Whole guide: about '+(totalMin>=60?Math.floor(totalMin/60)+' h '+(totalMin%60)+' min':totalMin+' min')+' across '+secs.length+' sections. Each section shows its own estimate. These are study times, not reading times: they assume you follow the equations and try the interactives. A first pass with “Essentials only” switched on takes roughly half as long.';
+  const mins=secs.map(s=>{const c=s.cloneNode(true);c.querySelectorAll('.widget,.tex,svg,.code').forEach(n=>n.remove());const words=(c.textContent.match(/\S+/g)||[]).length,wd=s.querySelectorAll('.widget').length,m=Math.max(1,Math.round((words/110+3*wd)/5)*5),p=document.createElement('p');p.className='rt';p.textContent='Study time: about '+m+' min'+(wd?', including '+wd+' interactive'+(wd>1?'s':''):'');s.querySelector('h2').insertAdjacentElement('afterend',p);return m;});
+  const totalMin=mins.reduce((x,y)=>x+y,0),rtT=$('#rt-total');if(rtT)rtT.textContent='Whole guide: about '+(totalMin>=60?Math.floor(totalMin/60)+' h '+(totalMin%60)+' min':totalMin+' min')+' of study across '+secs.length+' sections; about half that with “Essentials only”.';
   $('#tocList').innerHTML=secs.map((s,i)=>(GPARTS[s.id]?'<li class="tpart" aria-hidden="true">'+GPARTS[s.id]+'</li>':'')+'<li><a href="#'+s.id+'"><span>'+s.dataset.title+'</span><small aria-label="about '+mins[i]+' minutes">'+mins[i]+' min</small></a></li>').join('');
   secs.forEach((s,i)=>{const nav=document.createElement('nav');nav.className='secnav';nav.setAttribute('aria-label','Section navigation');nav.innerHTML=(i?'<a href="#'+secs[i-1].id+'">← '+secs[i-1].dataset.title+'</a>':'<span></span>')+(i<secs.length-1?'<a href="#'+secs[i+1].id+'">'+secs[i+1].dataset.title+' →</a>':'<a href="#main">Back to top ↑</a>');s.appendChild(nav);});
   let curIdx=-1;
@@ -2806,12 +4330,11 @@ function initChrome(){
     const N=secs.length,tot=mins.reduce((a,b)=>a+b,0);let doneMin=0;
     secs.forEach((s,i)=>{const on=done.has(s.id);if(on)doneMin+=mins[i];const b=$('.doneBtn',s);b.setAttribute('aria-pressed',on);b.classList.toggle('on',on);$('.dt',b).textContent=on?'Done (click to undo)':'Mark this section as done';$('.dk',b).textContent=on?'✔':'☐';$('.donebar',s).classList.toggle('on',on);
       $('.dmsg',s).textContent=changed===s.id?(on?(done.size===N?'Every section is done. Well done!':done.size+' of '+N+' sections done.'):'Marked as not done.'):'';
-      links[i].parentElement.classList.toggle('done',on);links[i].setAttribute('aria-label',s.dataset.title+', about '+mins[i]+' minutes'+(on?', done':''));
-      $$('.map a[href="#'+s.id+'"]').forEach(a=>a.classList.toggle('fin',on));});
+      links[i].parentElement.classList.toggle('done',on);links[i].setAttribute('aria-label',s.dataset.title+', about '+mins[i]+' minutes'+(on?', done':''));});
     const pct=tot?Math.round(100*doneMin/tot):0;
     $('#pgTxt').textContent=done.size+' of '+N+' sections done';$('#pgPct').textContent=pct+'%';$('#pgFill').style.width=pct+'%';$('#pgFill').parentElement.setAttribute('aria-valuenow',pct);$('#mFill').style.width=pct+'%';
     window.leftMin=tot-doneMin;$('#pgLeft').textContent=done.size===N?'All done. Nothing left.':'About '+fmtLeft(tot-doneMin)+' left (study time)';
-    $('#pgReset').disabled=!done.size;$('#pgReset2').disabled=!done.size;
+    $('#pgReset').disabled=!done.size;
     window.updateMobile();
   }
   const fmtLeft=m=>m>=60?Math.floor(m/60)+' h'+(m%60?' '+m%60+' min':''):m+' min';
@@ -2851,7 +4374,6 @@ function initChrome(){
   document.addEventListener('click',e=>{if(!setMenu.hidden&&!e.target.closest('.setwrap'))closeSet(false);});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!setMenu.hidden)closeSet(true);});
   setMenu.addEventListener('focusout',e=>{if(e.relatedTarget&&!e.relatedTarget.closest('.setwrap'))closeSet(false);});
-  $('#pgReset2').addEventListener('click',()=>{const b=$('#pgReset');if(b&&!b.disabled)b.click();});
   let rt=null,lastW=window.innerWidth;window.addEventListener('resize',()=>{if(window.innerWidth===lastW)return;lastW=window.innerWidth;clearTimeout(rt);rt=setTimeout(rerender,150);});
 }
 /* ================= Section 11: encoder-decoder and cross-attention ================= */
@@ -3049,7 +4571,7 @@ function initSelects(){
     paint();
   });
 }
-[initGuide,initChrome,initNext,initTok,initPE,initAttn,initMH,initBlock,initArch,initTrain,initGen,initScale,initCross,initInfer,initPaper,initA11y,initGloss,initSelects].forEach(f=>{try{f();}catch(e){console.error(f.name,e);}});
+[initGuide,initCode,initChrome,initNext,initTok,initPE,initAttn,initMH,initBlock,initArch,initTrain,initGen,initScale,initCross,initInfer,initPaper,initA11y,initGloss,initSelects].forEach(f=>{try{f();}catch(e){console.error(f.name,e);}});
 renderTex(document);
 </script>
 <script async src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous" onload="renderAllTex()" onerror="texFailed()"></script>
