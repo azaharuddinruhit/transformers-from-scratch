@@ -52,7 +52,7 @@
 </header>
 <section class="refsec" id="maths">
 <h2>The maths you need</h2>
-<p>The guide assumes programming and the ideas on this page, nothing more. If any of them feel rusty, spend about 15 minutes here first. Each idea comes with one example you can check by hand, and links to where the guide uses it.</p>
+<p>The guide assumes programming and the ideas on this page, nothing more. If any of them feel rusty, spend about 25 minutes here first. Each idea comes with one example you can check by hand, and links to where the guide uses it.</p>
 
 <h3>Vectors and the dot product</h3>
 <p>A vector is a list of numbers. In this guide every token becomes a vector, and vectors are written as rows. The <b>dot product</b> of two vectors of the same length multiplies them position by position and adds the results:</p>
@@ -66,6 +66,11 @@
 <div class="tex d">xW=[1,\ 2,\ 3]</div>
 <p>The third entry, for example, is <span class="tex">1\cdot1+2\cdot1=3</span>. Shapes follow one rule: the inner sizes must match, and they disappear. A <code>[1, 2]</code> vector times a <code>[2, 3]</code> matrix gives <code>[1, 3]</code>. Stack <span class="tex">T</span> token vectors as rows and the same rule gives <code>[T, d_model]</code> times <code>[d_model, d_k]</code> equals <code>[T, d_k]</code>. <span class="tex">W^{\top}</span>, the <b>transpose</b>, swaps rows and columns.</p>
 <p><b>Where it appears:</b> everywhere, starting with <a class="xref" data-ref="attention"></a> and <a class="xref" data-ref="multihead"></a>. Tracking shapes is most of the work in <a class="xref" data-ref="architecture"></a>.</p>
+
+<h3>Tensors: more than two dimensions</h3>
+<p>A <b>tensor</b> is the same idea with more dimensions. A vector has one index, a matrix has two, and a tensor can have any number. The shape <code>[B, T, d_model]</code> means <span class="tex">B</span> sequences, <span class="tex">T</span> tokens in each, and <span class="tex">d_{\text{model}}</span> numbers per token.</p>
+<p><b>Example.</b> 2 sequences of 5 tokens, with 8 numbers per token, is a <code>[2, 5, 8]</code> tensor holding <span class="tex">2\times5\times8=80</span> numbers. Matrix multiplication on tensors works on the last two dimensions, and the leading ones just say how many separate products there are. <code>[B, h, T, d_k]</code> times <code>[B, h, d_k, T]</code> gives <code>[B, h, T, T]</code>: one <span class="tex">T\times T</span> table for every sequence and every head.</p>
+<p><b>Where it appears:</b> the shape tables in <a class="xref" data-ref="multihead"></a> and <a class="xref" data-ref="block"></a>.</p>
 
 <h3>Exponentials and logarithms</h3>
 <p><span class="tex">e\approx2.718</span>. The exponential <span class="tex">e^a</span> is always positive and grows quickly: <span class="tex">e^0=1</span>, <span class="tex">e^1\approx2.718</span>, <span class="tex">e^2\approx7.389</span>, <span class="tex">e^{-2}\approx0.135</span>. The natural logarithm <span class="tex">\log</span> undoes it: <span class="tex">\log e^a=a</span>. It turns products into sums, <span class="tex">\log(ab)=\log a+\log b</span>.</p>
@@ -83,16 +88,43 @@
 <p><b>Example.</b> Scores <span class="tex">[2,1,0]</span> give <span class="tex">[7.389,\ 2.718,\ 1]</span>, which add up to 11.107. Dividing gives <span class="tex">[0.665,\ 0.245,\ 0.090]</span>. The largest score gets the largest share, but every option keeps some probability.</p>
 <p><b>Where it appears:</b> <a class="xref" data-ref="intro"></a> (next-token probabilities), <a class="xref" data-ref="attention"></a> (attention weights) and <a class="xref" data-ref="generation"></a> (temperature).</p>
 
+<h3>Sigmoid: a soft on-off switch</h3>
+<p>The sigmoid squeezes any number into the range 0 to 1:</p>
+<div class="tex d">\operatorname{sigmoid}(a)=\frac{1}{1+e^{-a}}</div>
+<p><b>Example.</b> <span class="tex">\operatorname{sigmoid}(0)=0.5</span>, <span class="tex">\operatorname{sigmoid}(2)\approx0.881</span> and <span class="tex">\operatorname{sigmoid}(-2)\approx0.119</span>. Large positive inputs give nearly 1 (on), large negative ones nearly 0 (off). It is softmax with two options: the first entry of <span class="tex">\operatorname{softmax}([a,0])</span> is <span class="tex">\operatorname{sigmoid}(a)</span>.</p>
+<p><b>Where it appears:</b> the gated MLP in <a class="xref" data-ref="modern"></a> and the DPO loss in <a class="xref" data-ref="prefs"></a>.</p>
+
+<h3>Conditional probability</h3>
+<p><span class="tex">p(A\mid B)</span> reads “the probability of <span class="tex">A</span> given <span class="tex">B</span>”. A language model gives <span class="tex">p(w_t\mid w_{\lt t})</span>: the probability of the next token, given all the tokens before it.</p>
+<p>The probability of a whole text is the product of its next-token probabilities. This is the <b>chain rule of probability</b>:</p>
+<div class="tex d">\begin{aligned}p(\text{the cat sat})&amp;=p(\text{the})\\&amp;\times p(\text{cat}\mid\text{the})\\&amp;\times p(\text{sat}\mid\text{the cat})\end{aligned}</div>
+<p><b>Example.</b> With <span class="tex">0.2\times0.1\times0.3=0.006</span>, the product gets small very quickly. Logarithms turn it into a sum, <span class="tex">\log0.2+\log0.1+\log0.3=-1.609-2.303-1.204=-5.116=\log0.006</span>, which is why models add log-probabilities instead of multiplying probabilities.</p>
+<p><b>Where it appears:</b> <a class="xref" data-ref="intro"></a> and the loss in <a class="xref" data-ref="training"></a>.</p>
+
 <h3>Averages, variance and standard deviation</h3>
 <p>The <b>mean</b> is the average. The <b>variance</b> is the average squared distance from the mean, and the <b>standard deviation</b> is its square root: a typical distance from the mean.</p>
 <p><b>Example.</b> For <span class="tex">[1,2,3,6]</span> the mean is <span class="tex">12/4=3</span>. The distances from it are <span class="tex">-2,-1,0,3</span>, whose squares add up to 14, so the variance is <span class="tex">14/4=3.5</span> and the standard deviation is <span class="tex">\sqrt{3.5}\approx1.871</span>.</p>
 <p><b>Where it appears:</b> LayerNorm in <a class="xref" data-ref="block"></a>, and the scaling step in <a class="xref" data-ref="attention"></a>.</p>
+
+<h3>Sine, cosine and rotation</h3>
+<p>Put a point on a circle of radius 1, at an angle <span class="tex">\theta</span> from the horizontal. Its coordinates are <span class="tex">(\cos\theta,\ \sin\theta)</span>. Angles are in radians: a full turn is <span class="tex">2\pi\approx6.283</span>. Both functions stay between −1 and 1 and repeat every full turn, so they can encode position as a pattern that cycles at a chosen speed.</p>
+<p>Rotating a point <span class="tex">(x_1,x_2)</span> by an angle <span class="tex">\theta</span> gives a new point <span class="tex">(x_1',x_2')</span>, further round the circle and the same distance from the centre:</p>
+<div class="tex d">\begin{aligned}x_1'&amp;=x_1\cos\theta-x_2\sin\theta\\x_2'&amp;=x_1\sin\theta+x_2\cos\theta\end{aligned}</div>
+<p><b>Example.</b> Rotate <span class="tex">(1,0)</span> by a quarter turn, <span class="tex">\theta=\pi/2</span>. Since <span class="tex">\cos\theta=0</span> and <span class="tex">\sin\theta=1</span>, the result is <span class="tex">(0,1)</span>: the point has moved from pointing right to pointing up.</p>
+<p><b>Where it appears:</b> sinusoidal positions in <a class="xref" data-ref="position"></a> and rotary positions (RoPE) in <a class="xref" data-ref="modern"></a>.</p>
 
 <h3>Slopes, gradients and gradient descent</h3>
 <p>The <b>derivative</b> of a function is its slope: how much the output changes when the input moves a little. A model has millions of parameters, and the <b>gradient</b> is the list of slopes of the loss, one for each parameter. Training repeatedly takes a small step downhill:</p>
 <div class="tex d">w\leftarrow w-\eta\times\text{slope}</div>
 <p><b>Example.</b> Take the loss <span class="tex">(w-3)^2</span>, which is lowest at <span class="tex">w=3</span>. Its slope is <span class="tex">2(w-3)</span>, so at <span class="tex">w=1</span> the slope is <span class="tex">-4</span>. With a learning rate <span class="tex">\eta=0.1</span>, the step gives <span class="tex">w=1-0.1\times(-4)=1.4</span>, and the loss falls from 4 to 2.56. You never compute gradients by hand in this guide; libraries do it. You only need the idea.</p>
 <p><b>Where it appears:</b> <a class="xref" data-ref="training"></a>, and why residual connections help in <a class="xref" data-ref="block"></a>.</p>
+
+<h3>The chain rule: how gradients flow back</h3>
+<p>When functions are chained, their slopes multiply. If <span class="tex">y=f(u)</span> and <span class="tex">u=g(x)</span>, then the slope of <span class="tex">y</span> with respect to <span class="tex">x</span> is the outer slope times the inner slope:</p>
+<div class="tex d">\frac{dy}{dx}=\frac{dy}{du}\times\frac{du}{dx}</div>
+<p><b>Example.</b> <span class="tex">y=u^2</span> with <span class="tex">u=3x</span>. At <span class="tex">x=1</span>, <span class="tex">u=3</span>, the outer slope is <span class="tex">2u=6</span> and the inner slope is 3, so the slope is <span class="tex">6\times3=18</span>. Check: <span class="tex">y=9x^2</span> has slope <span class="tex">18x=18</span>.</p>
+<p>A network is a long chain of layers. <b>Backpropagation</b> applies the chain rule from the loss back to every weight, multiplying slopes layer by layer. Many slopes below 1 multiplied together shrink to almost nothing; many above 1 blow up. That is the problem residual connections solve.</p>
+<p><b>Where it appears:</b> <a class="xref" data-ref="training"></a> and the residual connections in <a class="xref" data-ref="block"></a>.</p>
 
 <h3>Large numbers and memory</h3>
 <p>Model sizes are written in powers of ten: 7 billion is <span class="tex">7\times10^9</span>. A gigabyte (GB) is <span class="tex">10^9</span> bytes. To find memory, multiply a count by the bytes each item takes.</p>

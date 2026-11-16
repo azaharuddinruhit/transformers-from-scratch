@@ -13,7 +13,7 @@ An interactive visual guide to how GPT-style language models work, from tokens t
 | Part C · Training and using it | 8 | Cross-entropy training, scaling laws, from base model to assistant (fine-tuning and the chat template), preference tuning and reasoning models (RLHF, DPO), decoding, inference in practice, GPUs and CUDA, open-weight models with Ollama and vLLM |
 | Part D · The wider picture | 3 | Encoder–decoder models, the 2017 paper in detail, and what modern LLMs change (RoPE, RMSNorm, SwiGLU, GQA, mixture of experts) |
 | Interview drill | 6 topics | 64 questions, each with a short sample answer and bullet points: fundamentals, RAG, fine-tuning, agents, production, hardware |
-| Reference | 4 | The maths you need (a 15-minute refresher), glossary, notation and further learning |
+| Reference | 4 | The maths you need (a 25-minute refresher), glossary, notation and further learning |
 
 Each section in Parts A to D shows its level (Foundation, Core or Deep dive) and has learning objectives, a running example, equations built up step by step with every symbol named, a worked example you can check by hand, interactive widgets, key takeaways, a self-check quiz and discussion questions.
 
@@ -32,7 +32,7 @@ Each section in Parts A to D shows its level (Foundation, Core or Deep dive) and
 - The interview drill hides each answer behind "Show answer"; mark questions "Got it" or "Review again" and filter by topic or status.
 - Progress (sections done, quiz answers, drill marks, where you left off) is saved in your browser only, so it does not sync between devices. Settings has a progress reset, the path, a Light or Dark theme (the system setting is used until you choose), and whether code boxes start expanded.
 - On phones, a floating bar with previous and next buttons, the current section and a progress line; tapping it opens the contents as a bottom sheet.
-- "The maths you need": a 15-minute refresher on dot products, matrices, logs, softmax, variance and gradients, each with one example to check by hand.
+- "The maths you need": a 25-minute refresher on vectors, matrices and tensors, logs, softmax and sigmoid, conditional probability, variance, sine and cosine, gradients and the chain rule, each with one example to check by hand.
 - A six-session plan on the home page for teaching the material to a team.
 
 All numbers are computed in the browser. No pretrained model is used; where a demonstration is simplified (hand-picked attention weights, illustrative scaling curves), the page says so.
