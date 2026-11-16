@@ -46,9 +46,13 @@ function applyPath(){
 function setPath(p){P.path=p;store.save();applyPath();rerender();onPathChange.forEach(f=>f());}
 function initSettings(){
   const root=document.documentElement;
-  const applyTheme=t=>{if(t==='auto')root.removeAttribute('data-theme');else root.setAttribute('data-theme',t);try{if(t==='auto')localStorage.removeItem('tfs-theme');else localStorage.setItem('tfs-theme',t);}catch(e){}$$('.thBtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));};
-  try{const t=localStorage.getItem('tfs-theme');if(t)root.setAttribute('data-theme',t);}catch(e){}
-  $$('.thBtn').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.t===(root.getAttribute('data-theme')||'auto'));b.addEventListener('click',()=>applyTheme(b.dataset.t));});
+  // Light or dark; until the reader chooses, the page follows the system setting
+  const sysTheme=()=>window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  const markTheme=()=>{const t=root.getAttribute('data-theme')||sysTheme();$$('.thBtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));};
+  const applyTheme=t=>{root.setAttribute('data-theme',t);try{localStorage.setItem('tfs-theme',t);}catch(e){}markTheme();};
+  try{const t=localStorage.getItem('tfs-theme');if(t==='light'||t==='dark')root.setAttribute('data-theme',t);}catch(e){}
+  markTheme();
+  $$('.thBtn').forEach(b=>b.addEventListener('click',()=>applyTheme(b.dataset.t)));
   $$('.pathBtn').forEach(b=>b.addEventListener('click',()=>setPath(b.dataset.p)));
   const setBtn=$('#setBtn'),setMenu=$('#setMenu');
   const closeSet=ret=>{if(setMenu.hidden)return;setMenu.hidden=true;setBtn.setAttribute('aria-expanded','false');if(ret)setBtn.focus();};
