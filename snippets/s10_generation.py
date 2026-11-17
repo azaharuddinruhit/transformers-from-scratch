@@ -18,7 +18,7 @@ def next_token_probs(logits, tau=1.0, top_k=None, top_p=None):
         n = np.searchsorted(cum, top_p) + 1               # smallest set >= p
         keep[order[n:]] = False                           # top-p
     p = np.where(keep, p, 0.0)
-    return p / p.sum()                                    # renormalise
+    return p / p.sum()                                    # renormalize
 
 
 z = [2.0, 1.0, 0.1]

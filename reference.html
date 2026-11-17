@@ -124,7 +124,7 @@
   <div class="term"><dt>Key</dt><dd>The vector a token exposes so queries can be matched against it.</dd></div>
   <div class="term"><dt>Value</dt><dd>The vector a token contributes to whoever attends to it.</dd></div>
   <div class="term"><dt>Softmax</dt><dd>A function that turns any list of numbers into positive values that sum to 1.</dd></div>
-  <div class="term"><dt>Logits</dt><dd>The raw, unnormalised scores a model outputs, one per vocabulary entry.</dd></div>
+  <div class="term"><dt>Logits</dt><dd>The raw, unnormalized scores a model outputs, one per vocabulary entry.</dd></div>
   <div class="term"><dt>Logits vs. probabilities</dt><dd>Logits can be any real number and only their differences matter; probabilities are what softmax makes of them, lying between 0 and 1 and summing to 1.</dd></div>
   <div class="term"><dt>Residual stream</dt><dd>The running vector for each token that every layer reads from and adds to.</dd></div>
   <div class="term"><dt>LayerNorm</dt><dd>Rescales one token’s vector to mean 0 and standard deviation 1, then applies a learned scale and shift.</dd></div>
@@ -137,7 +137,7 @@
   <div class="term"><dt>Neural network</dt><dd>A function built from layers of neurons, each a weighted sum followed by an activation, whose weights are found by training.</dd></div>
   <div class="term"><dt>Activation function</dt><dd>The non-linear function applied after a layer’s weighted sums (tanh, ReLU, GELU). Without it, stacked layers collapse into one.</dd></div>
   <div class="term"><dt>Backpropagation</dt><dd>The method that computes the gradient of the loss for every weight, by applying the chain rule backwards through the layers.</dd></div>
-  <div class="term"><dt>Overfitting</dt><dd>Memorising the training examples instead of the pattern: training loss falls while validation loss rises.</dd></div>
+  <div class="term"><dt>Overfitting</dt><dd>Memorizing the training examples instead of the pattern: training loss falls while validation loss rises.</dd></div>
   <div class="term"><dt>Generative model</dt><dd>A model that produces new examples like its training data (text, images, audio), as opposed to a classifier, which returns a label for an example it is given.</dd></div>
   <div class="term"><dt>Autoregressive</dt><dd>Generating one piece at a time, each conditioned on the pieces before it. LLMs generate text this way, one token per step.</dd></div>
   <div class="term"><dt>Diffusion model</dt><dd>A generative model that starts from random noise and removes a little of it in each of many steps until a clean output, usually an image, remains.</dd></div>
@@ -150,7 +150,7 @@
   <div class="term"><dt>Base model</dt><dd>A model after pretraining only: it continues text rather than following instructions.</dd></div>
   <div class="term"><dt>Chat template</dt><dd>The special tokens and layout that turn a list of messages into the single sequence a chat model was trained on.</dd></div>
   <div class="term"><dt>Reasoning model</dt><dd>A model trained with reinforcement learning on checkable tasks to write out intermediate steps before answering; better on hard problems, slower and costlier per answer.</dd></div>
-  <div class="term"><dt>RLHF</dt><dd>Reinforcement learning from human feedback: optimising a model towards outputs people prefer.</dd></div>
+  <div class="term"><dt>RLHF</dt><dd>Reinforcement learning from human feedback: optimizing a model towards outputs people prefer.</dd></div>
   <div class="term"><dt>Multimodal model</dt><dd>A model that accepts more than one kind of input, such as text and images. Images enter as patch tokens in the same sequence as the text.</dd></div>
   <div class="term"><dt>Image patch</dt><dd>A small square of an image (often 14 or 16 pixels a side), flattened and projected into one token vector.</dd></div>
   <div class="term"><dt>CLIP</dt><dd>A way of training an image encoder and a text encoder together, so that an image and its caption get similar embeddings. Often used to pretrain the vision encoder of a multimodal model.</dd></div>
@@ -161,7 +161,6 @@
   <div class="term"><dt>Prefill</dt><dd>The first phase of inference: the whole prompt is processed in one parallel pass and its keys and values are cached.</dd></div>
   <div class="term"><dt>Time to first token</dt><dd>The delay between sending a request and receiving the first output token; roughly the prefill time.</dd></div>
   <div class="term"><dt>Throughput</dt><dd>Tokens generated per second summed over all requests being served at once.</dd></div>
-  <div class="term"><dt>BLEU</dt><dd>A 0 to 100 score for machine translation that measures overlap of word sequences with human reference translations.</dd></div>
   <div class="term"><dt>Warm-up</dt><dd>Raising the learning rate gradually from near zero over the first training steps, before letting it decay.</dd></div>
   <div class="term"><dt>Hallucination</dt><dd>Fluent output that is false or unsupported. It arises because the model generates probable text, not verified facts.</dd></div>
   <div class="term"><dt>RAG</dt><dd>Retrieval-augmented generation: fetching relevant passages at query time and placing them in the prompt so the model answers from them.</dd></div>
@@ -214,7 +213,7 @@
 <div class="scroll"><table class="numt cmp">
   <thead><tr><th>Symbol</th><th>Meaning</th><th>Shape or range</th></tr></thead>
   <tbody>
-    <tr><th scope="row"><span class="tex">w_t</span></th><td>the token ID at position t</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">w_t</span></th><td>the token ID at position <span class="tex">t</span></td><td>integer</td></tr>
     <tr><th scope="row"><span class="tex">T</span></th><td>sequence length: number of tokens (also the context length)</td><td>integer</td></tr>
     <tr><th scope="row"><span class="tex">t</span></th><td>a position in the sequence</td><td>0 … T−1</td></tr>
     <tr><th scope="row"><span class="tex">n_{\text{vocab}}</span></th><td>vocabulary size</td><td>integer</td></tr>
@@ -225,10 +224,15 @@
     <tr><th scope="row"><span class="tex">Q,\ K,\ V</span></th><td>queries, keys, values (one row per token)</td><td><code>[T, d_k]</code></td></tr>
     <tr><th scope="row"><span class="tex">W_Q,\ W_K,\ W_V,\ W_O</span></th><td>attention projection matrices</td><td><code>[d_model, d_k] or [d_model, d_model]</code></td></tr>
     <tr><th scope="row"><span class="tex">d_k,\ h</span></th><td>dimensions per head; number of heads, with <span class="tex">d_k = d_{\text{model}} / h</span></td><td>integers</td></tr>
-    <tr><th scope="row"><span class="tex">\alpha_{ij}</span></th><td>attention weight: how much token i reads from token j</td><td>0 … 1</td></tr>
+    <tr><th scope="row"><span class="tex">\alpha_{ij}</span></th><td>attention weight: how much token <span class="tex">i</span> reads from token <span class="tex">j</span></td><td>0 … 1</td></tr>
+    <tr><th scope="row"><span class="tex">s_{ij},\ c_i</span></th><td>scaled score of key <span class="tex">j</span> for query <span class="tex">i</span>; the output (context vector) for token <span class="tex">i</span></td><td>number; <code>[d_k]</code></td></tr>
     <tr><th scope="row"><span class="tex">d_{\text{ff}}</span></th><td>hidden width of the feed-forward network</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">W_1,\ W_2,\ W_3,\ b_1,\ b_2</span></th><td>feed-forward weights and biases; <span class="tex">W_3</span> only in the gated SwiGLU MLP</td><td><code>[d_model, d_ff]</code>; <code>[d_ff, d_model]</code></td></tr>
+    <tr><th scope="row"><span class="tex">\mu,\ \sigma^{2}</span></th><td>in LayerNorm: the mean and variance of one token’s vector</td><td>numbers</td></tr>
+    <tr><th scope="row"><span class="tex">\gamma,\ \beta,\ \epsilon</span></th><td>in LayerNorm and RMSNorm: the learned scale and shift; a tiny constant that prevents division by zero</td><td><code>[d_model]</code>; tiny positive number</td></tr>
     <tr><th scope="row"><span class="tex">L,\ \ell</span></th><td>number of blocks (layers); index of one block</td><td>integer</td></tr>
     <tr><th scope="row"><span class="tex">z,\ p</span></th><td>logits; probabilities after softmax</td><td><code>[n_vocab]</code></td></tr>
+    <tr><th scope="row"><span class="tex">W_U</span></th><td>output projection: final vector to one logit per vocabulary entry</td><td><code>[d_model, n_vocab]</code></td></tr>
     <tr><th scope="row"><span class="tex">\tau</span></th><td>sampling temperature</td><td>positive number</td></tr>
     <tr><th scope="row"><span class="tex">\theta,\ N</span></th><td>all the parameters; how many there are</td><td>—</td></tr>
     <tr><th scope="row"><span class="tex">\mathcal{L},\ \eta</span></th><td>loss; learning rate</td><td>numbers</td></tr>
@@ -238,6 +242,7 @@
     <tr><th scope="row"><span class="tex">\pi_{\theta},\ \pi_{\text{ref}}</span></th><td>the model being tuned, as a distribution over answers; the model it started from</td><td>probabilities</td></tr>
     <tr><th scope="row"><span class="tex">y,\ \lambda</span></th><td>a whole answer in preference tuning; strength of the pull back to <span class="tex">\pi_{\text{ref}}</span></td><td>text; positive number</td></tr>
     <tr><th scope="row"><span class="tex">B</span></th><td>batch size: sequences processed together</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">M_{\text{KV}},\ R,\ F</span></th><td>KV-cache memory; a GPU’s memory bandwidth; its usable compute</td><td>bytes; bytes per second; operations per second</td></tr>
     <tr><th scope="row"><span class="tex">P,\ n</span></th><td>prompt length; number of tokens generated</td><td>integers</td></tr>
     <tr><th scope="row"><span class="tex">D</span></th><td>number of training tokens</td><td>integer</td></tr>
     <tr><th scope="row"><span class="tex">\Delta,\ q,\ q_{\max},\ \hat w</span></th><td>in quantization: the scale of a group; the stored integer; the largest integer (7 for 4 bits); the weight the model computes with</td><td>positive number; integer; integer; number</td></tr>
@@ -246,7 +251,7 @@
     <tr><th scope="row"><span class="tex">u_0,\ u_{\text{noisy}}</span></th><td>in diffusion: a clean example; the same example with noise mixed in</td><td>one number per pixel value</td></tr>
     <tr><th scope="row"><span class="tex">\bar\alpha</span></th><td>in diffusion: the share of the clean example kept, set by the noise level</td><td>0 … 1</td></tr>
     <tr><th scope="row"><span class="tex">\varepsilon,\ \hat\varepsilon,\ \varepsilon_\theta</span></th><td>in diffusion: the noise added; its prediction; the network that predicts it</td><td>same shape as <span class="tex">u_0</span></td></tr>
-    <tr><th scope="row"><span class="tex">\gamma</span></th><td>in diffusion: the guidance scale</td><td>positive number</td></tr>
+    <tr><th scope="row"><span class="tex">s</span></th><td>in diffusion: the guidance scale</td><td>positive number</td></tr>
   </tbody>
 </table></div>
 <p>Where a source uses different letters (the 2017 paper writes <span class="tex">pos</span>, <span class="tex">n</span> and <span class="tex">d</span>, for instance), the section says so.</p>

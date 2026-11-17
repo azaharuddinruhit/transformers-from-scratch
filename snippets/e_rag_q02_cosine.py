@@ -16,7 +16,7 @@ def embed(text):
     # Word counts stand in for a real embedding model here; the search code
     # below is the same whichever model produces the vectors.
     v = np.array([words(text).count(w) for w in vocab], dtype=float)
-    return v / (np.linalg.norm(v) or 1.0)          # normalise to length 1
+    return v / (np.linalg.norm(v) or 1.0)          # normalize to length 1
 
 
 doc_vectors = np.stack([embed(d) for d in docs])   # computed once, offline

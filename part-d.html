@@ -49,7 +49,7 @@
 <p>Everything so far described a single stack that reads and writes one sequence. The original 2017 Transformer was built differently, for translation: one stack, the <b>encoder</b>, reads the whole input sentence; a second stack, the <b>decoder</b>, writes the output sentence one token at a time. The two are joined by a third kind of attention, <b>cross-attention</b>, through which the decoder consults the encoder’s result at every step.</p>
 <ul>
   <li><b>Encoder</b>: self-attention with <i>no</i> causal mask. The input is fully known, so every source token may look at every other, left and right. It runs once.</li>
-  <li><b>Decoder</b>: causal self-attention over the output written so far, exactly as in <a href="part-b.html">Part B</a>, because the rest of the output does not exist yet.</li>
+  <li><b>Decoder</b>: causal self-attention over the output written so far, exactly as in <a class="xref" data-ref="attention"></a>, because the rest of the output does not exist yet.</li>
   <li><b>Cross-attention</b>: the same query–key–value computation, with one change. The <b class="tq">queries</b> come from the decoder, while the <b class="tk">keys</b> and <b class="tv">values</b> come from the encoder’s output. In the library analogy, the readers are in one building and the books in another.</li>
 </ul>
 <div class="ed" role="img" aria-label="Diagram: an encoder stack processes the source sentence with unmasked self-attention and outputs X_enc. A decoder stack processes the target so far with masked self-attention, then cross-attention that takes keys and values from X_enc, then a feed-forward network, and predicts the next target token.">
@@ -85,7 +85,7 @@
 <details class="why"><summary>Why no causal mask here?</summary><div class="whyb">The mask exists to hide tokens that have not been produced yet. The whole source sentence is known before decoding starts, so nothing in it is “in the future”, and every decoder position may read all of it.</div></details>
 <p>A decoder block therefore has three sublayers, each an update added to the stream:</p>
 <div class="tex d">\begin{aligned}x' &amp;= x + \mathrm{MaskedSelfAttention}(\mathrm{LayerNorm}(x))\\ x'' &amp;= x' + \mathrm{CrossAttention}(\mathrm{LayerNorm}(x'),\,X_{\text{enc}})\\ y &amp;= x'' + \mathrm{FFN}(\mathrm{LayerNorm}(x''))\end{aligned}</div>
-<p class="sym">First look at what has been written so far, then consult the source, then process the result. This is written in the pre-norm style of <a class="xref" data-ref="block"></a> for consistency; the 2017 paper normalised after each addition instead, as shown further down.</p>
+<p class="sym">First look at what has been written so far, then consult the source, then process the result. This is written in the pre-norm style of <a class="xref" data-ref="block"></a> for consistency; the 2017 paper normalized after each addition instead, as shown further down.</p>
 <div class="worked">
   <h4>Worked example: the decoder is about to write “black”</h4>
   <p>To write “black”, the decoder asks the encoder “which source word should I translate now?”. The answer is mostly “noir” (61%), with some weight on “chat” (22%), the noun that “noir” describes. French puts the adjective after the noun and English before it, and cross-attention handles the swap without any special rule.</p>
@@ -154,7 +154,7 @@ for word, row in zip(written, weights):
   <small>As in <a class="xref" data-ref="attention"></a>, Q, K and V are small hand-picked numbers so that every step can be checked, not the output of a trained translation model. Line thickness and the printed percentage both show the attention weight. Click a decoder word in the diagram or a row of the table on the right to change the step.</small>
   <div class="wjh"><b>What just happened?</b> One decoder position asked a question, and the answer was assembled entirely from the encoder’s vectors. Step through the four positions and the strongest link moves le → noir → chat → dort: the middle two cross over, because the two languages order adjective and noun differently. In the full table the bright cells are not on the diagonal, which is the signature of reordering.</div>
 </div>
-<div class="callout try opt"><b>Try this</b><p>Select “predict cat” and read the dot-product column: the query scores 4 against “chat” and 2 against “noir”. Then switch to the simplified explanation in Settings and compare the bars for “predict black” and “predict cat”. They are mirror images.</p></div>
+<div class="callout try opt"><b>Try this</b><p>Select “predict cat” and read the dot-product column: the query scores 4 against “chat” and 2 against “noir”. Then compare the bars with “predict black”: the two are mirror images, with “chat” and “noir” swapped.</p></div>
 <h3>Contrast with the decoder-only design</h3>
 <p>A decoder-only model has no encoder and no cross-attention. To translate, it puts the source and the target in <b>one</b> sequence, “le chat noir dort &lt;s&gt; the black cat …”, and relies on ordinary causal self-attention. The target tokens can still look back at the source tokens, so the job cross-attention did is absorbed into self-attention. The widget below shows who may attend to whom in each design.</p>
 <div class="widget opt" id="w-contrast">
@@ -182,20 +182,20 @@ for word, row in zip(written, weights):
 <p>Neither design is strictly better. Encoder–decoder models fit tasks with a clear input and a clear output, such as translation or speech recognition, and give the input a bidirectional reading. Decoder-only models are simpler, treat every task as “continue this text”, and can be pretrained on raw text with no input–output pairs, which is a large part of why they became the default for general-purpose LLMs.</p>
 <h3>The 2017 paper, and what came after</h3>
 <p>This design comes from the 2017 paper “Attention Is All You Need”, which built it for translation. Its base model had 6 encoder layers and 6 decoder layers, <span class="tex">d_{\text{model}}=512</span>, 8 attention heads and an MLP of width 2,048. The attention and multi-head formulas of <a class="xref" data-ref="attention"></a> and <a class="xref" data-ref="multihead"></a> are the paper’s own, and no model since has changed them.</p>
-<p>Other details did change. The paper normalised <i>after</i> each residual addition, which is called <b>post-norm</b>:</p>
+<p>Other details did change. The paper normalized <i>after</i> each residual addition, which is called <b>post-norm</b>:</p>
 <div class="tex d">x\leftarrow\mathrm{LayerNorm}\big(x+\mathrm{Sublayer}(x)\big)</div>
-<p>In the pre-norm block of <a class="xref" data-ref="block"></a>, the stream is left alone and only a copy is normalised. Here the stream itself is normalised after every addition, so no untouched path runs from the first layer to the last. That makes deep stacks harder to train, which is why later models moved the normalisation. The table lists the other differences.</p>
+<p>In the pre-norm block of <a class="xref" data-ref="block"></a>, the stream is left alone and only a copy is normalized. Here the stream itself is normalized after every addition, so no untouched path runs from the first layer to the last. That makes deep stacks harder to train, which is why later models moved the normalization. The table lists the other differences.</p>
 <div class="scroll"><table class="numt cmp">
   <thead><tr><th></th><th>2017 Transformer</th><th>Typical GPT-style LLM</th></tr></thead>
   <tbody>
     <tr><th scope="row">Structure</th><td>Encoder + decoder with cross-attention</td><td>Decoder only</td></tr>
     <tr><th scope="row">Task</th><td>Translation, trained on sentence pairs</td><td>Next-token prediction on raw text, then fine-tuning</td></tr>
-    <tr><th scope="row">Normalisation</th><td>After the residual add (post-norm)</td><td>Before the sublayer (pre-norm), often RMSNorm, plus a final normalisation</td></tr>
+    <tr><th scope="row">Normalization</th><td>After the residual add (post-norm)</td><td>Before the sublayer (pre-norm), often RMSNorm, plus a final normalization</td></tr>
     <tr><th scope="row">Activation</th><td>ReLU</td><td>GELU (GPT-2, GPT-3) or a gated MLP such as SwiGLU (Llama, Qwen, Mistral)</td></tr>
     <tr><th scope="row">Positions</th><td>Fixed sinusoids added to the input</td><td>Learned (GPT-2, GPT-3) or rotary, applied inside attention (most current models)</td></tr>
     <tr><th scope="row">Size</th><td>65 to 213 million parameters</td><td>Billions of parameters and beyond</td></tr>
     <tr><th scope="row">Decoding</th><td>Beam search</td><td>Sampling with temperature, top-k, top-p</td></tr>
-    <tr><th scope="row">Unchanged</th><td colspan="2">Scaled dot-product attention, multiple heads, residual connections, layer normalisation, a position-wise feed-forward network, learned embeddings, warm-up</td></tr>
+    <tr><th scope="row">Unchanged</th><td colspan="2">Scaled dot-product attention, multiple heads, residual connections, layer normalization, a position-wise feed-forward network, learned embeddings, warm-up</td></tr>
   </tbody>
 </table></div>
 <p>The line of descent is short. In 2018, GPT kept only the decoder and pretrained it on unlabelled text. BERT kept only the encoder and pretrained it by filling in masked words. Scaling the decoder-only branch, with the handful of adjustments in the table, leads to the models in the rest of this guide.</p>
@@ -203,7 +203,7 @@ for word, row in zip(written, weights):
 <p><b>The paper’s learning-rate schedule.</b> One more idea from the paper became standard: start with a tiny learning rate, raise it for a fixed number of warm-up steps, then let it fall slowly.</p>
 <div class="tex d">\eta(\text{step})=d_{\text{model}}^{-0.5}\cdot\min\!\left(\text{step}^{-0.5},\ \ \text{step}\cdot\text{warmup}^{-1.5}\right)</div>
 <p class="sym"><span class="tex">\eta</span> is the learning rate (the paper calls it <i>lrate</i>). <span class="tex">\text{step}</span> counts training steps from 1. <span class="tex">\text{warmup}</span> is a fixed number of steps, 4000 in the paper.</p>
-<details class="why"><summary>Reading the formula.</summary><div class="whyb">The <span class="tex">\min</span> chooses between two candidates. <span class="tex">\text{step}\cdot\text{warmup}^{-1.5}</span> is a straight line rising from zero; it is the smaller one early on. <span class="tex">\text{step}^{-0.5}</span> is a slowly falling curve; it is the smaller one later. They are equal exactly when <span class="tex">\text{step}=\text{warmup}</span>, which is where the rate peaks. The factor <span class="tex">d_{\text{model}}^{-0.5}</span> gives wider models smaller steps. The gentle start stops a randomly initialised model from being thrown off course by its first, very noisy gradients.</div></details>
+<details class="why"><summary>Reading the formula.</summary><div class="whyb">The <span class="tex">\min</span> chooses between two candidates. <span class="tex">\text{step}\cdot\text{warmup}^{-1.5}</span> is a straight line rising from zero; it is the smaller one early on. <span class="tex">\text{step}^{-0.5}</span> is a slowly falling curve; it is the smaller one later. They are equal exactly when <span class="tex">\text{step}=\text{warmup}</span>, which is where the rate peaks. The factor <span class="tex">d_{\text{model}}^{-0.5}</span> gives wider models smaller steps. The gentle start stops a randomly initialized model from being thrown off course by its first, very noisy gradients.</div></details>
 </div>
 <div class="worked opt">
   <h4>Worked example: the learning-rate schedule</h4>
@@ -232,11 +232,11 @@ def layer_norm(x, eps=1e-5):
     return (x - mu) / np.sqrt(x.var(axis=-1, keepdims=True) + eps)
 
 
-def post_norm(x, sublayer):          # 2017 paper: normalise after the add
+def post_norm(x, sublayer):          # 2017 paper: normalize after the add
     return layer_norm(x + sublayer(x))
 
 
-def pre_norm(x, sublayer):           # GPT-style: normalise a copy first
+def pre_norm(x, sublayer):           # GPT-style: normalize a copy first
     return x + sublayer(layer_norm(x))
 
 
@@ -275,10 +275,10 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
 <ul class="pit opt">
   <li><b>“Cross-attention needs a causal mask.”</b> It does not. The whole source is available from the start. Only the decoder’s self-attention is masked.</li>
   <li><b>“The encoder runs again for every generated token.”</b> It runs once. Its output is fixed and reused by every decoder step.</li>
-  <li><b>“Decoder-only models cannot translate or summarise.”</b> They can: the source goes in the prompt and self-attention reaches back to it.</li>
+  <li><b>“Decoder-only models cannot translate or summarize.”</b> They can: the source goes in the prompt and self-attention reaches back to it.</li>
   <li><b>“Cross-attention is a different mechanism.”</b> It is the same scaled dot-product attention, with queries from one sequence and keys and values from another.</li>
   <li><b>Pitfall:</b> each kind of attention has its own <span class="tex">W_Q, W_K, W_V</span>. The decoder’s self-attention and cross-attention do not share weights.</li>
-  <li><b>“Modern LLMs use the paper’s architecture as written.”</b> The core is intact, but normalisation placement, activation, positional scheme and overall structure have all changed.</li>
+  <li><b>“Modern LLMs use the paper’s architecture as written.”</b> The core is intact, but normalization placement, activation, positional scheme and overall structure have all changed.</li>
   <li><b>Pitfall:</b> code or diagrams that follow the paper (post-norm, encoder–decoder) do not match GPT-style code (pre-norm, decoder-only). Check which one a tutorial describes before comparing details.</li>
 </ul>
 <div class="wrapup">
@@ -289,8 +289,8 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
 <fieldset><legend>1. In cross-attention, where do the keys and values come from?</legend><button type="button" class="qo">The decoder</button><button type="button" class="qo" data-ok="1">The encoder’s output</button><button type="button" class="qo">The embedding table</button><p class="qx" hidden aria-live="polite"><b></b> The decoder asks (queries); the encoder’s output is what it reads (keys and values).</p></fieldset>
 <fieldset><legend>2. The source has 4 tokens and the target so far has 3. What is the shape of the cross-attention weight table?</legend><button type="button" class="qo" data-ok="1">[3, 4]</button><button type="button" class="qo">[4, 4]</button><button type="button" class="qo">[3, 3]</button><p class="qx" hidden aria-live="polite"><b></b> One row per decoder position, one column per source token.</p></fieldset>
 <fieldset><legend>3. Why does the encoder not need a causal mask?</legend><button type="button" class="qo">It has no attention</button><button type="button" class="qo" data-ok="1">The whole source is known in advance, so nothing is “in the future”</button><button type="button" class="qo">It would be too slow</button><p class="qx" hidden aria-live="polite"><b></b> The mask only exists to hide tokens that have not been produced yet.</p></fieldset>
-<fieldset><legend>4. Which of these is unchanged between the 2017 model and modern LLMs?</legend><button type="button" class="qo">Where LayerNorm sits</button><button type="button" class="qo" data-ok="1">Scaled dot-product attention</button><button type="button" class="qo">The activation function</button><p class="qx" hidden aria-live="polite"><b></b> Normalisation placement and activation both changed; the attention formula did not.</p></fieldset>
-<fieldset><legend>5. What does post-norm mean?</legend><button type="button" class="qo" data-ok="1">LayerNorm is applied after the residual addition</button><button type="button" class="qo">LayerNorm is applied only at the end of the model</button><button type="button" class="qo">There is no LayerNorm</button><p class="qx" hidden aria-live="polite"><b></b> The stream itself is normalised after every addition, unlike pre-norm where only a copy is normalised.</p></fieldset>
+<fieldset><legend>4. Which of these is unchanged between the 2017 model and modern LLMs?</legend><button type="button" class="qo">Where LayerNorm sits</button><button type="button" class="qo" data-ok="1">Scaled dot-product attention</button><button type="button" class="qo">The activation function</button><p class="qx" hidden aria-live="polite"><b></b> Normalization placement and activation both changed; the attention formula did not.</p></fieldset>
+<fieldset><legend>5. What does post-norm mean?</legend><button type="button" class="qo" data-ok="1">LayerNorm is applied after the residual addition</button><button type="button" class="qo">LayerNorm is applied only at the end of the model</button><button type="button" class="qo">There is no LayerNorm</button><p class="qx" hidden aria-live="polite"><b></b> The stream itself is normalized after every addition, unlike pre-norm where only a copy is normalized.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>For which of our tasks is there a clear “input” and a separate “output”? Would an encoder–decoder model have any advantage there?</li><li>A decoder-only model handles translation by treating source and target as one sequence. What is gained and lost?</li><li>When you read a tutorial or code base, how can you tell quickly whether it follows the paper or the GPT-style variant?</li></ul></details>
 <p class="bridge">The table above lists what changed since 2017 in a line each. <a class="xref" data-ref="modern"></a> explains the changes that matter most today.</p>
@@ -313,7 +313,7 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
 </table></div>
 <div class="flow" role="img" aria-label="Diagram: the 2017 block becomes the modern block through RMSNorm before each sublayer, rotary positions and grouped-query attention inside attention, and a SwiGLU or mixture-of-experts MLP">
   <div><b>2017 block</b><small>post-norm, ReLU, sinusoids added to the input</small></div><i>→</i>
-  <div class="fa"><b>RMSNorm, before each sublayer</b><small>cheaper normalisation</small></div><i>→</i>
+  <div class="fa"><b>RMSNorm, before each sublayer</b><small>cheaper normalization</small></div><i>→</i>
   <div class="fa"><b>Attention with RoPE and GQA</b><small>relative positions; a smaller cache</small></div><i>→</i>
   <div class="fa"><b>SwiGLU MLP, or experts</b><small>gated; or routed per token</small></div><i>→</i>
   <div><b>Today’s block</b><small>same shape, same residual stream</small></div>
@@ -410,7 +410,7 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
   <div id="moe-load"></div>
   <div class="stats" id="moe-stats" aria-live="polite"></div>
   <small>What is simplified: one layer with 8 experts. The token vectors and the router are random, not trained, and each token’s vector depends only on the token, so the same word always goes to the same experts; in a real model the vector carries context, and routing differs from layer to layer. “Balanced” nudges one bias per expert, down if it is overloaded and up if it is underused; training with a balancing loss has a similar effect. The parameter counts are those of a model shaped like Mixtral 8x7B: 46.7B in total and 12.9B active with 2 experts, which implies about 5.6B per expert and 1.6B shared by all tokens.</small>
-  <div class="wjh"><b>What just happened?</b> For each token the router scored all 8 experts, kept the best few, and turned their scores into gates that add up to 1. Only those experts did any work, which is why the active parameter count is a fraction of the total. With 2 experts per token, the router as initialised already loads its busiest expert at about 1.6 times the average. Give one expert a head start and it takes 26 of the 37 tokens, while its neighbours idle: on a real GPU that expert becomes the bottleneck, or the tokens it cannot take are dropped. Balancing brings the busiest expert down to about 1.2 times the average. That is the job of the balancing loss described above.</div>
+  <div class="wjh"><b>What just happened?</b> For each token the router scored all 8 experts, kept the best few, and turned their scores into gates that add up to 1. Only those experts did any work, which is why the active parameter count is a fraction of the total. With 2 experts per token, the router as initialized already loads its busiest expert at about 1.6 times the average. Give one expert a head start and it takes 26 of the 37 tokens, while its neighbours idle: on a real GPU that expert becomes the bottleneck, or the tokens it cannot take are dropped. Balancing brings the busiest expert down to about 1.2 times the average. That is the job of the balancing loss described above.</div>
 </div>
 
 <h3>Putting it together: Llama 3.1 8B</h3>
@@ -421,7 +421,7 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
     <tr><th scope="row">Structure</th><td>Encoder and decoder, 6 layers each</td><td>Decoder only, 32 layers</td></tr>
     <tr><th scope="row">Width <span class="tex">d_{\text{model}}</span></th><td>512</td><td>4,096</td></tr>
     <tr><th scope="row">Positions</th><td>Sinusoids added to the input</td><td>RoPE inside attention</td></tr>
-    <tr><th scope="row">Normalisation</th><td>LayerNorm after each sublayer</td><td>RMSNorm before each sublayer</td></tr>
+    <tr><th scope="row">Normalization</th><td>LayerNorm after each sublayer</td><td>RMSNorm before each sublayer</td></tr>
     <tr><th scope="row">MLP</th><td>ReLU, width 2,048</td><td>SwiGLU, width 14,336</td></tr>
     <tr><th scope="row">Attention heads</th><td>8, each with its own keys and values</td><td>32 query heads sharing 8 key and value heads</td></tr>
   </tbody>
@@ -637,7 +637,7 @@ for side in (224, 336, 448, 672):
 <p><b>Training.</b> A common recipe takes a pretrained vision encoder and a pretrained LLM, and connects them in two stages. First, only the projector is trained, on images with captions, so that image tokens start to land where the LLM expects meaningful vectors. Then the projector and the LLM are fine-tuned together on conversations about images. As in <a class="xref" data-ref="posttrain"></a>, the loss counts only the tokens of the answer. Some models are instead trained on images and text together from the start.</p>
 <h3 class="opt">Other inputs, and images as output</h3>
 <ul class="opt">
-  <li><b>Audio.</b> Sound is turned into a <b>spectrogram</b>, the strength of each frequency over time, and short slices of it become tokens. Speech recognisers such as Whisper read them with an encoder–decoder Transformer (<a class="xref" data-ref="encdec"></a>).</li>
+  <li><b>Audio.</b> Sound is turned into a <b>spectrogram</b>, the strength of each frequency over time, and short slices of it become tokens. Speech recognizers such as Whisper read them with an encoder–decoder Transformer (<a class="xref" data-ref="encdec"></a>).</li>
   <li><b>Video.</b> A few frames per second are sampled and each frame is cut into patches. The token count climbs fast, so models sample frames sparingly and merge neighbouring patches.</li>
   <li><b>Images as output.</b> Reading an image is not the same as making one. Some systems pass the request to a separate image generator, usually a diffusion model (<a class="xref" data-ref="diffusion"></a>). Others generate image tokens one at a time and decode them back into pixels.</li>
 </ul>
@@ -778,8 +778,8 @@ for steps in (1, 3, 10, 50):
 <h3>Steering with a prompt</h3>
 <p>A text-to-image model passes the prompt through a text encoder, a Transformer like the ones in this guide, and gives the resulting vectors to the denoising network at every step. Inside the network, <b>cross-attention</b> (<a class="xref" data-ref="encdec"></a>) lets every part of the image read from the prompt’s tokens, just as the decoder read from the source sentence in translation.</p>
 <p class="opt"><b>Guidance.</b> On its own the condition steers only weakly. <b>Classifier-free guidance</b> runs the network twice per step, once with the prompt and once without, and pushes the prediction further in the direction the prompt made it move:</p>
-<div class="tex d opt">\hat\varepsilon=\hat\varepsilon_{\text{without}}+\gamma\,\big(\hat\varepsilon_{\text{with}}-\hat\varepsilon_{\text{without}}\big)</div>
-<p class="sym opt"><span class="tex">\gamma</span> is the guidance scale. With <span class="tex">\gamma=1</span> this is the ordinary prediction with the prompt; larger values follow the prompt more closely at some cost to variety. Values around 5 to 8 are common.</p>
+<div class="tex d opt">\hat\varepsilon=\hat\varepsilon_{\text{without}}+s\,\big(\hat\varepsilon_{\text{with}}-\hat\varepsilon_{\text{without}}\big)</div>
+<p class="sym opt"><span class="tex">s</span> is the guidance scale. With <span class="tex">s=1</span> this is the ordinary prediction with the prompt; larger values follow the prompt more closely at some cost to variety. Values around 5 to 8 are common.</p>
 <h3>Where the Transformer fits</h3>
 <ul>
   <li><b>The text encoder</b> that reads the prompt is a Transformer.</li>

@@ -4,7 +4,7 @@ import numpy as np
 def layer_norm(x, gamma=1.0, beta=0.0, eps=1e-5):
     mu = x.mean(axis=-1, keepdims=True)          # 1. mean
     var = x.var(axis=-1, keepdims=True)          # 2. variance
-    x_hat = (x - mu) / np.sqrt(var + eps)        # 3. normalise
+    x_hat = (x - mu) / np.sqrt(var + eps)        # 3. normalize
     return gamma * x_hat + beta                  # 4. learned scale and shift
 
 

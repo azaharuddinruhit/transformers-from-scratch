@@ -259,7 +259,7 @@ function initMoe(){
   const chips=(id,opts,set)=>{const el=$('#'+id);el.innerHTML=opts.map(o=>'<button class="chip" data-v="'+o[0]+'" aria-pressed="false">'+o[1]+'</button>').join('');
     el.addEventListener('click',e=>{const bt=e.target.closest('button');if(!bt)return;set(bt.dataset.v);renderMoe();$('#'+id+' button[data-v="'+bt.dataset.v+'"]').focus();});};
   chips('moe-k',[['1','1'],['2','2'],['4','4']],v=>{smoe.k=+v;});
-  chips('moe-r',[['init','As initialised'],['fav','With a favourite expert'],['bal','Balanced']],v=>{smoe.router=v;});
+  chips('moe-r',[['init','As initialized'],['fav','With a favourite expert'],['bal','Balanced']],v=>{smoe.router=v;});
   $('#moe-toks').addEventListener('click',e=>{const bt=e.target.closest('.moet');if(bt){smoe.sel=+bt.dataset.i;renderMoe();$('#moe-toks .moet[data-i="'+smoe.sel+'"]').focus();}});
   reg(renderMoe);
 }

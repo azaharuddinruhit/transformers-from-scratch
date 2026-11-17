@@ -199,8 +199,8 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
 
 <h3>Training in practice</h3>
 <ul>
-  <li><b>Training and validation data.</b> Keep some examples aside and never train on them. The loss on those <b>validation</b> examples tells you whether the network has learned the pattern or only memorised its training examples.</li>
-  <li><b>Overfitting.</b> If the training loss keeps falling while the validation loss rises, the network is memorising, noise included. More data is the best cure; a smaller network or stopping earlier also helps.</li>
+  <li><b>Training and validation data.</b> Keep some examples aside and never train on them. The loss on those <b>validation</b> examples tells you whether the network has learned the pattern or only memorized its training examples.</li>
+  <li><b>Overfitting.</b> If the training loss keeps falling while the validation loss rises, the network is memorizing, noise included. More data is the best cure; a smaller network or stopping earlier also helps.</li>
   <li><b>Batches and epochs.</b> Real datasets are too large to use all at once, so each step uses a small random <b>batch</b>. One pass through the whole dataset is an <b>epoch</b>.</li>
   <li><b>Learning rate.</b> Too small and training crawls. Too large and the loss jumps around or blows up.</li>
 </ul>
@@ -221,7 +221,7 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
   <svg id="nn-chart" role="img" aria-label="Training loss and validation loss against training step"></svg>
   <div class="lg"><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln a"/></svg> training loss (solid)</span><span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" class="ln b"/></svg> validation loss (dashed)</span></div>
   <small>What is simplified: two inputs, one hidden layer and one output, trained on all the training points at every step, where a real network uses batches. One label in ten is deliberately wrong, as in real data, so about 90% accuracy is the best possible. The network is trained here, in your browser, from random weights.</small>
-  <div class="wjh"><b>What just happened?</b> Each step ran the loop above: predict, measure the loss, find the slopes, nudge the weights. With tanh and four neurons, the shaded region closes round the inner points and both losses fall together. With no activation the network can only draw a straight line, so on the ring its loss stays near 0.69, the loss of plain guessing, however long it trains. With 12 training points and 16 neurons, the training loss keeps falling while the validation loss climbs past 1: the network has memorised its few examples, wrong labels and all. That is overfitting.</div>
+  <div class="wjh"><b>What just happened?</b> Each step ran the loop above: predict, measure the loss, find the slopes, nudge the weights. With tanh and four neurons, the shaded region closes round the inner points and both losses fall together. With no activation the network can only draw a straight line, so on the ring its loss stays near 0.69, the loss of plain guessing, however long it trains. With 12 training points and 16 neurons, the training loss keeps falling while the validation loss climbs past 1: the network has memorized its few examples, wrong labels and all. That is overfitting.</div>
 </div>
 <div class="callout try opt"><b>Try this</b><p>On the ring with tanh, compare 1, 2 and 4 hidden neurons: each neuron adds one bend to the boundary, and one or two bends cannot close a loop. Then try “Two groups”: a straight line is enough there, so the activation makes no difference.</p></div>
 <div class="callout note"><b>From this to an LLM</b><p>An LLM is the same loop at a very different scale. Its inputs are tokens, its layers are Transformer blocks, its output is a probability for every possible next token, and its loss measures how surprised it was by the token that really came next. <a class="xref" data-ref="training"></a> covers that loss.</p></div>
@@ -229,7 +229,7 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
 <ul class="pit opt">
   <li><b>“A neural network works like a brain.”</b> The name is historical. A neuron here is a weighted sum and a squashing function, nothing more.</li>
   <li><b>“Someone programs what each neuron detects.”</b> Nobody sets the weights. They start random, and training finds them.</li>
-  <li><b>“A training loss near zero means the network is good.”</b> It may have memorised the training data. Only the validation loss tells you.</li>
+  <li><b>“A training loss near zero means the network is good.”</b> It may have memorized the training data. Only the validation loss tells you.</li>
   <li><b>Pitfall:</b> judging a model on the data it was trained on.</li>
 </ul>
 <div class="wrapup">
@@ -239,7 +239,7 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
 <div class="quiz">
 <fieldset><legend>1. A neuron has inputs [1, 2], weights [0.5, −1] and bias 0.5. What is its weighted sum, before the activation?</legend><button type="button" class="qo">2</button><button type="button" class="qo" data-ok="1">−1</button><button type="button" class="qo">0.5</button><p class="qx" hidden aria-live="polite"><b></b> 1 × 0.5 + 2 × (−1) + 0.5 = −1.</p></fieldset>
 <fieldset><legend>2. What happens if you remove the activation function from every layer of a deep network?</legend><button type="button" class="qo">It trains faster and works as well</button><button type="button" class="qo" data-ok="1">The whole network can do no more than a single layer</button><button type="button" class="qo">It can no longer be trained</button><p class="qx" hidden aria-live="polite"><b></b> Matrices multiplied together are just one matrix, so the network can only fit straight-line patterns.</p></fieldset>
-<fieldset><legend>3. Training loss is falling, but validation loss has started to rise. What is happening?</legend><button type="button" class="qo">The learning rate is too small</button><button type="button" class="qo" data-ok="1">The network is memorising its training examples (overfitting)</button><button type="button" class="qo">The network has finished learning</button><p class="qx" hidden aria-live="polite"><b></b> It is getting better at examples it has seen and worse at ones it has not.</p></fieldset>
+<fieldset><legend>3. Training loss is falling, but validation loss has started to rise. What is happening?</legend><button type="button" class="qo">The learning rate is too small</button><button type="button" class="qo" data-ok="1">The network is memorizing its training examples (overfitting)</button><button type="button" class="qo">The network has finished learning</button><p class="qx" hidden aria-live="polite"><b></b> It is getting better at examples it has seen and worse at ones it has not.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>In the interactive, one label in ten is wrong. Where would wrong labels come from in our own data, and what would overfitting to them look like?</li><li>Nobody programs what a neuron detects. What does that mean for explaining a model’s decision to a customer or an auditor?</li></ul></details>
 <p class="bridge">Any network learns this way. The one you trained sorts points into classes; <a class="xref" data-ref="genai"></a> shows how networks create new text and images instead.</p>
@@ -358,7 +358,7 @@ for k in (1, 2, 3, 4):
   <div class="chips" id="gn-list"></div>
   <div class="stats" id="gn-stats"></div>
   <small>What is simplified: the “model” is a table of counts, not a neural network. For each run of letters in 162 first names, it counts which letter came next. It works on letters where an LLM works on tokens, and it can only continue contexts it has seen. An LLM replaces the table with a Transformer, which can handle contexts it has never seen. The table is built in your browser when the page loads.</small>
-  <div class="wjh"><b>What just happened?</b> Each letter was drawn from the bars, as an LLM draws each token, and the name ended when the end marker was drawn. With 1 letter of context the model knows too little, and most names are unpronounceable. With 2 letters most names are new and some sound plausible. With 3 or 4 letters the names look real because most are copies: each context is so specific that only one training name continues it. That is memorising, the generative form of the overfitting in <a class="xref" data-ref="nn"></a>. A useful generator sits in between, producing outputs that are new but plausible. LLMs get there with a network that learns patterns shared across billions of examples, not a table.</div>
+  <div class="wjh"><b>What just happened?</b> Each letter was drawn from the bars, as an LLM draws each token, and the name ended when the end marker was drawn. With 1 letter of context the model knows too little, and most names are unpronounceable. With 2 letters most names are new and some sound plausible. With 3 or 4 letters the names look real because most are copies: each context is so specific that only one training name continues it. That is memorizing, the generative form of the overfitting in <a class="xref" data-ref="nn"></a>. A useful generator sits in between, producing outputs that are new but plausible. LLMs get there with a network that learns patterns shared across billions of examples, not a table.</div>
 </div>
 <h3>Where the Transformer sits</h3>
 <p>Two choices define a generative model, and they are independent:</p>
@@ -381,7 +381,7 @@ for k in (1, 2, 3, 4):
 <h3 class="opt">Common misconceptions</h3>
 <ul class="pit opt">
   <li><b>“Generative AI means chatbots.”</b> Text is one kind of output. The same ideas produce code, images, audio and video.</li>
-  <li><b>“A generative model stitches together pieces of its training data.”</b> It samples from learned probabilities, so most outputs are new. It can still memorise and repeat training data, especially text it saw many times, as the 4-letter setting shows.</li>
+  <li><b>“A generative model stitches together pieces of its training data.”</b> It samples from learned probabilities, so most outputs are new. It can still memorize and repeat training data, especially text it saw many times, as the 4-letter setting shows.</li>
   <li><b>“Diffusion models and Transformers are rival technologies.”</b> One is a recipe and the other is a network. Many diffusion models have a Transformer inside.</li>
   <li><b>Pitfall:</b> treating fluent output as checked output. A generator is trained to be plausible, not to be true.</li>
 </ul>
@@ -392,7 +392,7 @@ for k in (1, 2, 3, 4):
 <div class="quiz">
 <fieldset><legend>1. Which of these is a generative model?</legend><button type="button" class="qo">A model that flags fraudulent payments</button><button type="button" class="qo">A model that sorts support tickets into five queues</button><button type="button" class="qo" data-ok="1">A model that writes product descriptions from a list of features</button><p class="qx" hidden aria-live="polite"><b></b> It produces new text. The other two map an input to a label.</p></fieldset>
 <fieldset><legend>2. A new image model is described as “a diffusion Transformer”. What does that mean?</legend><button type="button" class="qo">It is a language model that can also draw</button><button type="button" class="qo" data-ok="1">It generates by removing noise step by step, and the network that makes each step’s prediction is a Transformer</button><button type="button" class="qo">It runs a diffusion model and a Transformer and keeps the better output</button><p class="qx" hidden aria-live="polite"><b></b> Diffusion is the recipe and the Transformer is the network inside it.</p></fieldset>
-<fieldset><legend>3. In the interactive, with 4 letters of context almost every name is a copy of a training name. Why?</legend><button type="button" class="qo" data-ok="1">Each 4-letter context is so specific that usually only one training name continues it</button><button type="button" class="qo">The table has too few contexts</button><button type="button" class="qo">Longer contexts make sampling greedy</button><p class="qx" hidden aria-live="polite"><b></b> The table has memorised its training list: the generative form of overfitting.</p></fieldset>
+<fieldset><legend>3. In the interactive, with 4 letters of context almost every name is a copy of a training name. Why?</legend><button type="button" class="qo" data-ok="1">Each 4-letter context is so specific that usually only one training name continues it</button><button type="button" class="qo">The table has too few contexts</button><button type="button" class="qo">Longer contexts make sampling greedy</button><p class="qx" hidden aria-live="polite"><b></b> The table has memorized its training list: the generative form of overfitting.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>Which of the features we build need generation, and which would be served better by a classifier, a search or a plain rule?</li><li>A generator can repeat text from its training data. Where would that be a legal or privacy problem for us?</li></ul></details>
 <p class="bridge">An LLM is the autoregressive recipe running on a Transformer. <a class="xref" data-ref="why"></a> explains why that network replaced the ones before it.</p>
@@ -416,7 +416,7 @@ for k in (1, 2, 3, 4):
   </tbody>
 </table></div>
 <h3>The problem it solved</h3>
-<p>Before 2017 the standard tool for sequences was the recurrent neural network (RNN, usually an LSTM). An RNN reads one token at a time and carries a single “memory” vector forward. That has two costs. Training cannot be parallelised along the sequence, because step 50 needs the result of step 49. And information from an early word has to survive dozens of updates to reach a late one. Attention had already been added to RNNs as a helper (Bahdanau et al., 2014). The 2017 paper kept the helper and removed the RNN.</p>
+<p>Before 2017 the standard tool for sequences was the recurrent neural network (RNN, usually an LSTM). An RNN reads one token at a time and carries a single “memory” vector forward. That has two costs. Training cannot be parallelized along the sequence, because step 50 needs the result of step 49. And information from an early word has to survive dozens of updates to reach a late one. Attention had already been added to RNNs as a helper (Bahdanau et al., 2014). The 2017 paper kept the helper and removed the RNN.</p>
 <div class="flow" role="img" aria-label="Diagram: in a recurrent network, information from word 1 reaches word n through n minus 1 sequential steps. In a Transformer, every word reaches every other word in one attention step, and all positions are computed in parallel.">
   <div><b>RNN</b><small>word 1 → 2 → 3 → … → n</small></div><i>:</i>
   <div><b>n − 1 steps</b><small>between the first and last word; computed one after another</small></div>
@@ -456,25 +456,25 @@ for k in (1, 2, 3, 4):
   <li><b>Tokens and embeddings</b> turn text into vectors (<a class="xref" data-ref="tokens"></a>).</li>
   <li><b>Positional information</b> restores word order, which an RNN had for free (<a class="xref" data-ref="position"></a>).</li>
   <li><b>Self-attention</b> lets every token read every other token (<a class="xref" data-ref="attention"></a>), several times in parallel (<a class="xref" data-ref="multihead"></a>).</li>
-  <li><b>A feed-forward network, residual connections and normalisation</b> turn attention into a trainable block (<a class="xref" data-ref="block"></a>).</li>
+  <li><b>A feed-forward network, residual connections and normalization</b> turn attention into a trainable block (<a class="xref" data-ref="block"></a>).</li>
   <li><b>A stack of blocks plus an output layer</b> is the complete model (<a class="xref" data-ref="architecture"></a>).</li>
 </ul>
 <h3 class="opt">Common misconceptions</h3>
 <ul class="pit opt">
   <li><b>“The paper invented attention.”</b> Attention was already used alongside RNNs. The contribution was a model built on it with no recurrence at all, plus multi-head attention and the surrounding recipe.</li>
-  <li><b>“Attention is literally all you need.”</b> The model also needs feed-forward layers, residual connections, normalisation, embeddings and positional information. Remove any of them and it stops working.</li>
+  <li><b>“Attention is literally all you need.”</b> The model also needs feed-forward layers, residual connections, normalization, embeddings and positional information. Remove any of them and it stops working.</li>
   <li><b>“The paper introduced large language models.”</b> It introduced a translation model of at most 213 million parameters. Pretraining on raw text and scaling up came later.</li>
 </ul>
 <div class="wrapup">
 <h3>Key takeaways</h3>
-<ul class="take"><li>RNNs process tokens one after another: no parallelism along the sequence, and long paths between distant words.</li><li>Self-attention connects every pair of tokens in one step and computes all positions in parallel.</li><li>The price is work that grows with the square of the sequence length.</li><li>The 2017 paper introduced the recipe; modern LLMs keep its core and change a few details.</li></ul>
+<ul class="take"><li>RNNs process tokens one after another: no parallelizm along the sequence, and long paths between distant words.</li><li>Self-attention connects every pair of tokens in one step and computes all positions in parallel.</li><li>The price is work that grows with the square of the sequence length.</li><li>The 2017 paper introduced the recipe; modern LLMs keep its core and change a few details.</li></ul>
 <h3 class="checkh">Check yourself <span class="qscore"></span></h3>
 <div class="quiz">
 <fieldset><legend>1. Why can an RNN not be trained in parallel along the sequence?</legend><button type="button" class="qo">It has too many parameters</button><button type="button" class="qo" data-ok="1">Each step needs the result of the previous step</button><button type="button" class="qo">It uses attention</button><p class="qx" hidden aria-live="polite"><b></b> Step 50 takes the memory vector produced by step 49 as input, so the steps must run in order.</p></fieldset>
 <fieldset><legend>2. When does a self-attention layer do less arithmetic than a recurrent layer?</legend><button type="button" class="qo" data-ok="1">When the sequence is shorter than the model is wide (<span class="tex">T \lt d_{\text{model}}</span>)</button><button type="button" class="qo">Always</button><button type="button" class="qo">When the sequence is longer than the model is wide</button><p class="qx" hidden aria-live="polite"><b></b> The costs are <span class="tex">T^2 d_{\text{model}}</span> against <span class="tex">T\,d_{\text{model}}^2</span>. They are equal at <span class="tex">T = d_{\text{model}}</span>.</p></fieldset>
 <fieldset><legend>3. What was the 2017 paper’s model built for?</legend><button type="button" class="qo">Chatbots</button><button type="button" class="qo" data-ok="1">Machine translation</button><button type="button" class="qo">Image recognition</button><p class="qx" hidden aria-live="polite"><b></b> It was an encoder–decoder translation model. Decoder-only language models came afterwards.</p></fieldset>
 </div>
-<details class="talk"><summary>For team discussion</summary><ul><li>Context windows have grown from 512 tokens to hundreds of thousands. Given the T² cost, what does that imply for serving cost?</li><li>Which matters more for a team choosing a model today: per-layer arithmetic, or the ability to parallelise training?</li></ul></details>
+<details class="talk"><summary>For team discussion</summary><ul><li>Context windows have grown from 512 tokens to hundreds of thousands. Given the T² cost, what does that imply for serving cost?</li><li>Which matters more for a team choosing a model today: per-layer arithmetic, or the ability to parallelize training?</li></ul></details>
 <p class="bridge">Now the build begins. The model can only do arithmetic, so the first step, in <a class="xref" data-ref="tokens"></a>, is to turn text into numbers.</p>
 </div>
 </section>

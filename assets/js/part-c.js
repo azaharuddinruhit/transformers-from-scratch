@@ -100,6 +100,13 @@ function renderHW(){
   const tBw=(W+kv)/(sh.n*G[2]),tFl=2*N*sh.B/(sh.n*G[3]),step=Math.max(tBw,tFl),per=1/step;
   const rate=x=>x>=100?Math.round(x).toLocaleString('en-US'):x>=10?x.toFixed(1):x.toFixed(2);
   $('#hw-stats').innerHTML=[['Weights',bytes(W)],['KV cache',bytes(kv)],['Needed',bytes(need)],['Available',bytes(cap)],['Speed per request',fits?'≤ '+rate(per)+' tok/s':'–'],['Total throughput',fits?'≤ '+rate(per*sh.B)+' tok/s':'–'],['Limited by',fits?(tBw>=tFl?'bandwidth':'compute'):'memory'],['To train it',bytes(16*N)+' + activations']].map(x=>'<div><span>'+x[0]+'</span><b style="font-size:.95rem">'+x[1]+'</b></div>').join('');
+  /* total throughput and speed per request for 1 to 64 requests at once, from the same two limits */
+  const at=b=>{const k=2*L*sh.T*d*2*b,s=Math.max((W+k)/(sh.n*G[2]),2*N*b/(sh.n*G[3]));return [b/s,1/s];};
+  const A=[],Bp=[];let lo=Infinity,hi=-Infinity;
+  for(let x=0;x<=6;x++){const [t,p]=at(Math.pow(2,x));A.push([x,Math.log10(t)]);Bp.push([x,Math.log10(p)]);lo=Math.min(lo,Math.log10(p));hi=Math.max(hi,Math.log10(t));}
+  lo=Math.floor(lo-0.01);hi=Math.ceil(hi+0.01);if(hi-lo<2)hi=lo+2;
+  const yt=[];for(let y=lo;y<=hi;y++)yt.push(y);const x0=Math.log2(sh.B);
+  lineChart($('#hw-chart'),[{pts:A,cls:'a'},{pts:Bp,cls:'b'}],{x0:0,x1:6,y0:lo,y1:hi,h:250,ml:54,xt:[0,1,2,3,4,5,6],xf:v=>Math.pow(2,v),yt:yt,yf:v=>v>=0&&v<4?Math.pow(10,v):pow10(v),xl:'requests at once',yl:'tokens per second',dots:[[x0,Math.log10(per*sh.B),sh.B>1?'total':''],[x0,Math.log10(per),sh.B>1?'per request':'']]});
 }
 function initHW(){
   $('#hw-model').innerHTML=IE_MODELS.map((m,i)=>'<option value="'+i+'"'+(i===sh.m?' selected':'')+'>'+m[0]+'</option>').join('');
@@ -133,21 +140,6 @@ function renderKC(){
   $('#kc-play').textContent=sk.timer?'⏸ Pause':'▶ Play';
 }
 const IE_MODELS=[['GPT-2 small size · 124M · 12 layers, width 768',124.4e6,12,768],['1B class · 24 layers, width 2048',1.2e9,24,2048],['7B class · 32 layers, width 4096',7e9,32,4096],['70B class · 80 layers, width 8192',7e10,80,8192]];
-const si={m:2,prec:2,P:1000,n:316,B:1,bw:500e9,fl:1e14,mem:22.6e9};
-function ieRate(B,Wb,N){const comp=si.fl/(2*N),band=B*si.bw/Wb,tot=Math.min(comp,band);return {tot:tot,per:tot/B,bound:comp<band?'compute':'memory bandwidth'};}
-function renderIE(){
-  const M=IE_MODELS[si.m],N=M[1],L=M[2],d=M[3],Wb=N*si.prec,T=si.P+si.n,kv=2*L*T*d*2*si.B,used=Wb+kv,r=ieRate(si.B,Wb,N);
-  const ttft=Math.max(2*N*si.P*si.B/si.fl,Wb/si.bw),total=ttft+si.n/r.per,fits=used<=si.mem,span=Math.max(used,si.mem);
-  $('#ie-bar').innerHTML='<span class="p0" style="width:'+100*Wb/span+'%" tabindex="0" data-tip="'+esc('Weights: '+bytes(Wb))+'">'+(Wb/span>0.12?'weights':'')+'</span><span class="p2" style="width:'+100*kv/span+'%" tabindex="0" data-tip="'+esc('KV cache: '+bytes(kv))+'">'+(kv/span>0.12?'KV cache':'')+'</span>'+(fits?'<span style="width:'+100*(si.mem-used)/span+'%;color:var(--muted)">'+((si.mem-used)/span>0.12?'free':'')+'</span>':'');
-  $('#ie-fit').innerHTML='<span class="badge '+(fits?'ok':'bad')+'">'+(fits?'fits':'does not fit')+'</span> Weights '+bytes(Wb)+' + KV cache '+bytes(kv)+' = '+bytes(used)+' of '+bytes(si.mem)+' device memory.'+'<br>KV cache = 2 × '+L+' layers × '+T.toLocaleString('en-US')+' tokens × '+d+' × 2 bytes × '+si.B+' request'+(si.B>1?'s':'')+' = '+kv.toLocaleString('en-US')+' bytes'+(fits?'':'<br>The speed figures below assume it did fit.');
-  const sec=t=>t<1?(t*1000).toFixed(0)+' ms':t<120?t.toFixed(1)+' s':(t/60).toFixed(1)+' min',rate=x=>x>=100?Math.round(x).toLocaleString('en-US'):x>=10?x.toFixed(1):x.toFixed(2);
-  $('#ie-stats').innerHTML=[['Time to first token',sec(ttft)],['Speed per request',rate(r.per)+' tok/s'],['Total throughput',rate(r.tot)+' tok/s'],['Full response ('+si.n+' tokens)',sec(total)],['KV cache per request',bytes(kv/si.B)],['Decode bottleneck',r.bound]].map(x=>'<div><span>'+x[0]+'</span><b style="font-size:.95rem">'+x[1]+'</b></div>').join('');
-  const a=[],b=[];let lo=Infinity,hi=-Infinity;
-  for(let x=0;x<=6;x++){const q=ieRate(Math.pow(2,x),Wb,N),y1=Math.log10(q.tot),y2=Math.log10(q.per);a.push([x,y1]);b.push([x,y2]);lo=Math.min(lo,y2);hi=Math.max(hi,y1);}
-  lo=Math.floor(lo-0.01);hi=Math.ceil(hi+0.01);if(hi-lo<2)hi=lo+2;
-  const yt=[];for(let y=lo;y<=hi;y++)yt.push(y);const x0=Math.log2(si.B);
-  lineChart($('#ie-chart'),[{pts:a,cls:'a'},{pts:b,cls:'b'}],{x0:0,x1:6,y0:lo,y1:hi,h:250,ml:54,xt:[0,1,2,3,4,5,6],xf:v=>Math.pow(2,v),yt:yt,yf:v=>v>=0&&v<4?Math.pow(10,v):pow10(v),xl:'requests in the batch',yl:'tokens per second',dots:[[x0,Math.log10(r.tot),si.B>1?'total':''],[x0,Math.log10(r.per),si.B>1?'per request':'']]});
-}
 function initInfer(){
   const reset=()=>{kcStop();sk.step=sk.n;renderKC();};
   slider('kc-P',v=>v,v=>{sk.P=v;reset();});slider('kc-n',v=>v,v=>{sk.n=v;reset();});
@@ -155,17 +147,7 @@ function initInfer(){
   $('#kc-step').addEventListener('click',()=>{kcStop();sk.step=sk.step>=sk.n?0:sk.step+1;renderKC();});
   $('#kc-reset').addEventListener('click',()=>{kcStop();sk.step=0;renderKC();});
   $('#kc-play').addEventListener('click',()=>{if(sk.timer){kcStop();renderKC();return;}if(sk.step>=sk.n)sk.step=0;sk.timer=setInterval(()=>{if(sk.step>=sk.n)kcStop();else sk.step++;renderKC();},700);renderKC();});
-  $('#ie-model').innerHTML=IE_MODELS.map((m,i)=>'<option value="'+i+'"'+(i===si.m?' selected':'')+'>'+m[0]+'</option>').join('');
-  $('#ie-model').addEventListener('change',e=>{si.m=+e.target.value;renderIE();});
-  $('#ie-prec').addEventListener('change',e=>{si.prec=+e.target.value;renderIE();});
-  const p10=v=>Math.round(Math.pow(10,v));
-  slider('ie-P',v=>p10(v).toLocaleString('en-US'),v=>{si.P=p10(v);renderIE();});si.P=p10(+$('#ie-P').value);
-  slider('ie-n',v=>p10(v).toLocaleString('en-US'),v=>{si.n=p10(v);renderIE();});si.n=p10(+$('#ie-n').value);
-  slider('ie-B',v=>Math.pow(2,v),v=>{si.B=Math.pow(2,v);renderIE();});
-  slider('ie-bw',v=>p10(v).toLocaleString('en-US')+' GB/s',v=>{si.bw=p10(v)*1e9;renderIE();});si.bw=p10(+$('#ie-bw').value)*1e9;
-  slider('ie-fl',v=>sci(Math.pow(10,v+12))+' FLOP/s',v=>{si.fl=Math.pow(10,v+12);renderIE();});si.fl=Math.pow(10,+$('#ie-fl').value+12);
-  slider('ie-mem',v=>bytes(Math.pow(2,v)*1e9),v=>{si.mem=Math.pow(2,v)*1e9;renderIE();});si.mem=Math.pow(2,+$('#ie-mem').value)*1e9;
-  reg(renderKC);reg(renderIE);
+  reg(renderKC);
 }
 /* ================= Post-training: chat template and loss mask ================= */
 const CT_MSGS=[['system','You are a helpful assistant.'],['user','What did the cat sit on?'],['assistant','The cat sat on the mat.'],['user','And the dog?'],['assistant','The text does not mention a dog.']];

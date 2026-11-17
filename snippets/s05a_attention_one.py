@@ -11,7 +11,7 @@ d_k = q.size
 scores = K @ q                      # 1. one dot product per key
 scaled = scores / np.sqrt(d_k)      # 2. divide by sqrt(d_k)
 e = np.exp(scaled)                  # 3. exponentiate ...
-alpha = e / e.sum()                 #    ... and normalise: softmax
+alpha = e / e.sum()                 #    ... and normalize: softmax
 c = alpha @ V                       # 4. weighted sum of the values
 
 print("dot products  =", scores)

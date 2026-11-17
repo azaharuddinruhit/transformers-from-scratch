@@ -15,11 +15,11 @@ def layer_norm(x, eps=1e-5):
     return (x - mu) / np.sqrt(x.var(axis=-1, keepdims=True) + eps)
 
 
-def post_norm(x, sublayer):          # 2017 paper: normalise after the add
+def post_norm(x, sublayer):          # 2017 paper: normalize after the add
     return layer_norm(x + sublayer(x))
 
 
-def pre_norm(x, sublayer):           # GPT-style: normalise a copy first
+def pre_norm(x, sublayer):           # GPT-style: normalize a copy first
     return x + sublayer(layer_norm(x))
 
 
