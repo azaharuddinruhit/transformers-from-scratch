@@ -17,9 +17,9 @@ def alpha_bar(level):
 u0 = data[:4]
 eps = rng.normal(size=u0.shape)
 a = alpha_bar(0.5)
-u_s = np.sqrt(a) * u0 + np.sqrt(1 - a) * eps
+u_noisy = np.sqrt(a) * u0 + np.sqrt(1 - a) * eps
 print("clean      ", u0.round(2).tolist())
-print("level 0.5  ", u_s.round(2).tolist())
+print("level 0.5  ", u_noisy.round(2).tolist())
 
 
 def guess_clean(u, a):

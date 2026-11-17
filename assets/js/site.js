@@ -5,14 +5,14 @@ const SITE_VERSION='__SITE_VERSION__';
 const PARTS=[
   {id:'a',name:'The big picture',goal:'What an LLM computes, how neural networks learn and generate, and why the Transformer replaced earlier networks.',secs:['intro','nn','genai','why']},
   {id:'b',name:'Building the model',goal:'Every layer of a decoder-only Transformer, from text to the probabilities of the next token.',secs:['tokens','position','attention','multihead','block','architecture']},
-  {id:'c',name:'Training and using it',goal:'How the model learns, how it generates text, and what it takes to run it.',secs:['training','posttrain','prefs','generation','inference','hardware','quant']},
+  {id:'c',name:'Training and using it',goal:'How the model learns, how it generates text, and what it takes to run it.',secs:['training','posttrain','prefs','generation','inference','hardware','quant','flash']},
   {id:'d',name:'The wider picture',goal:'The original encoder–decoder Transformer from the 2017 paper, what today’s models change, and how models read and make images.',secs:['encdec','modern','multimodal','diffusion']}];
 /* title, study minutes for Full depth and Quick tour, then the level (an index into LEVELS).
    Minutes: words / 110 + 3 per interactive, rounded to 5, code boxes left out (Full depth drops .s-only; Quick tour
    drops .opt and .x-only). Recount when a section changes a lot. */
 const SECS={intro:['What is an LLM?',10,10,0],nn:['Neural networks in 15 minutes',15,15,0],genai:['Generative AI: the big picture',15,15,0],why:['Why Transformers?',10,10,0],tokens:['Tokenization and embeddings',15,10,0],position:['Positional information',15,15,1],
   attention:['Self-attention from scratch',15,15,1],multihead:['Multi-head attention',10,10,1],block:['FFN, residuals and normalization',20,15,1],architecture:['Full decoder-only architecture',15,10,1],
-  training:['Training an LLM',20,15,1],generation:['Generation and decoding',10,10,0],hardware:['GPUs and CUDA',20,15,1],quant:['Quantization',15,10,1],inference:['Inference in practice',15,10,1],posttrain:['From base model to assistant',10,10,1],prefs:['Preference tuning and reasoning',15,10,1],
+  training:['Training an LLM',20,15,1],generation:['Generation and decoding',10,10,0],hardware:['GPUs and CUDA',20,15,1],quant:['Quantization',15,10,1],flash:['FlashAttention',15,10,2],inference:['Inference in practice',15,10,1],posttrain:['From base model to assistant',10,10,1],prefs:['Preference tuning and reasoning',15,10,1],
   encdec:['Encoder–decoder and the 2017 paper',25,15,1],modern:['What modern LLMs change',20,20,2],
   multimodal:['Multimodal LLMs: reading images',15,10,1],diffusion:['How diffusion models make images',15,15,1]};
 const LEVELS=['Foundation','Core','Deep dive'];

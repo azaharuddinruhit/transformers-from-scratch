@@ -237,4 +237,73 @@ function initQuant(){
   reg(renderQuant);
 }
 
-PAGE_INITS.push(initTrain,initGen,initHW,initInfer,initChat,initPref,initQuant);
+/* ================= FlashAttention: attention, one tile at a time ================= */
+/* 8 tokens with 2-number queries and keys and 1-number values, causal mask. The tiled path keeps the running
+   maximum, sum and weighted sum per query (online softmax); the plain path stores the full grids. */
+const FL_T=8,FL=(()=>{const r=mulberry32(31),v=()=>[1.3*randn(r),1.3*randn(r)],Q=[],K=[],V=[];
+  for(let i=0;i<FL_T;i++){Q.push(v());K.push(v());V.push(1+Math.floor(r()*9));}
+  return{S:Q.map(q=>K.map(k=>(q[0]*k[0]+q[1]*k[1])/Math.SQRT2)),V};})();
+const sfl={mode:'tiled',B:4,row:7,step:0,T:32768};
+const flTiles=()=>{const t=[],n=FL_T/sfl.B;for(let qb=0;qb<n;qb++)for(let kb=0;kb<=qb;kb++)t.push([qb,kb]);return t;};
+const flTotal=()=>sfl.mode==='tiled'?flTiles().length:3;
+function flExact(i){const s=FL.S[i].slice(0,i+1),m=Math.max(...s),e=s.map(x=>Math.exp(x-m)),z=e.reduce((a,b)=>a+b,0);return{w:e.map(x=>x/z),c:e.reduce((a,x,j)=>a+x*FL.V[j],0)/z};}
+/* the running totals of query i after the tiles processed so far */
+function flRun(i){
+  let m=-Infinity,r=0,o=0;const hist=[],B=sfl.B;
+  flTiles().slice(0,sfl.step).forEach(([qb,kb])=>{
+    if(qb!==Math.floor(i/B))return;
+    const js=[];for(let j=kb*B;j<(kb+1)*B&&j<=i;j++)js.push(j);
+    const m2=Math.max(m,...js.map(j=>FL.S[i][j])),sc=Math.exp(m-m2);
+    r=r*sc+js.reduce((a,j)=>a+Math.exp(FL.S[i][j]-m2),0);
+    o=o*sc+js.reduce((a,j)=>a+Math.exp(FL.S[i][j]-m2)*FL.V[j],0);
+    hist.push({js,m:m2,r,o,rescaled:isFinite(m)&&m2>m,last:kb===qb});m=m2;});
+  return hist;
+}
+function renderFlash(){
+  const B=sfl.B,T=FL_T,tiled=sfl.mode==='tiled',tiles=flTiles(),cur=tiled&&sfl.step?tiles[sfl.step-1]:null;
+  let h='<div class="flg" style="grid-template-columns:auto repeat('+T+',minmax(34px,1fr))"><span></span>';
+  for(let j=0;j<T;j++)h+='<span class="flh">key '+(j+1)+'<br>v = '+FL.V[j]+'</span>';
+  for(let i=0;i<T;i++){
+    h+='<button type="button" class="flrb'+(i===sfl.row?' on':'')+'" data-i="'+i+'" aria-pressed="'+(i===sfl.row)+'">query '+(i+1)+'</button>';
+    for(let j=0;j<T;j++){
+      const ti=tiles.findIndex(t=>t[0]===Math.floor(i/B)&&t[1]===Math.floor(j/B));
+      let st='';if(j>i)st='msk';else if(tiled){if(ti>=0&&ti<sfl.step-1)st='used';else if(ti===sfl.step-1)st='now';}else if(sfl.step>=1)st='hbm';
+      const shown=st&&st!=='msk',val=!tiled&&sfl.step>=2?fmt(flExact(i).w[j],2):fmt(FL.S[i][j],1);
+      h+='<span class="flc fls '+st+(tiled&&j%B===0&&j?' tl':'')+(tiled&&i%B===0&&i?' tt':'')+(i===sfl.row?' fol':'')+'">'+(shown?val:'')+'</span>';}
+  }
+  $('#fl-grid').innerHTML=h+'</div>';
+  const n=flTotal(),vis=T*(T+1)/2;
+  $('#fl-cap').innerHTML=!sfl.step?'Press Step to begin. Each cell will hold the score of a query against a key; a value <i>v</i> sits above each key.'
+    :tiled?'Tile '+sfl.step+' of '+n+': queries '+(cur[0]*B+1)+'–'+(cur[0]*B+B)+' against keys '+(cur[1]*B+1)+'–'+(cur[1]*B+B)+'. Its scores are computed in fast memory, folded into each query’s running totals, and discarded.'+(sfl.step===n?' Done: tiles wholly above the diagonal were never computed.':'')
+    :['','All '+vis+' visible scores are computed and written to main memory.','The scores are read back, each row goes through softmax, and '+vis+' probabilities are written to main memory (shown in the cells).','The probabilities and the values are read back and the outputs are written. Done.'][sfl.step];
+  const i=sfl.row,ex=flExact(i);
+  $('#fl-rlab').textContent='Query '+(i+1)+(tiled?': running totals after each of its tiles':': plain attention');
+  let t;
+  if(tiled){const hist=flRun(i);
+    t='<thead><tr><th>Tile (keys)</th><th>Largest score <i>m</i></th><th>Sum <i>r</i></th><th>Weighted sum <i>o</i></th><th></th></tr></thead><tbody>'+
+      (hist.length?hist.map(e=>'<tr><td>'+(e.js[0]+1)+'–'+(e.js[e.js.length-1]+1)+'</td><td>'+fmt(e.m,2)+'</td><td>'+fmt(e.r,3)+'</td><td>'+fmt(e.o,3)+'</td><td>'+(e.rescaled?'<span class="badge bad">largest rose: old totals rescaled</span>':'')+'</td></tr>').join(''):'<tr><td colspan="5">No tile of this query has been processed yet.</td></tr>');
+    const done=hist.length&&hist[hist.length-1].last;
+    t+='</tbody>'+(done?'<tfoot><tr><th scope="row">Output</th><td colspan="4"><i>o</i> ÷ <i>r</i> = '+fmt(hist[hist.length-1].o/hist[hist.length-1].r,4)+' · exact softmax: '+fmt(ex.c,4)+' <span class="badge ok">same</span></td></tr></tfoot>':'');}
+  else t='<tbody><tr><th scope="row">Probabilities</th><td>'+(sfl.step>=2?ex.w.map(w=>fmt(w,3)).join(', '):'not computed yet')+'</td></tr><tr><th scope="row">Output</th><td>'+(sfl.step>=3?fmt(ex.c,4):'not computed yet')+'</td></tr></tbody>';
+  $('#fl-run').innerHTML=t;
+  const written=tiled?0:(sfl.step>=2?2*vis:sfl.step>=1?vis:0),finished=tiled?tiles.slice(0,sfl.step).filter(x=>x[0]===x[1]).length*B:(sfl.step>=3?T:0);
+  $('#fl-stats').innerHTML=[['Step',sfl.step+' / '+n],['Grid values written to main memory',written],['Most scores held at once',tiled?B*B:vis],['Outputs finished',finished+' of '+T]].map(r=>'<div><b>'+r[1]+'</b><span>'+r[0]+'</span></div>').join('');
+  const g=sfl.T*sfl.T*32*2;
+  $('#fl-mem').innerHTML='At '+sfl.T.toLocaleString('en-US')+' tokens, plain attention stores '+bytes(g)+' of scores per layer for 32 heads, and the same again for the probabilities. FlashAttention holds tiles of 128 × 128 scores, '+bytes(128*128*2)+' each, in on-chip memory.';
+  $('#fl-step').disabled=sfl.step>=n;$('#fl-all').disabled=sfl.step>=n;
+  [['fl-mode',sfl.mode],['fl-b',String(B)]].forEach(([id,v])=>$$('#'+id+' button').forEach(b=>{const o=b.dataset.v===v;b.classList.toggle('on',o);b.setAttribute('aria-pressed',o);}));
+}
+function initFlash(){
+  const chips=(id,opts,set)=>{const el=$('#'+id);el.innerHTML=opts.map(o=>'<button class="chip" data-v="'+o[0]+'" aria-pressed="false">'+o[1]+'</button>').join('');
+    el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;set(b.dataset.v);sfl.step=0;renderFlash();$('#'+id+' button[data-v="'+b.dataset.v+'"]').focus();});};
+  chips('fl-mode',[['tiled','Tiled (FlashAttention)'],['plain','Plain']],v=>{sfl.mode=v;});
+  chips('fl-b',[['2','2 × 2'],['4','4 × 4']],v=>{sfl.B=+v;});
+  $('#fl-step').addEventListener('click',()=>{if(sfl.step<flTotal())sfl.step++;renderFlash();});
+  $('#fl-all').addEventListener('click',()=>{sfl.step=flTotal();renderFlash();});
+  $('#fl-reset').addEventListener('click',()=>{sfl.step=0;renderFlash();});
+  $('#fl-grid').addEventListener('click',e=>{const b=e.target.closest('.flrb');if(b){sfl.row=+b.dataset.i;renderFlash();$('#fl-grid .flrb[data-i="'+sfl.row+'"]').focus();}});
+  slider('fl-T',v=>Math.pow(2,v).toLocaleString('en-US'),v=>{sfl.T=Math.pow(2,v);renderFlash();});
+  reg(renderFlash);
+}
+
+PAGE_INITS.push(initTrain,initGen,initHW,initInfer,initChat,initPref,initQuant,initFlash);

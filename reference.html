@@ -260,12 +260,12 @@
     <tr><th scope="row"><span class="tex">P,\ n</span></th><td>prompt length; number of tokens generated</td><td>integers</td></tr>
     <tr><th scope="row"><span class="tex">D</span></th><td>number of training tokens</td><td>integer</td></tr>
     <tr><th scope="row"><span class="tex">\Delta,\ q,\ q_{\max},\ \hat w</span></th><td>in quantization: the scale of a group; the stored integer; the largest integer (7 for 4 bits); the weight the model computes with</td><td>positive number; integer; integer; number</td></tr>
+    <tr><th scope="row"><span class="tex">m_i,\ r_i,\ o_i</span></th><td>in FlashAttention: the running largest score, sum of exponentials and weighted sum of values for query <span class="tex">i</span></td><td>numbers; a vector like <span class="tex">v_j</span></td></tr>
     <tr><th scope="row"><span class="tex">W_{\text{patch}}</span></th><td>the matrix that turns a flattened image patch into a vector</td><td><code>[pixels per patch × 3, d_model]</code></td></tr>
-    <tr><th scope="row"><span class="tex">u_0,\ u_s</span></th><td>in diffusion: a clean example; the same example at noise level <span class="tex">s</span></td><td>one number per pixel value</td></tr>
-    <tr><th scope="row"><span class="tex">s,\ S</span></th><td>in diffusion: a noise level; the highest level, pure noise</td><td>0 … S</td></tr>
-    <tr><th scope="row"><span class="tex">\bar\alpha_s</span></th><td>in diffusion: the share of the clean example kept at level <span class="tex">s</span></td><td>0 … 1</td></tr>
+    <tr><th scope="row"><span class="tex">u_0,\ u_{\text{noisy}}</span></th><td>in diffusion: a clean example; the same example with noise mixed in</td><td>one number per pixel value</td></tr>
+    <tr><th scope="row"><span class="tex">\bar\alpha</span></th><td>in diffusion: the share of the clean example kept, set by the noise level</td><td>0 … 1</td></tr>
     <tr><th scope="row"><span class="tex">\varepsilon,\ \hat\varepsilon,\ \varepsilon_\theta</span></th><td>in diffusion: the noise added; its prediction; the network that predicts it</td><td>same shape as <span class="tex">u_0</span></td></tr>
-    <tr><th scope="row"><span class="tex">c,\ \gamma</span></th><td>the condition a generator follows, usually the prompt; the guidance scale</td><td>vectors; positive number</td></tr>
+    <tr><th scope="row"><span class="tex">\gamma</span></th><td>in diffusion: the guidance scale</td><td>positive number</td></tr>
   </tbody>
 </table></div>
 <p>Where a source uses different letters (the 2017 paper writes <span class="tex">pos</span>, <span class="tex">n</span> and <span class="tex">d</span>, for instance), the section says so.</p>

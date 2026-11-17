@@ -843,7 +843,7 @@ for B in (1, 16, 256):
 <ul class="opt">
   <li><b>Prompt caching</b>: keeping the KV cache of a prefix that many requests share, such as a long system prompt, so its prefill is paid once.</li>
   <li><b>Beam search</b>: keeping several candidate continuations alive and choosing the most probable overall. Common in translation; rare in chat models, where sampling gives more natural text.</li>
-  <li><b>FlashAttention</b>: computes attention in tiles that fit in the GPU’s fast on-chip memory, so the full <span class="tex">T\times T</span> score matrix is never written out. The result is exact; it saves memory traffic, which is what makes long contexts affordable. Some long-context models also use <b>sliding-window attention</b> in some layers, where each token attends only to the most recent few thousand tokens.</li>
+  <li><b>FlashAttention</b>: computes attention in tiles that fit in the GPU’s fast on-chip memory, so the full <span class="tex">T\times T</span> score matrix is never written out. The result is exact; it saves memory traffic, which is what makes long contexts affordable (<a class="xref" data-ref="flash"></a>). Some long-context models also use <b>sliding-window attention</b> in some layers, where each token attends only to the most recent few thousand tokens.</li>
   <li><b>A smaller cache</b>: most current models share each key and value head between several query heads (grouped-query attention, see <a class="xref" data-ref="modern"></a>), which divides the cache by the same factor.</li>
   <li><b>Speculative decoding</b>: a small, fast model drafts a few tokens and the large model checks them in one parallel pass, keeping those it agrees with. Done correctly, the output distribution is unchanged and only the speed improves.</li>
 </ul>
@@ -1243,6 +1243,136 @@ for name, bpw in [("bf16", 16), ("int8", 8 + 16 / 32), ("int4", 4 + 16 / 32)]:
 <fieldset><legend>3. A 70-billion-parameter model is quantized to 4 bits with a 16-bit scale per 32 weights. Roughly how much memory do its weights take?</legend><button type="button" class="qo">140 GB</button><button type="button" class="qo" data-ok="1">About 39 GB</button><button type="button" class="qo">About 9 GB</button><p class="qx" hidden aria-live="polite"><b></b> 4.5 bits per weight × 70 × 10⁹ ÷ 8 ≈ 39 GB.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>What checks would we run before switching a deployed model from 16 bits to 4 bits?</li><li>A 4-bit 32B model and a 16-bit 8B model take similar memory. Which would we expect to do better on our tasks, and how would we find out?</li></ul></details>
+<p class="bridge">Quantization shrinks the weights. <a class="xref" data-ref="flash"></a> removes a different cost: the memory traffic of attention itself.</p>
+</div>
+</section>
+<section class="ch" id="flash" data-title="FlashAttention">
+<h2>FlashAttention: attention in tiles</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why plain attention is slowed by memory traffic more than by arithmetic.</li><li>Compute a softmax in pieces, with a running maximum and a running sum.</li><li>Say what FlashAttention changes, and what it leaves unchanged.</li></ul></div><p class="needs"><b>Builds on</b> <a class="xref" data-ref="attention"></a> and the memory and bandwidth ideas in <a class="xref" data-ref="hardware"></a>.</p></div>
+<div class="story"><p>For “the cat sat on the”, the attention scores of one head form a 5 × 5 grid: 25 numbers. For a 32,768-token document they form a grid of over a billion numbers, per head, per layer. Writing that grid to memory and reading it back takes longer than computing it.</p></div>
+<p>Attention, as written in <a class="xref" data-ref="attention"></a>, computes every score, turns each row into probabilities, then mixes the values. Done in that order, the full <span class="tex">T\times T</span> grid of scores has to be stored in between. <b>FlashAttention</b> (Dao and others, 2022) computes exactly the same result without ever storing the grid. It is now the standard way attention is computed on GPUs.</p>
+<h3>Two kinds of GPU memory</h3>
+<ul>
+  <li><b>Main memory</b> (HBM, the “GPU memory” on the box): tens of gigabytes, read at a few terabytes per second. The weights, the KV cache and anything stored between steps live here.</li>
+  <li><b>On-chip memory</b> (SRAM): a few hundred kilobytes next to each group of cores, tens of megabytes in all, and roughly ten times faster. Arithmetic can only work on data brought in here.</li>
+</ul>
+<p>The FlashAttention paper gives the A100 as an example: about 40 GB of main memory at 1.5 TB/s, against 20 MB of on-chip memory at about 19 TB/s.</p>
+<div class="flow" role="img" aria-label="Diagram: plain attention writes the score grid to main memory, reads it to apply softmax, writes the probabilities, and reads them again; FlashAttention loads small tiles of queries, keys and values into on-chip memory and writes only the output">
+  <div><b>Plain attention</b><small>scores → main memory → softmax → main memory → × values</small></div><i>·</i>
+  <div class="fa"><b>FlashAttention</b><small>tile of Q, K, V → on-chip: scores, softmax, × values → only the output is written</small></div>
+</div>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>Why not just cut the grid into tiles?</b> Scores are easy to compute a tile at a time: each one needs only a query and a key. The softmax is the problem. Every probability is divided by the sum over the whole row, and that sum is not known until the last tile of the row has been seen.</p>
+<p><b>The fix: keep running totals.</b> For each query, keep three numbers while the tiles of keys go past: the largest score so far, the sum of the exponentials of the scores measured from that largest score, and the matching weighted sum of the values. When a tile brings a larger score, the totals so far are rescaled to the new largest score. After the last tile, one division gives the exact result:</p>
+<div class="tex d">\begin{aligned}m_i' &amp;= \max\!\big(m_i,\ \max_{j\in\text{tile}} s_{ij}\big)\\ r_i' &amp;= r_i\,e^{m_i-m_i'}+\textstyle\sum_{j\in\text{tile}}e^{s_{ij}-m_i'}\\ o_i' &amp;= o_i\,e^{m_i-m_i'}+\textstyle\sum_{j\in\text{tile}}e^{s_{ij}-m_i'}\,v_j\end{aligned}\qquad\text{and at the end}\qquad c_i=\frac{o_i}{r_i}</div>
+<p class="sym"><span class="tex">s_{ij}</span> is the score of query <span class="tex">i</span> against key <span class="tex">j</span>, <span class="tex">v_j</span> the value of key <span class="tex">j</span>, and <span class="tex">c_i</span> the output, all as in <a class="xref" data-ref="attention"></a>. <span class="tex">m_i</span> is the largest score seen so far, <span class="tex">r_i</span> the running sum of exponentials and <span class="tex">o_i</span> the running weighted sum of values; a prime marks the value after the tile. They start at <span class="tex">-\infty</span>, 0 and 0.</p>
+<details class="why"><summary>Why subtract the largest score at all?</summary><div class="whyb">Softmax gives the same result whatever constant is subtracted from every score, and subtracting the largest keeps every exponential at most 1, so nothing overflows (the same trick as in <a class="xref" data-ref="intro"></a>’s Python box). The factor <span class="tex">e^{m_i-m_i'}</span> converts totals measured from the old largest score into totals measured from the new one.</div></details>
+<div class="worked">
+  <h4>Worked example: a softmax in two tiles</h4>
+  <div class="x-only"><p>One query, four keys with scores <span class="tex">[1,\;2,\;3,\;0]</span> and one-number values <span class="tex">[10,\;20,\;30,\;40]</span>, in tiles of two.</p>
+  <p>Tile 1, scores 1 and 2: <span class="tex">m=2</span>, <span class="tex">r=e^{-1}+e^{0}=1.3679</span>, <span class="tex">o=10e^{-1}+20=23.679</span>.</p>
+  <p>Tile 2, scores 3 and 0: the largest score rises to 3, so the old totals are multiplied by <span class="tex">e^{2-3}=0.3679</span>. Then <span class="tex">r=1.3679\times0.3679+e^{0}+e^{-3}=1.5530</span> and <span class="tex">o=23.679\times0.3679+30+40e^{-3}=40.702</span>.</p>
+  <p>Result: <span class="tex">c=40.702/1.5530=26.21</span>. The ordinary softmax gives weights <span class="tex">[0.087,\;0.237,\;0.644,\;0.032]</span> and the same <span class="tex">26.21</span>.</p></div>
+  <p class="s-only">Scores 1, 2, 3 and 0 for values 10, 20, 30 and 40, taken two at a time. After the first pair the running total is measured from the largest score so far, 2. The second pair brings a 3, so the old total is scaled down by <span class="tex">e^{-1}</span> before the new terms are added. The final answer, 26.21, is exactly what the ordinary softmax gives.</p>
+</div>
+<div class="widget" id="w-flash">
+  <h4 class="wt">Interactive · attention, one tile at a time</h4>
+  <p class="look"><b>The point:</b> The tiled computation keeps only one small tile of scores at a time, and still gets the exact output. <b>Do this:</b> With “Tiled”, press Step and follow the highlighted row’s running totals. Then switch to “Plain” and step again. <b>Watch for:</b> The count of grid values written to main memory, and the final output, which matches the exact softmax.</p>
+  <div class="controls">
+    <div class="ctl"><span>Method</span><div class="chips" id="fl-mode" role="group" aria-label="Method"></div></div>
+    <div class="ctl"><span>Tile size</span><div class="chips" id="fl-b" role="group" aria-label="Tile size"></div></div>
+  </div>
+  <div class="controls"><button class="pri" id="fl-step">Step ›</button><button id="fl-all">Run to the end</button><button id="fl-reset">Reset</button></div>
+  <p class="cap" id="fl-cap" aria-live="polite"></p>
+  <div class="scroll"><div id="fl-grid"></div></div>
+  <div class="lg"><span><i class="fls now"></i> in fast on-chip memory now</span><span><i class="fls used"></i> used, then discarded</span><span><i class="fls hbm"></i> stored in main memory</span><span><i class="fls msk"></i> masked (a token cannot see later tokens)</span></div>
+  <span class="lab" id="fl-rlab"></span>
+  <div class="scroll"><table class="numt" id="fl-run"></table></div>
+  <div class="stats" id="fl-stats"></div>
+  <label class="ctl"><span class="row">Sequence length for real sizes <output id="fl-T-o"></output></span><input type="range" id="fl-T" min="10" max="17" step="1" value="15"></label>
+  <p class="readout" id="fl-mem"></p>
+  <small>What is simplified: 8 tokens, with keys and queries of 2 numbers and values of 1 number, so that every cell fits on screen; real tiles are about 64 to 128 rows of queries by as many keys. Click a row of the grid to follow a different query. The real-size figures assume 32 heads and 16-bit numbers, and count only the score grid.</small>
+  <div class="wjh"><b>What just happened?</b> In plain attention the whole grid of scores was written to main memory, then the grid of probabilities, and both were read back. In the tiled version each tile of scores was computed in fast memory, folded into the running totals and thrown away, so nothing of size <span class="tex">T\times T</span> was ever stored, and tiles entirely above the diagonal were skipped. Each time a tile raised the largest score, the earlier totals were rescaled. The final division gave the same output as the exact softmax, to the last digit shown: FlashAttention is not an approximation.</div>
+</div>
+<details class="callout code opt"><summary>In Python: online softmax, checked against plain attention</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s11d_flash.py"><code>import numpy as np
+
+rng = np.random.default_rng(0)
+T, d_k, tile = 1024, 64, 128
+Q, K, V = (rng.normal(size=(T, d_k)) for _ in range(3))
+
+
+def plain_attention(Q, K, V):
+    S = Q @ K.T / np.sqrt(d_k)                        # the full T x T grid of scores
+    S[np.triu_indices(T, 1)] = -np.inf                # causal mask
+    P = np.exp(S - S.max(axis=1, keepdims=True))
+    return (P / P.sum(axis=1, keepdims=True)) @ V, S.size
+
+
+def tiled_attention(Q, K, V):
+    out, largest = np.zeros_like(Q), 0
+    for q0 in range(0, T, tile):                      # one tile of queries at a time
+        q = Q[q0:q0 + tile]
+        m = np.full(len(q), -np.inf)                  # running largest score
+        r = np.zeros(len(q))                          # running sum of exponentials
+        o = np.zeros((len(q), V.shape[1]))            # running weighted sum of values
+        for k0 in range(0, q0 + tile, tile):          # tiles wholly above the diagonal are skipped
+            s = q @ K[k0:k0 + tile].T / np.sqrt(d_k)  # one tile of scores, never stored
+            rows, cols = np.arange(q0, q0 + len(q))[:, None], np.arange(k0, k0 + tile)[None, :]
+            s[cols &gt; rows] = -np.inf
+            largest = max(largest, s.size)
+            m_new = np.maximum(m, s.max(axis=1))
+            scale = np.exp(m - m_new)                 # rescale the old totals to the new maximum
+            e = np.exp(s - m_new[:, None])
+            r = r * scale + e.sum(axis=1)
+            o = o * scale[:, None] + e @ V[k0:k0 + tile]
+            m = m_new
+        out[q0:q0 + tile] = o / r[:, None]
+    return out, largest
+
+
+a, grid = plain_attention(Q, K, V)
+b, held = tiled_attention(Q, K, V)
+print("same output as plain      :", bool(np.abs(a - b).max() &lt; 1e-12))
+print("scores stored, plain      :", f"{grid:,}")
+print("scores held at once, tiled:", f"{held:,}")
+
+# The worked example: scores [1, 2, 3, 0], values [10, 20, 30, 40], tiles of two
+s, v = np.array([1.0, 2, 3, 0]), np.array([10.0, 20, 30, 40])
+w = np.exp(s - s.max()) / np.exp(s - s.max()).sum()
+print("softmax weights           :", w.round(3), " output", round(float(w @ v), 2))
+
+# Output:
+# same output as plain      : True
+# scores stored, plain      : 1,048,576
+# scores held at once, tiled: 16,384
+# softmax weights           : [0.087 0.237 0.644 0.032]  output 26.21</code></pre></details>
+<h3>What it changes, and what it does not</h3>
+<ul>
+  <li><b>The result is exact.</b> Up to the rounding of floating-point arithmetic, the output is the same as plain attention’s.</li>
+  <li><b>Memory falls from <span class="tex">T^2</span> to <span class="tex">T</span>.</b> Only tiles, the running totals and the output are held, so long contexts no longer need room for the score grid.</li>
+  <li><b>Speed rises</b> because far less data moves through main memory. The paper reported attention several times faster than the standard implementation of the time.</li>
+  <li><b>Training</b> does not store the probabilities for the backward pass either; it recomputes each tile when needed. That is more arithmetic but less memory traffic, a good trade on a GPU.</li>
+  <li><b>The arithmetic still grows with <span class="tex">T^2</span>.</b> FlashAttention removes the memory cost of the grid, not the work of computing it. Approximations such as sliding-window attention (<a class="xref" data-ref="inference"></a>) are a different idea.</li>
+</ul>
+<p class="opt">Later versions, FlashAttention-2 (2023) and FlashAttention-3 (2024), divide the work better between the GPU’s cores and use newer hardware features such as fp8 on H100 GPUs. You rarely call it yourself: PyTorch’s built-in <code>scaled_dot_product_attention</code> and inference servers such as vLLM use FlashAttention-style kernels when the hardware supports them.</p>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“FlashAttention approximates attention to make it faster.”</b> It computes the same numbers in a different order.</li>
+  <li><b>“FlashAttention makes long contexts cheap.”</b> It removes the memory for the score grid and much of the memory traffic. The arithmetic still grows with the square of the length.</li>
+  <li><b>“FlashAttention shrinks the KV cache.”</b> The cache stores keys and values, not scores. Grouped-query attention (<a class="xref" data-ref="modern"></a>) and quantization (<a class="xref" data-ref="quant"></a>) shrink the cache.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Plain attention stores the <span class="tex">T\times T</span> scores and probabilities in main memory, and the traffic, not the arithmetic, sets its speed.</li><li>FlashAttention computes attention one tile at a time in fast on-chip memory and writes only the output.</li><li>A running maximum, sum and weighted sum per query let the softmax be computed in pieces, exactly.</li><li>It saves memory and time, but the arithmetic still grows with <span class="tex">T^2</span>.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. What stops plain attention from simply being computed a tile at a time?</legend><button type="button" class="qo">Scores need every query at once</button><button type="button" class="qo" data-ok="1">Softmax divides by a sum over the whole row, which is not known until the row is finished</button><button type="button" class="qo">GPUs cannot multiply small matrices</button><p class="qx" hidden aria-live="polite"><b></b> Running totals, rescaled whenever the largest score changes, solve exactly this.</p></fieldset>
+<fieldset><legend>2. The running maximum for a query rises from 2 to 3 when a new tile arrives. What happens to the running sum?</legend><button type="button" class="qo">It is reset to zero</button><button type="button" class="qo">It is left as it is</button><button type="button" class="qo" data-ok="1">It is multiplied by <span class="tex">e^{2-3}</span>, then the new tile’s terms are added</button><p class="qx" hidden aria-live="polite"><b></b> The rescaling makes the old terms measured from the new largest score, like the new ones.</p></fieldset>
+<fieldset><legend>3. Which of these does FlashAttention reduce?</legend><button type="button" class="qo" data-ok="1">The memory used for attention scores, and the traffic to main memory</button><button type="button" class="qo">The number of multiplications, from <span class="tex">T^2</span> to <span class="tex">T</span></button><button type="button" class="qo">The size of the KV cache</button><p class="qx" hidden aria-live="polite"><b></b> The arithmetic and the cache are unchanged; the grid of scores is never stored.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>FlashAttention speeds things up without changing the maths, by changing the order of work to suit the memory. Where in our own systems is data movement, not computation, the real cost?</li><li>If a vendor claims a model with a very long context is cheap to run, which costs would we ask about?</li></ul></details>
 <p class="bridge">You can now build, train, sample from and serve a model. <a class="xref" data-ref="models"></a> lists open models you can run yourself, most of them quantized, and <a class="xref" data-ref="encdec"></a> turns to the other branch of the Transformer family.</p>
 </div>
 </section>
