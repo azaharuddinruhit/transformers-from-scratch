@@ -184,3 +184,8 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 .dfd{fill:var(--muted);opacity:.45}.dfp{fill:var(--accent);opacity:.8}
 .dfr{fill:none;stroke:var(--ink);stroke-width:1.6}.dfl{stroke:var(--ink);stroke-width:1;stroke-dasharray:3 2}.dfx{stroke:var(--ink);stroke-width:2;fill:none}
 #w-diff [hidden]{display:none}
+/* quantization (Part C) */
+#qz-svg{display:block;width:100%;margin:12px 0 4px}
+.qzax{stroke:var(--line)}.qzt{font:500 11px var(--mono);fill:var(--muted)}
+.qzl{stroke:var(--accent);stroke-opacity:.35;stroke-width:1}.qzb{stroke:var(--muted);stroke-dasharray:3 3}
+.qze{stroke:var(--warn);stroke-width:1.5}.qzo{fill:none;stroke:var(--ink);stroke-width:1.2}.qzq{fill:var(--accent)}

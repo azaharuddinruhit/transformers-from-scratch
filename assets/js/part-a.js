@@ -139,7 +139,7 @@ function genStep(){
   if(ch==='.'||GN.word.length>=GEN_MAX){GN.done=true;GN.list.unshift(GN.word);}else GN.word+=ch;
 }
 function genName(){do genStep();while(!GN.done);}
-function renderGen(){
+function renderNames(){
   const k=GN.k,ctx=genCtx(),row=genTable(k)[ctx],tot=Object.values(row).reduce((a,b)=>a+b,0);
   const letters=ctx.replace(/\./g,''),after=letters?'after “'+letters+'”'+(ctx[0]==='.'?' at the start of a name':''):'for the first letter of a name';
   const w=GN.word,cut=Math.max(0,w.length-k);
@@ -155,15 +155,15 @@ function renderGen(){
   $('#gn-stats').innerHTML=[['Names generated',N],['New names',N?Math.round(100*(N-cp)/N)+'%':'–'],['Copies',N?Math.round(100*cp/N)+'%':'–'],['Contexts in the table',Object.keys(genTable(k)).length]].map(r=>'<div><b>'+r[1]+'</b><span>'+r[0]+'</span></div>').join('');
   $$('#gn-k button').forEach(b=>{const on=+b.dataset.v===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);});
 }
-function initGen(){
+function initNames(){
   const el=$('#gn-k');
   el.innerHTML=[1,2,3,4].map(v=>'<button class="chip" data-v="'+v+'" aria-pressed="false">'+v+'</button>').join('');
-  el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;GN.k=+b.dataset.v;GN.word='';GN.done=false;GN.list=[];renderGen();});
-  $('#gn-one').addEventListener('click',()=>{if(GN.done)GN.word='';GN.done=false;genName();renderGen();});
-  $('#gn-step').addEventListener('click',()=>{genStep();renderGen();});
-  $('#gn-many').addEventListener('click',()=>{for(let i=0;i<20;i++){GN.word='';GN.done=false;genName();}renderGen();});
-  $('#gn-clear').addEventListener('click',()=>{GN.word='';GN.done=false;GN.list=[];renderGen();});
-  reg(renderGen);
+  el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;GN.k=+b.dataset.v;GN.word='';GN.done=false;GN.list=[];renderNames();});
+  $('#gn-one').addEventListener('click',()=>{if(GN.done)GN.word='';GN.done=false;genName();renderNames();});
+  $('#gn-step').addEventListener('click',()=>{genStep();renderNames();});
+  $('#gn-many').addEventListener('click',()=>{for(let i=0;i<20;i++){GN.word='';GN.done=false;genName();}renderNames();});
+  $('#gn-clear').addEventListener('click',()=>{GN.word='';GN.done=false;GN.list=[];renderNames();});
+  reg(renderNames);
 }
 
-PAGE_INITS.push(initNext,initNN,initGen,initCX);
+PAGE_INITS.push(initNext,initNN,initNames,initCX);

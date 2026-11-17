@@ -211,6 +211,8 @@
   <div class="term"><dt>FlashAttention</dt><dd>An exact attention algorithm that works tile by tile in fast memory, avoiding the full T × T matrix.</dd></div>
   <div class="term"><dt>Mixture of experts</dt><dd>A layer with many expert MLPs and a router that sends each token to only a few of them.</dd></div>
   <div class="term"><dt>Quantization</dt><dd>Storing weights (and sometimes activations or the KV cache) in fewer bits to save memory and bandwidth.</dd></div>
+  <div class="term"><dt>Group size (quantization)</dt><dd>How many weights share one scale, typically 32 to 128. Smaller groups limit the damage an outlier does, at the cost of storing more scales.</dd></div>
+  <div class="term"><dt>GPTQ and AWQ</dt><dd>Post-training methods that quantize weights to about 4 bits using a little calibration data, choosing roundings or scales that keep the layer’s outputs close to the original.</dd></div>
   <div class="term"><dt>Speculative decoding</dt><dd>A small draft model proposes tokens that the large model verifies in one pass, speeding up generation.</dd></div>
   <div class="term"><dt>GPU</dt><dd>A processor with thousands of simple cores that apply the same operation to many numbers at once; it runs nearly all model training and inference.</dd></div>
   <div class="term"><dt>Tensor core</dt><dd>A unit inside a GPU that multiplies a small block of a matrix in one step, at reduced precision such as bf16 or fp8.</dd></div>
@@ -257,6 +259,7 @@
     <tr><th scope="row"><span class="tex">B</span></th><td>batch size: sequences processed together</td><td>integer</td></tr>
     <tr><th scope="row"><span class="tex">P,\ n</span></th><td>prompt length; number of tokens generated</td><td>integers</td></tr>
     <tr><th scope="row"><span class="tex">D</span></th><td>number of training tokens</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">\Delta,\ q,\ q_{\max},\ \hat w</span></th><td>in quantization: the scale of a group; the stored integer; the largest integer (7 for 4 bits); the weight the model computes with</td><td>positive number; integer; integer; number</td></tr>
     <tr><th scope="row"><span class="tex">W_{\text{patch}}</span></th><td>the matrix that turns a flattened image patch into a vector</td><td><code>[pixels per patch × 3, d_model]</code></td></tr>
     <tr><th scope="row"><span class="tex">u_0,\ u_s</span></th><td>in diffusion: a clean example; the same example at noise level <span class="tex">s</span></td><td>one number per pixel value</td></tr>
     <tr><th scope="row"><span class="tex">s,\ S</span></th><td>in diffusion: a noise level; the highest level, pure noise</td><td>0 … S</td></tr>

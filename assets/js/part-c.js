@@ -199,4 +199,42 @@ function initPref(){
   reg(renderPref);
 }
 
-PAGE_INITS.push(initTrain,initGen,initHW,initInfer,initChat,initPref);
+/* ================= Quantization: round weights to fewer bits ================= */
+/* 64 random weights, symmetric round-to-nearest with one scale per group; index 37 can be made an outlier. */
+const QZ_W=(()=>{const r=mulberry32(21);return Array.from({length:64},()=>0.05*randn(r));})(),QZ_OUT=37,QZ_Y=0.2;
+const sqz={bits:4,g:64,out:false};
+function qzRun(){
+  const w=QZ_W.slice();if(sqz.out)w[QZ_OUT]=0.6;
+  const qm=2**(sqz.bits-1)-1,groups=[],q=[];
+  for(let s=0;s<w.length;s+=sqz.g){const d=Math.max(...w.slice(s,s+sqz.g).map(Math.abs))/qm;groups.push({s,d});for(let i=s;i<s+sqz.g;i++)q.push(Math.max(-qm,Math.min(qm,Math.round(w[i]/d))));}
+  return{w,qm,groups,q,hat:q.map((v,i)=>v*groups[Math.floor(i/sqz.g)].d)};
+}
+function renderQuant(){
+  const R=qzRun(),X=i=>40+i*9,Y=v=>(130-Math.max(-QZ_Y,Math.min(QZ_Y,v))/QZ_Y*110).toFixed(1);
+  let g='<line class="qzax" x1="34" y1="130" x2="616" y2="130"/>'+[QZ_Y,QZ_Y/2,0,-QZ_Y/2,-QZ_Y].map(v=>'<text class="qzt" x="30" y="'+(+Y(v)+4)+'" text-anchor="end">'+v.toFixed(2)+'</text>').join('');
+  R.groups.forEach(G=>{
+    const x0=X(G.s)-4,x1=X(G.s+sqz.g-1)+4,lv=Math.floor(QZ_Y/G.d);
+    if(lv<=40)for(let k=-Math.min(lv,R.qm);k<=Math.min(lv,R.qm);k++)g+='<line class="qzl" x1="'+x0+'" y1="'+Y(k*G.d)+'" x2="'+x1+'" y2="'+Y(k*G.d)+'"/>';
+    if(G.s)g+='<line class="qzb" x1="'+(X(G.s)-4.5)+'" y1="14" x2="'+(X(G.s)-4.5)+'" y2="246"/>';
+  });
+  R.w.forEach((v,i)=>{const big=Math.abs(v)>QZ_Y;
+    g+='<line class="qze" x1="'+X(i)+'" y1="'+Y(v)+'" x2="'+X(i)+'" y2="'+Y(R.hat[i])+'"/><circle class="qzo" cx="'+X(i)+'" cy="'+Y(v)+'" r="3.2"/><circle class="qzq" cx="'+X(i)+'" cy="'+Y(R.hat[i])+'" r="2.4"/>';
+    if(big)g+='<text class="qzt" x="'+(X(i)+6)+'" y="'+(+Y(v)+4)+'">'+v.toFixed(2)+' ↑ (off the chart)</text>';});
+  $('#qz-svg').innerHTML=g;
+  const ord=R.w.map((v,i)=>i).filter(i=>!(sqz.out&&i===QZ_OUT)),rms=a=>Math.sqrt(a.reduce((s,v)=>s+v*v,0)/a.length);
+  const err=rms(ord.map(i=>R.w[i]-R.hat[i]))/rms(ord.map(i=>R.w[i])),zeros=R.q.filter(v=>v===0).length,bpw=sqz.bits+16/sqz.g;
+  $('#qz-stats').innerHTML=[['Bits per weight, with scales',fmt(bpw,2)],['Error on ordinary weights',(100*err).toFixed(1)+'%'],['Weights rounded to zero',zeros+' of 64'],['An 8B model’s weights',bytes(8.03e9*bpw/8)]].map(r=>'<div><b>'+r[1]+'</b><span>'+r[0]+'</span></div>').join('');
+  const G0=R.groups[Math.floor((sqz.out?QZ_OUT:0)/sqz.g)],i0=G0.s;
+  $('#qz-read').innerHTML=(sqz.out?'The outlier’s group':'Group 1')+': largest weight '+fmt(R.qm*G0.d,3)+', scale = '+fmt(R.qm*G0.d,3)+' ÷ '+R.qm+' = '+fmt(G0.d,4)+'.<br>First weights: '+[0,1,2,3].map(k=>fmt(R.w[i0+k],3)+' → '+R.q[i0+k]+' → '+fmt(R.hat[i0+k],3)).join(' · ');
+  [['qz-bits',String(sqz.bits)],['qz-g',String(sqz.g)],['qz-out',sqz.out?'on':'off']].forEach(([id,v])=>$$('#'+id+' button').forEach(b=>{const o=b.dataset.v===v;b.classList.toggle('on',o);b.setAttribute('aria-pressed',o);}));
+}
+function initQuant(){
+  const chips=(id,opts,set)=>{const el=$('#'+id);el.innerHTML=opts.map(o=>'<button class="chip" data-v="'+o[0]+'" aria-pressed="false">'+o[1]+'</button>').join('');
+    el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;set(b.dataset.v);renderQuant();$('#'+id+' button[data-v="'+b.dataset.v+'"]').focus();});};
+  chips('qz-bits',[['8','8'],['4','4'],['3','3'],['2','2']],v=>{sqz.bits=+v;});
+  chips('qz-g',[['64','64 (one scale)'],['32','32'],['16','16']],v=>{sqz.g=+v;});
+  chips('qz-out',[['off','None'],['on','One weight of 0.6']],v=>{sqz.out=v==='on';});
+  reg(renderQuant);
+}
+
+PAGE_INITS.push(initTrain,initGen,initHW,initInfer,initChat,initPref,initQuant);

@@ -897,6 +897,7 @@ for B in (1, 16, 256):
     <tr><th scope="row">int4</th><td>0.5</td><td>−8 to 7, times a scale per small group</td><td>Quantized weights for local models; check quality on your own task.</td></tr>
   </tbody>
 </table></div>
+<p>How int8 and int4 weights work, and what they cost in quality, is the subject of <a class="xref" data-ref="quant"></a>.</p>
 <h3>The equations, and the reasoning behind them</h3>
 <p><b>Will the model fit?</b> The weights take one number per parameter. The KV cache adds memory for every token of every request being served. The CUDA context, intermediate values and gaps between allocations come on top; a common rule of thumb allows another 20%:</p>
 <div class="tex d">M_{\text{needed}}\approx1.2\times\left(N\times\text{bytes per parameter}+M_{\text{KV}}\right)\le n_{\text{GPU}}\times M_{\text{GPU}}</div>
@@ -1112,7 +1113,137 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
 <fieldset><legend>3. A 7B model fits on a 24 GB card in testing but runs out of memory when many people use it. What grew?</legend><button type="button" class="qo">The weights</button><button type="button" class="qo" data-ok="1">The KV cache: one per request, growing with each conversation</button><button type="button" class="qo">The CUDA libraries</button><p class="qx" hidden aria-live="polite"><b></b> The weights are fixed. Each request adds its own cache, and it grows with every token.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>We want to run an open 70B model for 50 internal users. Would you buy GPUs, buy a DGX Spark, rent cloud GPUs or use a hosted API, and what would change your answer?</li><li>For serving our users, would we rather have more memory, more bandwidth or more compute, and why?</li></ul></details>
-<p class="bridge">You can now build, train, sample from and serve a model. <a class="xref" data-ref="models"></a> lists open models you can run yourself, and <a class="xref" data-ref="encdec"></a> turns to the other branch of the Transformer family.</p>
+<p class="bridge">Memory and bandwidth both come down to bytes per weight. <a class="xref" data-ref="quant"></a> shows how to use fewer.</p>
+</div>
+</section>
+<section class="ch" id="quant" data-title="Quantization">
+<h2>Quantization: fewer bits per weight</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Quantize a few weights to 4 bits by hand, and bound the rounding error.</li><li>Explain why one large weight spoils the rest, and how a scale per group fixes it.</li><li>Work out the memory of a quantized model, and say what it gains in speed.</li><li>Tell apart the methods and formats you will meet: GPTQ, AWQ, GGUF, NF4, fp8.</li></ul></div><p class="needs"><b>Builds on</b> Number formats and the memory and speed rules in <a class="xref" data-ref="hardware"></a>.</p></div>
+<div class="story"><p>Llama 3.1 8B takes 16 GB in bf16, too much for many laptops. Its 4-bit download is about 4.9 GB. Ask both versions to continue “the cat sat on the” and both still put “mat” first; the probabilities shift a little. Quantization is how almost everyone runs open models on their own hardware.</p></div>
+<p><b>Quantization</b> stores each weight as a small integer plus a shared scale, instead of a 16-bit float. An 8-bit integer takes half the memory of bf16; a 4-bit one takes a quarter. The model is not retrained. Each weight is rounded to the nearest value the smaller format can hold, and the rounding error is the price.</p>
+<div class="flow" role="img" aria-label="Diagram: a group of 16-bit weights is divided by a shared scale, rounded to small integers and stored; at run time the integers are multiplied by the scale again">
+  <div><b>Weights</b><small>16-bit floats</small></div><i>→</i>
+  <div class="fa"><b>÷ scale, round</b><small>one scale per group</small></div><i>→</i>
+  <div><b>Small integers</b><small>stored: 8 or 4 bits each</small></div><i>→</i>
+  <div class="fa"><b>× scale</b><small>when the weight is used</small></div><i>→</i>
+  <div><b>Approximate weights</b><small>off by at most half a step</small></div>
+</div>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>What can 4 bits hold?</b> Sixteen values. Symmetric quantization uses the integers −7 to 7 (8 bits: −127 to 127), so zero stays exactly zero and positive and negative weights are treated alike. Call the largest integer <span class="tex">q_{\max}</span>: 7 for 4 bits, 127 for 8.</p>
+<p><b>Which real numbers do they stand for?</b> Choose a step size, the <b>scale</b>, so that the largest weight in the group lands exactly on <span class="tex">q_{\max}</span>. Then every weight in the group fits:</p>
+<div class="tex d">\Delta=\frac{\max|w|}{q_{\max}},\qquad q=\operatorname{round}\!\left(\frac{w}{\Delta}\right),\qquad \hat w=q\,\Delta</div>
+<p class="sym"><span class="tex">w</span> is one weight and <span class="tex">\max|w|</span> the largest weight in its group, ignoring sign. <span class="tex">\Delta</span> is the scale, stored once per group. <span class="tex">q</span> is the integer that is stored. <span class="tex">\hat w</span> is the weight the model computes with.</p>
+<p><b>How wrong can a weight be?</b> Rounding moves a number by at most half a step:</p>
+<div class="tex d">|w-\hat w|\le\frac{\Delta}{2}</div>
+<p>So the error depends on the step, and the step depends on the largest weight in the group. That is the weak point: one unusually large weight makes the step large for every weight that shares its scale.</p>
+<p><b>What do the scales cost?</b> Each group stores one 16-bit scale, so the real size per weight is a little over the nominal bits:</p>
+<div class="tex d">\text{bits per weight}=\text{bits}+\frac{16}{\text{group size}}</div>
+<p class="sym">With groups of 32, 4-bit weights cost <span class="tex">4+16/32=4.5</span> bits each.</p>
+<div class="worked">
+  <h4>Worked example: four weights to 4 bits</h4>
+  <div class="x-only"><p>Weights <span class="tex">[0.12,\;-0.50,\;0.33,\;0.02]</span>. The largest is 0.50, so <span class="tex">\Delta=0.50/7=0.0714</span>.</p>
+  <p>Divide: <span class="tex">[1.68,\;-7.00,\;4.62,\;0.28]</span>. Round: <span class="tex">q=[2,\;-7,\;5,\;0]</span>. Multiply back: <span class="tex">\hat w=[0.143,\;-0.500,\;0.357,\;0]</span>. Errors: <span class="tex">[0.023,\;0,\;0.027,\;0.020]</span>, all within <span class="tex">\Delta/2=0.036</span>.</p>
+  <p>Now replace the last weight with an outlier, 3.0. The scale becomes <span class="tex">3.0/7=0.429</span>, and the others round to <span class="tex">q=[0,\;-1,\;1]</span>: 0.12 becomes 0, and 0.33 becomes 0.429. One weight has wrecked three.</p></div>
+  <p class="s-only">Four weights, the largest 0.50, share a step of 0.50 ÷ 7 ≈ 0.071. Each is rounded to the nearest step: 0.12 becomes 0.143 and 0.33 becomes 0.357, errors of about 0.02. If one weight were 3.0 instead, the step would be 0.43, and 0.12 would round to 0. One large weight spoils its whole group.</p>
+</div>
+<div class="widget" id="w-quant">
+  <h4 class="wt">Interactive · round weights to fewer bits</h4>
+  <p class="look"><b>The point:</b> Fewer bits means coarser steps, and one large weight coarsens the steps for its whole group. <b>Do this:</b> Step the bits down from 8 to 2. Then go back to 4 bits, add the outlier, and change the group size. <b>Watch for:</b> The horizontal lines, which are the values each group can store, and the count of weights rounded to zero.</p>
+  <div class="controls">
+    <div class="ctl"><span>Bits</span><div class="chips" id="qz-bits" role="group" aria-label="Bits per weight"></div></div>
+    <div class="ctl"><span>Weights per scale (group size)</span><div class="chips" id="qz-g" role="group" aria-label="Group size"></div></div>
+    <div class="ctl"><span>Outlier</span><div class="chips" id="qz-out" role="group" aria-label="Outlier"></div></div>
+  </div>
+  <svg id="qz-svg" viewBox="0 0 640 260" role="img" aria-label="64 weights: original values as hollow circles, quantized values as filled dots, and the values each group can store as horizontal lines"></svg>
+  <div class="lg"><span>○ original weight</span><span>● after quantization</span><span>— values the group can store</span><span>┊ group boundary</span></div>
+  <div class="stats" id="qz-stats" aria-live="polite"></div>
+  <p class="readout" id="qz-read"></p>
+  <small>What is simplified: 64 weights drawn at random, where a real layer has millions; real large weights also tend to sit in particular rows or columns. Rounding is to the nearest step, the simplest method; the methods below choose roundings more cleverly. The scales are counted as 16-bit numbers.</small>
+  <div class="wjh"><b>What just happened?</b> Each group got one scale, set by its largest weight, and every weight snapped to the nearest line. At 8 bits the lines are so close that the error is under 1% of a typical weight. At 4 bits it is about a tenth, and at 2 bits most weights round to zero. With the outlier and one scale for all 64 weights, the step grows so large that more than half the weights become zero. Smaller groups confine the damage to the outlier’s own group, at the cost of storing more scales. The errors are random in sign, so across the thousands of weights in each dot product they partly cancel; that is why a 4-bit model still works, and why 2 bits usually does not.</div>
+</div>
+<details class="callout code opt"><summary>In Python: quantize a weight matrix and measure the error</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s11c_quant.py"><code>import numpy as np
+
+rng = np.random.default_rng(0)
+W = rng.normal(0, 0.02, (512, 512))      # a weight matrix, rows are inputs
+W[rng.integers(0, 512, 8), rng.integers(0, 512, 8)] = 0.5   # a few large weights, as real models have
+x = rng.normal(0, 1, (64, 512))          # 64 input rows
+y = x @ W
+
+
+def quantize(w, bits, group):
+    """Symmetric round-to-nearest: one scale per `group` consecutive weights in each column."""
+    q_max = 2 ** (bits - 1) - 1                       # 127 for 8 bits, 7 for 4 bits
+    g = w.T.reshape(w.shape[1], -1, group)            # [columns, groups, group]
+    scale = np.abs(g).max(axis=-1, keepdims=True) / q_max
+    q = np.clip(np.round(g / scale), -q_max, q_max)   # the small integers that are stored
+    return (q * scale).reshape(w.shape[1], -1).T      # dequantized weights
+
+
+def rel(a, b):
+    return np.sqrt(((a - b) ** 2).mean() / (b ** 2).mean())
+
+
+print(f"{'bits':&gt;4} {'group':&gt;6} {'bits/weight':&gt;12} {'weight error':&gt;13} {'output error':&gt;13}")
+for bits, group in [(8, 512), (8, 32), (4, 512), (4, 32), (3, 32)]:
+    Wq = quantize(W, bits, group)
+    bpw = bits + 16 / group                            # plus one 16-bit scale per group
+    print(f"{bits:&gt;4} {group:&gt;6} {bpw:&gt;12.2f} {rel(Wq, W):&gt;13.1%} {rel(x @ Wq, y):&gt;13.1%}")
+
+params = 8.03e9                                       # Llama 3.1 8B
+for name, bpw in [("bf16", 16), ("int8", 8 + 16 / 32), ("int4", 4 + 16 / 32)]:
+    print(f"8B model in {name:5}: {params * bpw / 8 / 1e9:5.1f} GB of weights")
+
+# Output:
+# bits  group  bits/weight  weight error  output error
+#    8    512         8.03          1.0%          1.0%
+#    8     32         8.50          0.6%          0.6%
+#    4    512         4.03         17.2%         17.5%
+#    4     32         4.50         10.0%         10.0%
+#    3     32         3.50         22.7%         22.8%
+# 8B model in bf16 :  16.1 GB of weights
+# 8B model in int8 :   8.5 GB of weights
+# 8B model in int4 :   4.5 GB of weights</code></pre></details>
+<h3>What it saves</h3>
+<ul>
+  <li><b>Memory.</b> Llama 3.1 8B has 8.03 billion parameters: 16.1 GB in bf16, about 8.5 GB at 8 bits and about 4.5 GB at 4 bits, counting a 16-bit scale per 32 weights. Its Ollama download is 4.9 GB, because a few tensors keep more bits.</li>
+  <li><b>Speed.</b> Generating one token reads every weight (<a class="xref" data-ref="hardware"></a>), so reading a quarter of the bytes raises the bandwidth limit up to four times. Real gains are smaller, because the integers must be unpacked and multiplied by their scales on the fly.</li>
+  <li><b>What it costs.</b> At 8 bits the loss is usually too small to measure. At 4 bits it is small but real, and larger for small models. Below 4 bits, quality falls quickly. Always check on your own task.</li>
+</ul>
+<h3>What gets quantized</h3>
+<ul>
+  <li><b>Weights</b>: the common case, called weight-only quantization. Activations stay in 16 bits; each weight is turned back into a 16-bit number just before it is used.</li>
+  <li><b>The KV cache</b>: often stored at 8 bits, which halves the memory that grows with every token (<a class="xref" data-ref="inference"></a>).</li>
+  <li><b>Activations</b>: the hardest, because they contain large outliers. With weights and activations both at 8 bits, the multiplication itself runs on 8-bit tensor cores, which is what fp8 on H100-class GPUs provides.</li>
+</ul>
+<h3 class="opt">Methods and formats you will meet</h3>
+<ul class="opt">
+  <li><b>Round-to-nearest</b>: what the interactive does. Good enough at 8 bits.</li>
+  <li><b>GPTQ</b>: quantizes a layer a column at a time, and adjusts the weights not yet quantized to cancel the error so far, using a few hundred example inputs (calibration data).</li>
+  <li><b>AWQ</b> (activation-aware): finds the weights that meet the largest activations and scales them up before rounding, so the weights that matter most lose least.</li>
+  <li><b>GGUF</b> files for llama.cpp and Ollama, with names like <code>Q4_K_M</code>: about 4 bits, “K” for a scheme with scales inside scales, and “M” for a medium mix in which some tensors keep more bits.</li>
+  <li><b>NF4</b>: the 4-bit format of QLoRA. Its 16 levels are not evenly spaced; they follow the bell shape of typical weights, so more levels sit near zero.</li>
+  <li><b>Quantization-aware training</b>: simulating the rounding during training or fine-tuning, so the model learns weights that survive it. Better quality at low bits, at the cost of training.</li>
+</ul>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“A 4-bit model is a quarter as good.”</b> Bits measure storage, not quality. A large model at 4 bits usually loses little.</li>
+  <li><b>“Quantizing a model means retraining it.”</b> Post-training quantization needs no training, at most a small set of example inputs.</li>
+  <li><b>“All 4-bit versions of a model are the same.”</b> The group size, the method and which tensors keep more bits all differ, and so does quality.</li>
+  <li><b>Pitfall:</b> comparing two models, or two providers, without checking that both run at the same precision.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>A quantized weight is a small integer times a shared scale; the scale is the group’s largest weight divided by the largest integer.</li><li>Rounding error is at most half a step, so large weights, which enlarge the step, hurt everything in their group.</li><li>Scales per group of 32 to 128 weights limit that damage, for a fraction of a bit per weight.</li><li>4-bit weights take about a quarter of bf16’s memory and speed up memory-bound decoding; 8 bits is nearly lossless, below 4 bits quality falls fast.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. A group of weights is quantized to 4 bits (integers −7 to 7). Its largest weight is 0.7. What is the scale?</legend><button type="button" class="qo">0.0055</button><button type="button" class="qo" data-ok="1">0.1</button><button type="button" class="qo">0.175</button><p class="qx" hidden aria-live="polite"><b></b> 0.7 ÷ 7 = 0.1. (0.7 ÷ 127 ≈ 0.0055 would be the 8-bit scale.)</p></fieldset>
+<fieldset><legend>2. Why do quantized formats store a scale for every small group of weights, not one for the whole matrix?</legend><button type="button" class="qo" data-ok="1">One large weight sets the step for everything sharing its scale, so smaller groups limit the damage</button><button type="button" class="qo">Scales take no memory</button><button type="button" class="qo">The GPU can only multiply 32 numbers at a time</button><p class="qx" hidden aria-live="polite"><b></b> The step is the group’s largest weight divided by the largest integer, so an outlier coarsens only its own group.</p></fieldset>
+<fieldset><legend>3. A 70-billion-parameter model is quantized to 4 bits with a 16-bit scale per 32 weights. Roughly how much memory do its weights take?</legend><button type="button" class="qo">140 GB</button><button type="button" class="qo" data-ok="1">About 39 GB</button><button type="button" class="qo">About 9 GB</button><p class="qx" hidden aria-live="polite"><b></b> 4.5 bits per weight × 70 × 10⁹ ÷ 8 ≈ 39 GB.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>What checks would we run before switching a deployed model from 16 bits to 4 bits?</li><li>A 4-bit 32B model and a 16-bit 8B model take similar memory. Which would we expect to do better on our tasks, and how would we find out?</li></ul></details>
+<p class="bridge">You can now build, train, sample from and serve a model. <a class="xref" data-ref="models"></a> lists open models you can run yourself, most of them quantized, and <a class="xref" data-ref="encdec"></a> turns to the other branch of the Transformer family.</p>
 </div>
 </section>
 <section class="view complete" id="complete" data-title="Part C complete"><div id="partDone"></div></section>
