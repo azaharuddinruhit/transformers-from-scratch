@@ -124,8 +124,8 @@ body[data-page="home"] .hero::before{left:0;top:-95px;width:min(460px,55%);heigh
 body[data-page="home"] .hero::after{right:0;top:-85px;width:min(440px,52%);height:300px;background:radial-gradient(closest-side,color-mix(in srgb,var(--k) var(--halo),transparent),transparent),radial-gradient(closest-side at 30% 70%,color-mix(in srgb,var(--v) var(--halo),transparent),transparent)}
 .card,#resume .btn{transition:box-shadow .2s,border-color .2s}
 .card:hover{box-shadow:0 8px 28px color-mix(in srgb,var(--accent) 16%,transparent)}
-#resume .btn{box-shadow:0 8px 26px color-mix(in srgb,var(--fill) 38%,transparent)}
-#resume .btn:hover{box-shadow:0 10px 34px color-mix(in srgb,var(--fill) 52%,transparent)}
+#resume .btn{box-shadow:0 8px 26px color-mix(in srgb,var(--accent) 22%,transparent)}
+#resume .btn:hover{box-shadow:0 10px 34px color-mix(in srgb,var(--accent) 32%,transparent)}
 #journey>li.started .jl{box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 15%,transparent)}
 #journey>li.complete .jl{box-shadow:0 0 0 5px color-mix(in srgb,var(--v) 18%,transparent)}
 /* interview drill */

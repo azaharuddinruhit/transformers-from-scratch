@@ -67,9 +67,9 @@ input[type=text],input[type=number],input[type=password],textarea{font:inherit;f
 .btn:hover,.controls button:hover,.chip:hover{border-color:var(--accent)}
 .btn.pri{background:var(--fill);border-color:var(--fill);color:var(--on-fill)}
 .btn.pri:hover{background:var(--fill-hover);border-color:var(--fill-hover)}
-/* a widget's main button: an accent outline, so only page-level actions are solid */
-.controls button.pri{background:transparent;border:1.5px solid var(--accent);color:var(--accent)}
-.controls button.pri:hover{background:var(--accent-soft)}
+/* an accent outline: a widget's main button, and the Start / Continue buttons of the home and part openers */
+.btn.out,.controls button.pri{background:transparent;border:1.5px solid var(--accent);color:var(--accent)}
+.btn.out:hover,.controls button.pri:hover{background:var(--accent-soft)}
 .controls button:disabled{opacity:.45;cursor:default}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}

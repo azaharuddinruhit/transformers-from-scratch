@@ -358,7 +358,7 @@ function initPart(){
   function paintStart(){
     $('#partList').innerHTML=secs.map(s=>'<li class="'+(P.done[s.id]?'done':'')+'"><a href="#'+s.id+'">'+SECS[s.id][0]+'</a><small>'+minsOf(s.id)+' min</small></li>').join('');
     const first=secs.find(s=>!P.done[s.id]);
-    $('#partGo').innerHTML=first?'<a class="btn pri big" href="#'+first.id+'">'+(first===secs[0]?'Start':'Continue')+': '+SECS[first.id][0]+' →</a>':'<a class="btn big" href="#complete">Review the key takeaways →</a>';
+    $('#partGo').innerHTML=first?'<a class="btn out big" href="#'+first.id+'">'+(first===secs[0]?'Start':'Continue')+': '+SECS[first.id][0]+' →</a>':'<a class="btn big" href="#complete">Review the key takeaways →</a>';
   }
   function paintComplete(){
     const st=partStats(part);let got=0,n=0;secs.forEach(s=>{const q=quizScore(s);if(q){got+=q.got;n+=q.n;}});
@@ -413,7 +413,7 @@ function initHome(){
     const sum=i=>Object.keys(SECS).reduce((a,id)=>a+SECS[id][i],0);
     $('#studyTime').innerHTML='Study time: '+timeText(sum(1),sum(2));
     const lastId=P.last&&P.last.split('#')[1];
-    $('#resume').innerHTML=lastId&&SECS[lastId]?'<a class="btn pri big" href="'+P.last+'">Continue: '+SECS[lastId][0]+' →</a>':'<a class="btn pri big" href="part-a.html">Start with Part A →</a>';
+    $('#resume').innerHTML=lastId&&SECS[lastId]?'<a class="btn out big" href="'+P.last+'">Continue: '+SECS[lastId][0]+' →</a>':'<a class="btn out big" href="part-a.html">Start with Part A →</a>';
     $('#journey').innerHTML=PARTS.map(p=>{const st=partStats(p),state=st.n===st.total?'complete':st.n?'started':'';
       return '<li class="'+state+'"><a class="jpart" href="'+partUrl(p)+'"><span class="jl">'+p.id.toUpperCase()+'</span><span class="jt"><b>'+p.name+'</b><span>'+p.goal+'</span>'
         +'<small>'+st.total+' sections · '+(state==='complete'?'complete':st.n?st.n+' done, about '+fmtMin(st.left)+' left':'about '+fmtMin(st.left))+'</small></span></a>'
