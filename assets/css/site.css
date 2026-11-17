@@ -57,7 +57,9 @@ footer{padding:30px 0;color:var(--muted);font-size:.9rem}
 .crumb .steps{background:var(--accent-soft);color:var(--accent);font:600 .78rem var(--mono);border-radius:999px;padding:2px 8px;margin-left:4px}
 .kicker{font:600 .9rem var(--sans);color:var(--accent);margin:0}
 .hero.slim{padding:40px 0 16px}
-.rt{font:600 .88rem var(--sans);color:var(--muted);margin:-.4em 0 1.2em}
+.rt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font:600 .88rem var(--sans);color:var(--muted);margin:-.4em 0 1.2em}
+/* the optional-time and level pills in the meta line: one size, centred on the text */
+.rt .optpill,.rt .lvl{margin:0;padding:1px 9px;font-size:.76rem;line-height:1.6}
 .lvl{display:inline-block;margin-left:6px;padding:1px 9px;border-radius:999px;font-size:.78rem;font-weight:600;line-height:1.6;vertical-align:middle;white-space:nowrap}
 /* level pills: soft fill and matching text per level (--lv0 to --lv2 on :root), each at least 6.6:1 */
 .lv0{background:var(--lv0-bg);color:var(--lv0)}.lv1{background:var(--lv1-bg);color:var(--lv1)}.lv2{background:var(--lv2-bg);color:var(--lv2)}
