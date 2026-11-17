@@ -117,7 +117,7 @@ select.dd-native{display:none}
 .dd-opt:not([aria-selected="true"])::before{content:"";width:.9em;flex:none}
 /* settings menu */
 .setwrap{position:relative;flex:none}
-.btn.icon{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px}
+.btn.icon{display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:40px;padding:6px 9px}
 .btn.icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .btn.icon svg circle{fill:var(--bg)}
 #setBtn[aria-expanded="true"]{border-color:var(--accent);background:var(--accent-soft)}
@@ -182,7 +182,6 @@ button.sitem:hover,a.sitem:hover{background:color-mix(in srgb,var(--ink) 5%,tran
 .btn.danger:hover{background:var(--warn);color:var(--surface)}
 .dlg .syerr{margin:-6px 0 14px;color:var(--warn)}
 .dlg .ctl{margin:0 0 16px}
-@media (max-width:900px){.btn.icon{padding:6px 9px}}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .btn.big{min-height:46px;padding:11px 20px;font-size:1rem;text-decoration:none;display:inline-flex;align-items:center}
 a.btn{text-decoration:none}

@@ -434,11 +434,12 @@ function initDrill(){
     $('.show',act).addEventListener('click',e=>{const open=ans.hidden;ans.hidden=!open;e.target.setAttribute('aria-expanded',open);e.target.textContent=open?'Hide answer':'Show answer';});
     $$('[data-m]',act).forEach(b=>b.addEventListener('click',()=>{const m=b.dataset.m;if(P.drill[qa.dataset.id]===m)delete P.drill[qa.dataset.id];else P.drill[qa.dataset.id]=m;store.save();paint();}));
   });
-  const chips=(k,opts)=>'<div class="chips" role="group" aria-label="'+(k==='topic'?'Topic':'Status')+'">'+opts.map(([v,t])=>'<button type="button" class="chip" data-k="'+k+'" data-v="'+v+'">'+t+'</button>').join('')+'</div>';
-  $('#drillbar').innerHTML=chips('topic',[['all','All topics']].concat(Object.entries(TOPICS)))
-    +chips('status',[['all','All'],['new','Not marked'],['again','Review again'],['got','Got it']])
-    +'<p class="dcount" aria-live="polite"></p>';
-  $('#drillbar').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;f[b.dataset.k]=b.dataset.v;paint();});
+  /* one slim pinned row: two dropdowns (turned into the site's dropdowns by initSelects) and the count */
+  const pick=(k,label,opts)=>'<div class="dsel"><select data-k="'+k+'" aria-label="'+label+'">'+opts.map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('')+'</select></div>';
+  $('#drillbar').innerHTML=pick('topic','Topic',[['all','All topics']].concat(Object.entries(TOPICS)))
+    +pick('status','Show',[['all','All questions'],['new','Not marked'],['again','Review again'],['got','Got it']])
+    +'<p class="dcount" aria-live="polite"><span class="dc-got"></span><span class="dc-more"></span></p>';
+  $('#drillbar').addEventListener('change',e=>{f[e.target.dataset.k]=e.target.value;paint();});
   function paint(){
     let got=0,again=0;
     qas.forEach(qa=>{const m=P.drill[qa.dataset.id];if(m==='got')got++;if(m==='again')again++;
@@ -450,9 +451,10 @@ function initDrill(){
       const end=()=>{if(h)h.hidden=!hAny;};
       Array.from(sec.children).forEach(c=>{if(c.tagName==='H3'){end();h=c;hAny=false;}else if(c.classList.contains('qa')&&!c.hidden){any=true;hAny=true;}});
       end();sec.hidden=!any;});
-    $$('#drillbar .chip').forEach(b=>{const on=f[b.dataset.k]===b.dataset.v;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);});
     const shown=qas.filter(q=>!q.hidden).length;
-    $('.dcount').textContent=got+' of '+qas.length+' got it · '+again+' to review again'+(shown<qas.length?' · showing '+shown:'');
+    /* the second part is hidden on phones, where the row is narrow */
+    $('.dc-got').textContent=got+'/'+qas.length+' got it';
+    $('.dc-more').textContent=' · '+again+' to review'+(shown<qas.length?' · showing '+shown:'');
   }
   onProgress.push(paint);paint();
   const h=location.hash.slice(1);if(h&&document.getElementById(h))document.getElementById(h).scrollIntoView();

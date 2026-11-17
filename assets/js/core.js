@@ -102,7 +102,7 @@ function initSelects(){
   document.addEventListener('focusin',e=>{if(openDD&&!openDD.wrap.contains(e.target))closeAll();});
   $$('select').forEach(sel=>{
     const id='dd'+(++uid),wrap=document.createElement('div');wrap.className='dd';
-    const lab=sel.closest('label'),labText=lab?Array.from(lab.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join(' ').trim():'';
+    const lab=sel.closest('label'),labText=sel.getAttribute('aria-label')||(lab?Array.from(lab.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join(' ').trim():'');
     const btn=document.createElement('button');btn.type='button';btn.className='dd-btn';btn.setAttribute('aria-haspopup','listbox');btn.setAttribute('aria-expanded','false');btn.setAttribute('aria-controls',id+'-l');
     const txt=document.createElement('span');btn.appendChild(txt);
     const list=document.createElement('ul');list.className='dd-list';list.id=id+'-l';list.setAttribute('role','listbox');list.tabIndex=-1;list.hidden=true;if(labText)list.setAttribute('aria-label',labText);
