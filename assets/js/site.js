@@ -206,6 +206,8 @@ function applyPath(){
   const quick=P.path==='quick';
   state.exact=!quick;document.body.classList.toggle('simple',quick);document.body.classList.toggle('ess',quick);
   $$('.pathBtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===P.path));
+  /* the Quick tour hides the Python boxes (optional material), so their switch would do nothing there */
+  const sw=$('#codeSw');if(sw){sw.disabled=quick;const n=$('#codeSwSub');n.hidden=!quick;n.textContent='Hidden on the Quick tour';}
 }
 function setPath(p){P.path=p;store.save();applyPath();rerender();onPathChange.forEach(f=>f());}
 /* the Settings menu: an iOS-style grouped list built here once for every page, with sub-pages for the path, progress and
@@ -214,13 +216,13 @@ const ICONS={path:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d=
   theme:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',code:'<path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/>',
   prog:'<circle cx="12" cy="12" r="8"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',sync:'<path d="M7 18a4 4 0 0 1-.6-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/>',
   reset:'<path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v5h5"/>',chev:'<path d="M9 6l6 6-6 6"/>',back:'<path d="M15 6l-6 6 6 6"/>',
-  close:'<path d="M6 6l12 12M18 6L6 18"/>',check:'<path d="M5 12.5l4.5 4.5L19 7"/>'};
+  check:'<path d="M5 12.5l4.5 4.5L19 7"/>'};
 const svgI=k=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+ICONS[k]+'</svg>';
 const sIc=k=>'<span class="sic ic-'+k+'">'+svgI(k)+'</span>';
 const sNav=(to,k,label,valId)=>'<button type="button" class="sitem" data-go="'+to+'">'+sIc(k)+'<span class="slbl">'+label+'</span><span class="sval" id="'+valId+'"></span><span class="schev">'+svgI('chev')+'</span></button>';
-const sSwitch=(id,k,label)=>'<button type="button" class="sitem" role="switch" aria-checked="false" id="'+id+'">'+sIc(k)+'<span class="slbl">'+label+'</span><span class="swt" aria-hidden="true"></span></button>';
+const sSwitch=(id,k,label)=>'<button type="button" class="sitem" role="switch" aria-checked="false" id="'+id+'">'+sIc(k)+'<span class="slbl">'+label+'<small class="ssub" id="'+id+'Sub" hidden></small></span><span class="swt" aria-hidden="true"></span></button>';
 const SET_PAGES={main:'Settings',path:'Path',prog:'Progress',sync:'GitHub sync'};
-const SET_MENU='<div class="smhead"><button type="button" class="sbtn" id="setBack" aria-label="Back to Settings" hidden>'+svgI('back')+'</button><span id="setTitle">Settings</span><button type="button" class="sbtn" id="setClose" aria-label="Close settings">'+svgI('close')+'</button></div>'
+const SET_MENU='<div class="smhead"><button type="button" class="sbtn" id="setBack" aria-label="Back to Settings" hidden>'+svgI('back')+'</button><span id="setTitle">Settings</span></div>'
   +'<div class="spages">'
   +'<div class="spage" data-page="main">'
   +'<div class="sgroup">'+sNav('path','path','Path','pathVal')+sSwitch('thSw','theme','Dark theme')+sSwitch('codeSw','code','Expand Python code')+'</div>'
@@ -292,7 +294,6 @@ function initSettings(){
   dlg.addEventListener('close',()=>{if(dlg.returnValue==='reset'){store.reset();location.reload();}else setBtn.focus();});
   $('#pgReset').addEventListener('click',()=>{closeSet(false);dlg.returnValue='';dlg.showModal();});
   setBtn.addEventListener('click',()=>{if(menu.hidden)openSet();else closeSet(true);});
-  $('#setClose').addEventListener('click',()=>closeSet(true));
   const inside=el=>el&&(menu.contains(el)||setBtn.contains(el));
   document.addEventListener('click',e=>{if(!menu.hidden&&e.target.isConnected&&!inside(e.target))closeSet(false);});
   document.addEventListener('keydown',e=>{if(e.key!=='Escape'||menu.hidden)return;if(cur!=='main')go('main',true);else closeSet(true);});
