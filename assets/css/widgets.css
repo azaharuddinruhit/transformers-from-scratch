@@ -201,3 +201,8 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 .fls.hbm{background:color-mix(in srgb,var(--warn) 16%,var(--bg));border-color:var(--warn)}
 .fls.msk{background:repeating-linear-gradient(45deg,var(--line) 0 2px,transparent 2px 6px);border-color:transparent}
 .lg i.fls{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:4px;border:1px solid var(--line)}
+/* mixture-of-experts routing (Part D) */
+.moel{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.moet small{display:flex;gap:3px;justify-content:center;margin-top:2px}
+.moet small i{display:inline-block;width:8px;height:8px;border-radius:50%;box-shadow:0 0 0 1px var(--line)}
+.moesw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}

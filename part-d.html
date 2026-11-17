@@ -408,6 +408,29 @@ print("pre-norm stream:  mean", pre_norm(x, sublayer).mean().round(3),
 <p class="sym"><span class="tex">\mathcal{S}(x)</span> is the set of experts chosen for this token: usually 1 to 8 out of <span class="tex">n_{\text{experts}}</span>, which is often 8 to 128. <span class="tex">g_e</span> is expert <span class="tex">e</span>’s gate, and the gates add up to 1. <span class="tex">\operatorname{FFN}^{(e)}</span> is expert <span class="tex">e</span>’s MLP.</p>
 <p class="opt">Training adds a small extra loss that keeps tokens spread across the experts. Without it, the router tends to send everything to a favourite few.</p>
 <p><b>The gain, and the cost.</b> Each token passes through only the chosen experts, so compute and the bytes read per token follow the <i>active</i> parameter count. But any token may be sent to any expert, so every expert must be in memory: memory follows the <i>total</i> count. That is why the mixture-of-experts models in <a class="xref" data-ref="models"></a> are fast for their size but still need a lot of memory.</p>
+<div class="worked">
+  <h4>Worked example: one token, two experts</h4>
+  <div class="x-only"><p>The router gives a token the scores <span class="tex">[2.0,\;0.5,\;1.2,\;-0.3]</span> for four experts, and the layer keeps the top 2: experts 1 and 3.</p>
+  <p>Gates: <span class="tex">\operatorname{softmax}([2.0,\;1.2])=\big[\tfrac{e^{0.8}}{e^{0.8}+1},\;\tfrac{1}{e^{0.8}+1}\big]=[0.690,\;0.310]</span>.</p>
+  <p>Output: <span class="tex">0.690\,\operatorname{FFN}^{(1)}(x)+0.310\,\operatorname{FFN}^{(3)}(x)</span>. Experts 2 and 4 do no work for this token.</p></div>
+  <p class="s-only">Four experts score 2.0, 0.5, 1.2 and −0.3 for a token. The two best, experts 1 and 3, are run, and their outputs are blended about 69% to 31%. The other two experts do nothing for this token.</p>
+</div>
+<div class="widget" id="w-moe">
+  <h4 class="wt">Interactive · route tokens to experts</h4>
+  <p class="look"><b>The point:</b> Each token runs through only a few experts, and the router has to spread the tokens evenly or some experts sit idle while others are overloaded. <b>Do this:</b> Click a few tokens to see their router scores. Then try “With a favourite expert”, and then “Balanced”, with 1 and with 2 experts per token. <b>Watch for:</b> The coloured dots under each token (its chosen experts, stronger for a larger gate) and the load on each expert.</p>
+  <div class="controls">
+    <div class="ctl"><span>Experts per token</span><div class="chips" id="moe-k" role="group" aria-label="Experts per token"></div></div>
+    <div class="ctl"><span>Router</span><div class="chips" id="moe-r" role="group" aria-label="Router"></div></div>
+  </div>
+  <div id="moe-toks"></div>
+  <span class="lab" id="moe-lab"></span>
+  <div id="moe-bars"></div>
+  <span class="lab">Load: how many of the 37 tokens each expert processes</span>
+  <div id="moe-load"></div>
+  <div class="stats" id="moe-stats" aria-live="polite"></div>
+  <small>What is simplified: one layer with 8 experts. The token vectors and the router are random, not trained, and each token’s vector depends only on the token, so the same word always goes to the same experts; in a real model the vector carries context, and routing differs from layer to layer. “Balanced” nudges one bias per expert, down if it is overloaded and up if it is underused; training with a balancing loss has a similar effect. The parameter counts are those of a model shaped like Mixtral 8x7B: 46.7B in total and 12.9B active with 2 experts, which implies about 5.6B per expert and 1.6B shared by all tokens.</small>
+  <div class="wjh"><b>What just happened?</b> For each token the router scored all 8 experts, kept the best few, and turned their scores into gates that add up to 1. Only those experts did any work, which is why the active parameter count is a fraction of the total. With 2 experts per token, the router as initialised already loads its busiest expert at about 1.6 times the average. Give one expert a head start and it takes 26 of the 37 tokens, while its neighbours idle: on a real GPU that expert becomes the bottleneck, or the tokens it cannot take are dropped. Balancing brings the busiest expert down to about 1.2 times the average. That is the job of the balancing loss described above.</div>
+</div>
 
 <h3>Putting it together: Llama 3.1 8B</h3>
 <p>Here is the 2017 base model next to one current open model:</p>

@@ -210,4 +210,58 @@ function initDiff(){
   reg(renderDiff);
 }
 
-PAGE_INITS.push(initCross,initCrossKeys,initLR,initRope,initGqa,initPatch,initDiff);
+/* ================= Mixture of experts: route tokens to experts ================= */
+/* Token vectors: a base vector per kind of token plus a fixed per-token offset, so the same token always gets the
+   same vector. The router is a random matrix (not trained) plus one bias per expert. */
+const MOE_E=8,MOE_D=6,MOE_LINES=[
+  ['the','cat','sat','on','the','mat','.','the','dog','slept','on','the','sofa','.'],
+  ['def','add','(','a',',','b',')',':','return','a','+','b'],
+  ['in','2017',',','8','heads','and','6','layers','were','used','.']];
+const MOE_KIND={the:0,on:0,and:0,in:0,were:0,'.':1,',':1,'(':1,')':1,':':1,'+':1,'2017':2,'8':2,'6':2,def:3,return:3,a:3,b:3,add:3};
+const MOE=(()=>{
+  const r=mulberry32(41),vec=()=>Array.from({length:MOE_D},()=>randn(r));
+  const base=[vec(),vec(),vec(),vec(),vec()],W=Array.from({length:MOE_D},()=>Array.from({length:MOE_E},()=>randn(r)*0.8)),cache={};
+  const emb=t=>{if(cache[t])return cache[t];let h=7;for(const ch of t)h=(h*31+ch.charCodeAt(0))>>>0;const rr=mulberry32(h),k=MOE_KIND[t]!=null?MOE_KIND[t]:4;
+    return cache[t]=base[k].map(v=>v+0.6*randn(rr));};
+  const toks=[].concat(...MOE_LINES.map((l,li)=>l.map(t=>({t,li}))));
+  toks.forEach(o=>{const x=emb(o.t);o.score=Array.from({length:MOE_E},(_,e)=>x.reduce((a,v,d)=>a+v*W[d][e],0));});
+  return{toks};
+})();
+const smoe={k:2,router:'init',sel:3,bias:null};
+function moeBias(kind){
+  const b=Array(MOE_E).fill(0);
+  if(kind==='fav')b[4]=3;
+  if(kind==='bal')for(let it=0;it<200;it++){const load=moeLoad(b,smoe.k),avg=load.reduce((a,v)=>a+v,0)/MOE_E;load.forEach((l,e)=>{b[e]-=0.1*Math.pow(0.98,it)*Math.sign(l-avg);});}
+  return b;
+}
+function moeRoute(o,b,k){
+  const s=o.score.map((v,e)=>v+b[e]),ord=s.map((v,e)=>e).sort((x,y)=>s[y]-s[x]),top=ord.slice(0,k),m=Math.max(...top.map(e=>s[e])),ex=top.map(e=>Math.exp(s[e]-m)),z=ex.reduce((a,v)=>a+v,0);
+  return{s,top,gate:top.map((e,i)=>ex[i]/z)};
+}
+function moeLoad(b,k){const L=Array(MOE_E).fill(0);MOE.toks.forEach(o=>moeRoute(o,b,k).top.forEach(e=>L[e]++));return L;}
+const moeCol=e=>viridis(0.22+0.78*e/(MOE_E-1));
+function renderMoe(){
+  const b=moeBias(smoe.router),k=smoe.k,routes=MOE.toks.map(o=>moeRoute(o,b,k));
+  let h='',li=-1;
+  MOE.toks.forEach((o,i)=>{if(o.li!==li){if(li>=0)h+='</div>';li=o.li;h+='<div class="moel">';}
+    const R=routes[i];h+='<button type="button" class="chip tok moet'+(i===smoe.sel?' on':'')+'" data-i="'+i+'" aria-pressed="'+(i===smoe.sel)+'">'+esc(o.t)+'<small>'+R.top.map((e,j)=>'<i style="background:'+moeCol(e)+';opacity:'+(0.35+0.65*R.gate[j]).toFixed(2)+'" title="expert '+(e+1)+'"></i>').join('')+'</small></button>';});
+  $('#moe-toks').innerHTML=h+'</div>';
+  const o=MOE.toks[smoe.sel],R=routes[smoe.sel],m=Math.max(...R.s),pall=R.s.map(v=>Math.exp(v-m)),z=pall.reduce((a,v)=>a+v,0);
+  $('#moe-lab').textContent='Router scores for “'+o.t+'”: '+(k===1?'the top expert is chosen, with a gate of 1':'the top '+k+' experts are chosen, and their gates are a softmax over the chosen scores only');
+  $('#moe-bars').innerHTML=bars(R.s.map((v,e)=>{const j=R.top.indexOf(e);return{label:'<span class="moesw" style="background:'+moeCol(e)+'"></span>expert '+(e+1),p:pall[e]/z,cls:j>=0?'hit':'',right:'score '+fmt(v,2)+(j>=0?' · gate '+fmt(R.gate[j],2):''),tip:j>=0?'Chosen: this expert’s output is multiplied by '+fmt(R.gate[j],3):'Not chosen: this expert does no work for this token'};}),1);
+  const load=moeLoad(b,k),avg=load.reduce((a,v)=>a+v,0)/MOE_E;
+  $('#moe-load').innerHTML=bars(load.map((l,e)=>({label:'<span class="moesw" style="background:'+moeCol(e)+'"></span>expert '+(e+1),p:l,right:l+' tokens',tip:'Expert '+(e+1)+' processes '+l+' of the '+MOE.toks.length+' tokens'})),Math.max(...load));
+  const shared=1.63,per=5.63,act=shared+k*per;
+  $('#moe-stats').innerHTML=[['Experts used per token',k+' of '+MOE_E],['Busiest expert’s load',fmt(Math.max(...load)/avg,1)+'× the average'],['Experts with no tokens',load.filter(l=>!l).length],['Active parameters, Mixtral-shaped',fmt(act,1)+'B of 46.7B']].map(r=>'<div><b>'+r[1]+'</b><span>'+r[0]+'</span></div>').join('');
+  [['moe-k',String(k)],['moe-r',smoe.router]].forEach(([id,v])=>$$('#'+id+' button').forEach(bt=>{const on=bt.dataset.v===v;bt.classList.toggle('on',on);bt.setAttribute('aria-pressed',on);}));
+}
+function initMoe(){
+  const chips=(id,opts,set)=>{const el=$('#'+id);el.innerHTML=opts.map(o=>'<button class="chip" data-v="'+o[0]+'" aria-pressed="false">'+o[1]+'</button>').join('');
+    el.addEventListener('click',e=>{const bt=e.target.closest('button');if(!bt)return;set(bt.dataset.v);renderMoe();$('#'+id+' button[data-v="'+bt.dataset.v+'"]').focus();});};
+  chips('moe-k',[['1','1'],['2','2'],['4','4']],v=>{smoe.k=+v;});
+  chips('moe-r',[['init','As initialised'],['fav','With a favourite expert'],['bal','Balanced']],v=>{smoe.router=v;});
+  $('#moe-toks').addEventListener('click',e=>{const bt=e.target.closest('.moet');if(bt){smoe.sel=+bt.dataset.i;renderMoe();$('#moe-toks .moet[data-i="'+smoe.sel+'"]').focus();}});
+  reg(renderMoe);
+}
+
+PAGE_INITS.push(initCross,initCrossKeys,initLR,initRope,initGqa,initMoe,initPatch,initDiff);
