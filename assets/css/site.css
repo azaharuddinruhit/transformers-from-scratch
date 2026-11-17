@@ -119,6 +119,18 @@ footer{padding:30px 0;color:var(--muted);font-size:.9rem}
 .card{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);text-decoration:none;color:var(--ink)}
 .card:hover{border-color:var(--accent)}
 .card span{font-size:.92rem;color:var(--muted)}
+/* home halos: soft colour glows behind the title (accent, purple, green, echoing the logo) and around the cards */
+body[data-page="home"] .hero{position:relative;isolation:isolate}
+body[data-page="home"] .hero::before,body[data-page="home"] .hero::after{content:"";position:absolute;z-index:-1;pointer-events:none;border-radius:50%;filter:blur(40px)}
+body[data-page="home"] .hero::before{left:0;top:-70px;width:min(620px,75%);height:380px;background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) var(--halo),transparent),transparent)}
+body[data-page="home"] .hero::after{right:0;top:30px;width:min(560px,70%);height:360px;background:radial-gradient(closest-side,color-mix(in srgb,var(--k) var(--halo),transparent),transparent),radial-gradient(closest-side at 30% 80%,color-mix(in srgb,var(--v) var(--halo),transparent),transparent)}
+.pathCard,.card,#resume .btn{transition:box-shadow .2s,border-color .2s}
+.pathCard[aria-pressed="true"]{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent),0 10px 32px color-mix(in srgb,var(--accent) 18%,transparent)}
+.pathCard:hover,.card:hover{box-shadow:0 8px 28px color-mix(in srgb,var(--accent) 16%,transparent)}
+#resume .btn{box-shadow:0 8px 26px color-mix(in srgb,var(--fill) 38%,transparent)}
+#resume .btn:hover{box-shadow:0 10px 34px color-mix(in srgb,var(--fill) 52%,transparent)}
+#journey>li.started .jl{box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 15%,transparent)}
+#journey>li.complete .jl{box-shadow:0 0 0 5px color-mix(in srgb,var(--v) 18%,transparent)}
 /* interview drill */
 .drillbar{position:sticky;top:54px;z-index:5;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line);display:grid;gap:8px}
 .drillbar .chip{min-height:34px;padding:4px 12px;font-size:.84rem}

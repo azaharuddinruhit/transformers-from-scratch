@@ -154,19 +154,17 @@ document.addEventListener('visibilitychange',()=>{
 });
 const agoText=t=>{const s=Math.round((Date.now()-t)/1000);return s<60?'just now':s<3600?Math.round(s/60)+' min ago':s<86400?Math.round(s/3600)+' h ago':new Date(t).toLocaleDateString();};
 function paintSync(){
-  const st=$('#syncStat');if(!st)return;const on=!!syncToken();
-  st.textContent=!on?'Off. Progress is kept in this browser only.':sync.busy?'Syncing…':sync.err?'The last sync failed: '+sync.err+'.':syncAt()?'On. Last synced '+agoText(syncAt())+'.':'On.';
-  st.classList.toggle('bad',on&&!sync.busy&&!!sync.err);
-  $('#syncOn').hidden=on;$('#syncOnRow').hidden=!on;$('#syncNowBtn').disabled=sync.busy;
+  const st=$('#syncStat');if(!st)return;const on=!!syncToken(),bad=on&&!sync.busy&&!!sync.err;
+  st.textContent=!on?'Off':sync.busy?'Syncing…':bad?'Failed':syncAt()?'On · synced '+agoText(syncAt()):'On';
+  const note=$('#syncNote');
+  note.textContent=!on?'Keeps your progress in a GitHub gist, so it follows you between browsers.':bad?'The last sync failed: '+sync.err+'.':'';
+  note.hidden=!note.textContent;note.classList.toggle('bad',bad);
+  [$('.sdot'),$('#setBtn .bdot')].forEach(d=>{if(!d)return;d.hidden=!on;d.classList.toggle('bad',bad);});
+  $('#setBtn').setAttribute('aria-label','Settings'+(bad?', sync failed':''));
+  $('#syncOn').hidden=on;$('#syncNowBtn').hidden=$('#syncOff').hidden=!on;$('#syncNowBtn').disabled=sync.busy;
 }
 function initSync(closeSet){
-  const reset=$('#pgReset');if(!reset)return;
-  const g=document.createElement('div');g.className='sgrp';
-  g.innerHTML='<span class="slab">Sync with GitHub</span>'
-    +'<button type="button" class="btn full" id="syncOn">Connect a gist token</button>'
-    +'<div class="srow" id="syncOnRow" hidden><button type="button" class="btn" id="syncNowBtn">Sync now</button><button type="button" class="btn" id="syncOff">Disconnect</button></div>'
-    +'<small class="shint" id="syncStat" aria-live="polite"></small>';
-  reset.closest('.sgrp').insertAdjacentElement('beforebegin',g);
+  if(!$('#syncOn'))return;
   const dlg=document.createElement('dialog');dlg.className='dlg';dlg.setAttribute('aria-labelledby','syTitle');
   dlg.innerHTML='<form method="dialog"><h2 id="syTitle">Sync progress with GitHub</h2>'
     +'<p>Paste a GitHub token that can write gists: a classic token with the <code>gist</code> scope, or a fine-grained token with Gists set to read and write. <a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Transformers%20guide%20sync" target="_blank" rel="noopener">Create a classic token</a>.</p>'
@@ -197,7 +195,6 @@ function initSync(closeSet){
   $('#soYes',off).addEventListener('click',()=>{try{localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(SYNC_AT_KEY);}catch(e){}clearTimeout(sync.timer);sync.err='';paintSync();off.close();});
   off.addEventListener('close',()=>$('#setBtn').focus());
   $('#syncNowBtn').addEventListener('click',()=>syncNow());
-  $('#setBtn').addEventListener('click',paintSync);
   paintSync();
   syncNow();
 }
@@ -210,20 +207,44 @@ function applyPath(){
   $$('.pathBtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===P.path));
 }
 function setPath(p){P.path=p;store.save();applyPath();rerender();onPathChange.forEach(f=>f());}
+/* the Settings menu: built here once for every page; a popover under its button, a bottom sheet on phones */
+const SET_MENU='<div class="smhead"><span>Settings</span><button type="button" class="btn tiny" id="setClose">Close</button></div>'
+  +'<p class="sgh">Reading</p>'
+  +'<div class="sline"><span id="lab-path">Path</span><div class="seg" role="group" aria-labelledby="lab-path"><button type="button" class="pathBtn" data-p="quick" aria-pressed="false">Quick tour</button><button type="button" class="pathBtn" data-p="full" aria-pressed="false">Full depth</button></div></div>'
+  +'<div class="sline"><span id="lab-code">Python code</span><div class="seg" role="group" aria-labelledby="lab-code"><button type="button" class="codeBtn" data-c="closed" aria-pressed="true">Collapsed</button><button type="button" class="codeBtn" data-c="open" aria-pressed="false">Expanded</button></div></div>'
+  +'<p class="sgh">Appearance</p>'
+  +'<div class="sline"><span id="lab-theme">Theme</span><div class="seg" role="group" aria-labelledby="lab-theme"><button type="button" class="thBtn" data-t="light" aria-pressed="false">Light</button><button type="button" class="thBtn" data-t="dark" aria-pressed="false">Dark</button></div></div>'
+  +'<p class="sgh">Progress</p>'
+  +'<p class="sprog" id="progSum"></p>'
+  +'<div class="sline"><span>Sync with GitHub</span><span class="sstat"><i class="sdot" aria-hidden="true"></i><span id="syncStat" aria-live="polite"></span></span></div>'
+  +'<p class="snote" id="syncNote"></p>'
+  +'<div class="sacts"><button type="button" class="btn tiny" id="syncOn">Connect…</button><button type="button" class="btn tiny" id="syncNowBtn">Sync now</button><button type="button" class="btn tiny" id="syncOff">Disconnect</button><button type="button" class="btn tiny danger" id="pgReset">Reset progress…</button></div>';
+function paintProgSum(){
+  const el=$('#progSum');if(!el)return;
+  const ids=Object.keys(SECS),n=ids.filter(id=>P.done[id]).length,got=Object.values(P.drill).filter(v=>v==='got').length;
+  el.textContent=n+' of '+ids.length+' sections done'+(got?' · '+got+' drill “Got it”':'');
+}
 function initSettings(){
-  const menu=$('#setMenu');
-  if(menu){const v=document.createElement('p');v.className='sver';v.textContent=SITE_VERSION.startsWith('__')?'Version: local copy':'Version '+SITE_VERSION;menu.append(v);}
+  const setBtn=$('#setBtn'),menu=$('#setMenu');
+  menu.innerHTML=SET_MENU;
+  const v=document.createElement('p');v.className='sver';v.textContent=SITE_VERSION.startsWith('__')?'Version: local copy':'Version '+SITE_VERSION;menu.append(v);
+  /* the header's backdrop blur would trap a fixed element, so the menu lives in <body> */
+  const scrim=document.createElement('div');scrim.className='setscrim';scrim.hidden=true;
+  document.body.append(scrim,menu);
+  const dot=document.createElement('i');dot.className='bdot';dot.hidden=true;dot.setAttribute('aria-hidden','true');setBtn.append(dot);
   const root=document.documentElement;
   // Light or dark; until the reader chooses, the page follows the system setting
   const sysTheme=()=>window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
   const markTheme=()=>{const t=root.getAttribute('data-theme')||sysTheme();$$('.thBtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));};
   const applyTheme=t=>{root.setAttribute('data-theme',t);try{localStorage.setItem('tfs-theme',t);}catch(e){}markTheme();};
   try{const t=localStorage.getItem('tfs-theme');if(t==='light'||t==='dark')root.setAttribute('data-theme',t);}catch(e){}
-  markTheme();
+  markTheme();applyPath();
   $$('.thBtn').forEach(b=>b.addEventListener('click',()=>applyTheme(b.dataset.t)));
   $$('.pathBtn').forEach(b=>b.addEventListener('click',()=>setPath(b.dataset.p)));
-  const setBtn=$('#setBtn'),setMenu=$('#setMenu');
-  const closeSet=ret=>{if(setMenu.hidden)return;setMenu.hidden=true;setBtn.setAttribute('aria-expanded','false');if(ret)setBtn.focus();};
+  const phone=()=>window.matchMedia('(max-width:600px)').matches;
+  const place=()=>{if(phone()){menu.style.top=menu.style.right='';return;}const r=setBtn.getBoundingClientRect();menu.style.top=(r.bottom+10)+'px';menu.style.right=(document.documentElement.clientWidth-r.right)+'px';};
+  const closeSet=ret=>{if(menu.hidden)return;menu.hidden=true;scrim.hidden=true;setBtn.setAttribute('aria-expanded','false');if(ret)setBtn.focus();};
+  const openSet=()=>{paintProgSum();paintSync();place();menu.hidden=false;scrim.hidden=false;setBtn.setAttribute('aria-expanded','true');const f=menu.querySelector('[aria-pressed="true"]')||menu.querySelector('button');if(f)f.focus();};
   /* reset asks first in a modal <dialog>: it traps focus, closes on Escape and returns "reset" only from its button */
   const dlg=document.createElement('dialog');dlg.className='dlg';dlg.setAttribute('aria-labelledby','rsTitle');
   dlg.innerHTML='<form method="dialog"><h2 id="rsTitle">Reset progress?</h2><p>This clears the finished sections, quiz answers and drill marks saved in this browser and, when sync is on, in every synced browser. Your path, theme and code settings stay. You cannot undo this.</p>'
@@ -232,11 +253,14 @@ function initSettings(){
   dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close('cancel');});
   dlg.addEventListener('close',()=>{if(dlg.returnValue==='reset'){store.reset();location.reload();}else setBtn.focus();});
   $('#pgReset').addEventListener('click',()=>{closeSet(false);dlg.returnValue='';dlg.showModal();});
-  setBtn.addEventListener('click',()=>{if(setMenu.hidden){setMenu.hidden=false;setBtn.setAttribute('aria-expanded','true');const f=setMenu.querySelector('[aria-pressed="true"]')||setMenu.querySelector('button');if(f)f.focus();}else closeSet(true);});
-  document.addEventListener('click',e=>{if(!setMenu.hidden&&!e.target.closest('.setwrap'))closeSet(false);});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!setMenu.hidden)closeSet(true);});
-  setMenu.addEventListener('focusout',e=>{if(e.relatedTarget&&!e.relatedTarget.closest('.setwrap'))closeSet(false);});
-  let rt=null,lastW=window.innerWidth;window.addEventListener('resize',()=>{if(window.innerWidth===lastW)return;lastW=window.innerWidth;clearTimeout(rt);rt=setTimeout(rerender,150);});
+  setBtn.addEventListener('click',()=>{if(menu.hidden)openSet();else closeSet(true);});
+  $('#setClose').addEventListener('click',()=>closeSet(true));
+  const inside=el=>el&&(menu.contains(el)||setBtn.contains(el));
+  document.addEventListener('click',e=>{if(!menu.hidden&&!inside(e.target))closeSet(false);});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!menu.hidden)closeSet(true);});
+  menu.addEventListener('focusout',e=>{if(e.relatedTarget&&!inside(e.relatedTarget))closeSet(false);});
+  onProgress.push(paintProgSum);
+  let rt=null,lastW=window.innerWidth;window.addEventListener('resize',()=>{if(!menu.hidden)place();if(window.innerWidth===lastW)return;lastW=window.innerWidth;clearTimeout(rt);rt=setTimeout(rerender,150);});
   initSync(closeSet);
   const bar=$('#progBar');window.addEventListener('scroll',()=>{const h=document.documentElement;bar.style.width=(100*Math.max(0,Math.min(1,h.scrollTop/Math.max(1,h.scrollHeight-h.clientHeight)))).toFixed(1)+'%';},{passive:true});
 }
