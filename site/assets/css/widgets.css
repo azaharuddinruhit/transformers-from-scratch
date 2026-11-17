@@ -1,7 +1,7 @@
 /* The interactive widgets: vectors, bars, heatmaps and the per-section visualisations. */
 /* vectors */
 .vec{display:inline-flex;gap:2px;vertical-align:middle;--c:var(--muted)}
-.vec.q{--c:var(--q)}.vec.k{--c:var(--k)}.vec.v{--c:var(--v)}.vec.ctx{--c:var(--accent)}.vec.r{--c:var(--res)}
+.vec.q{--c:var(--q)}.vec.k{--c:var(--k)}.vec.v{--c:var(--v)}.vec.ctx{--c:var(--d1)}.vec.r{--c:var(--res)}
 .vec .c{font:500 .78rem var(--mono);font-variant-ligatures:none;min-width:3.3em;text-align:center;padding:5px 4px;border-radius:5px;border:1px solid color-mix(in srgb,var(--c) 55%,transparent);background:color-mix(in srgb,var(--c) calc(var(--a,.1)*100%),var(--surface))}
 .tq{color:var(--q)}.tk{color:var(--k)}.tv{color:var(--v)}.tr{color:var(--res)}
 /* bars */
@@ -23,7 +23,10 @@
 .hm.compact{font-size:.68rem}.hm.compact .hc{padding:6px 0}
 .hm .hc.masked{background-image:repeating-linear-gradient(45deg,transparent 0 4px,rgba(255,255,255,.28) 4px 6px)!important}
 .hm .hc.selrow{box-shadow:0 0 0 2px var(--ink) inset}
+/* who reads whom: source tokens teal, target tokens amber; cross-attention (target reads source) carries both */
 .maskg .hc{background:var(--accent-soft);color:var(--ink)}
+.maskg .hc.tS{background:color-mix(in srgb,var(--d2) 22%,var(--surface))}.maskg .hc.tT{background:color-mix(in srgb,var(--d1) 22%,var(--surface))}
+.maskg .hc.tX{background:linear-gradient(135deg,color-mix(in srgb,var(--d1) 22%,var(--surface)) 50%,color-mix(in srgb,var(--d2) 22%,var(--surface)) 50%)}
 .maskg .hc.masked{background:var(--panel);color:var(--muted);background-image:repeating-linear-gradient(45deg,transparent 0 4px,color-mix(in srgb,var(--muted) 45%,transparent) 4px 6px)!important}
 table.numt .vec .c{min-width:2.5em;padding:4px 2px}
 .stepper{display:flex;flex-wrap:wrap;gap:4px;list-style:none;margin:0;padding:0}
@@ -33,21 +36,21 @@ table.numt .vec .c{min-width:2.5em;padding:4px 2px}
 /* tokenizer */
 .onehot{display:flex;gap:1px;margin:4px 0;max-width:100%}
 .onehot i{flex:1;height:18px;background:var(--panel);border-radius:1px;min-width:1px}
-.onehot i.on{background:var(--accent);outline:2px solid var(--accent)}
+.onehot i.on{background:var(--d1);outline:2px solid var(--d1)}
 svg{max-width:100%;display:block}
 svg[id]{width:100%}
 svg text{font-family:var(--sans);fill:var(--ink)}
 .ax{font-size:11px;fill:var(--muted)!important}
 .grid{stroke:var(--line);stroke-width:1}
 .ln{fill:none;stroke-width:2.2;stroke-linejoin:round}
-.ln.a{stroke:var(--accent)}.ln.b{stroke:var(--k);stroke-dasharray:7 4}.ln.c{stroke:var(--muted);stroke-dasharray:2 4;stroke-width:1.5}.ln.r{stroke:var(--res)}
-.dotm{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.ln.a{stroke:var(--d1)}.ln.b{stroke:var(--d2);stroke-dasharray:7 4}.ln.c{stroke:var(--muted);stroke-dasharray:2 4;stroke-width:1.5}.ln.r{stroke:var(--res)}
+.dotm{fill:var(--d1);stroke:var(--surface);stroke-width:2}
 .pt{cursor:pointer}.pt text{font-size:12px}
 .pt .sh{stroke:var(--surface);stroke-width:1.5}
 .pt.c-animal .sh{fill:var(--v)}.pt.c-person .sh{fill:var(--q)}.pt.c-verb .sh{fill:var(--k)}.pt.c-function .sh{fill:var(--muted)}.pt.c-adjective .sh{fill:var(--res)}
 .pt.present .ring{stroke:var(--ink);stroke-width:2;fill:none}
 .pt.sel text{font-weight:800}
-.nb{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 3}
+.nb{stroke:var(--d1);stroke-width:1.5;stroke-dasharray:4 3}
 .lg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.82rem;color:var(--muted);margin-top:8px}
 .lg svg{display:inline-block;vertical-align:-3px}
 canvas{display:block;width:100%;border-radius:8px;touch-action:pan-y}
@@ -99,7 +102,7 @@ table.numt td.band{border-left:3px solid var(--accent)}
 .ctxline{font:500 1rem/2 var(--mono);font-variant-ligatures:none;overflow-wrap:anywhere}
 .ctxline span{padding:3px 1px;border-bottom:3px solid transparent}
 .ctxline .pr{border-bottom-color:var(--muted)}
-.ctxline .gen{border-bottom-color:var(--accent);background:var(--accent-soft)}
+.ctxline .gen{border-bottom-color:var(--d1);background:color-mix(in srgb,var(--d1) 16%,var(--surface))}
 .ctxline .out{opacity:.38}
 .ctxline .new{background:var(--mark)}
 .tl{display:flex;flex-wrap:wrap;gap:4px}
@@ -116,7 +119,7 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 .kc .kh.pr{text-decoration:underline;text-decoration-thickness:2px;color:var(--ink)}
 .kc .kr{text-align:right;padding-right:8px;color:var(--muted);white-space:nowrap}
 .kcc{height:26px;display:flex;align-items:center;justify-content:center;border-radius:4px;background:var(--panel)}
-.kcc.cmp{background:var(--accent);color:var(--on-accent)}
+.kcc.cmp{background:var(--d1);color:var(--on-d1)}
 .kcc.reu{background:none;border:1.5px dashed var(--v);color:var(--v)}
 .kcc.outc{background:var(--mark)}
 .kcc:not(.cmp):not(.reu):not(.outc){opacity:.35}
@@ -152,7 +155,7 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 .chatseq .nl{flex-basis:100%;height:0}
 .tk-sp{background:var(--panel);color:var(--muted)}
 .tk-cx{background:var(--surface);color:var(--ink)}
-.tk-tr{background:var(--accent-soft);border-color:var(--accent)!important;color:var(--ink)}
+.tk-tr{background:color-mix(in srgb,var(--d1) 16%,var(--surface));border-color:var(--d1)!important;color:var(--ink)}
 .tkkey{display:inline-block;width:14px;height:12px;border-radius:3px;border:1px solid var(--line);vertical-align:-1px;margin-right:4px}
 /* modern LLMs: RoPE and grouped-query heads */
 #rp-svg{display:block;width:100%;max-width:260px;margin:8px auto}
@@ -165,8 +168,8 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 /* tiny neural network (Part A) */
 #nn-svg{display:block;width:100%;max-width:320px;aspect-ratio:1;margin:12px auto 6px;border-radius:10px;background:var(--panel);overflow:hidden}
 .np{stroke-width:1.6}
-.np1.t{fill:var(--accent);stroke:var(--surface)}.np0.t{fill:var(--ink);stroke:var(--surface)}
-.np1.v{fill:none;stroke:var(--accent)}.np0.v{fill:none;stroke:var(--ink)}
+.np1.t{fill:var(--d1);stroke:var(--surface)}.np0.t{fill:var(--d2);stroke:var(--surface)}
+.np1.v{fill:none;stroke:var(--d1)}.np0.v{fill:none;stroke:var(--d2)}
 /* an image becomes tokens (Part D) */
 .ptwrap{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:16px;align-items:start;margin:12px 0}
 @media (max-width:600px){.ptwrap{grid-template-columns:minmax(0,1fr)}}
@@ -181,14 +184,14 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 .ptseq .chip{margin-left:3px}
 /* noise to a spiral (Part D) */
 #df-svg{display:block;width:100%;max-width:340px;aspect-ratio:1;margin:12px auto 6px;border-radius:10px;background:var(--panel)}
-.dfd{fill:var(--muted);opacity:.45}.dfp{fill:var(--accent);opacity:.8}
+.dfd{fill:var(--d2);opacity:.4}.dfp{fill:var(--d1);opacity:.85}
 .dfr{fill:none;stroke:var(--ink);stroke-width:1.6}.dfl{stroke:var(--ink);stroke-width:1;stroke-dasharray:3 2}.dfx{stroke:var(--ink);stroke-width:2;fill:none}
 #w-diff [hidden]{display:none}
 /* quantization (Part C) */
 #qz-svg{display:block;width:100%;margin:12px 0 4px}
 .qzax{stroke:var(--line)}.qzt{font:500 11px var(--mono);font-variant-ligatures:none;fill:var(--muted)}
-.qzl{stroke:var(--accent);stroke-opacity:.35;stroke-width:1}.qzb{stroke:var(--muted);stroke-dasharray:3 3}
-.qze{stroke:var(--warn);stroke-width:1.5}.qzo{fill:none;stroke:var(--ink);stroke-width:1.2}.qzq{fill:var(--accent)}
+.qzl{stroke:var(--d1);stroke-opacity:.35;stroke-width:1}.qzb{stroke:var(--muted);stroke-dasharray:3 3}
+.qze{stroke:var(--warn);stroke-width:1.5}.qzo{fill:none;stroke:var(--ink);stroke-width:1.2}.qzq{fill:var(--d1)}
 /* FlashAttention tiles (Part C) */
 .flg{display:grid;gap:2px;font:500 .78rem var(--mono);font-variant-ligatures:none;min-width:430px;margin:10px 0 4px}
 .flh{text-align:center;color:var(--muted);font-size:.7rem;line-height:1.25;padding-bottom:2px}
@@ -196,11 +199,13 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 .flrb.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
 .flc{display:flex;align-items:center;justify-content:center;min-height:30px;border-radius:4px;background:var(--bg);border:1px solid var(--line)}
 .flc.tl{margin-left:5px}.flc.tt{margin-top:5px}.flc.fol{font-weight:800}
-.fls.now{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
-.fls.used{background:var(--panel);color:var(--muted)}
-.fls.hbm{background:color-mix(in srgb,var(--warn) 16%,var(--bg));border-color:var(--warn)}
+/* computed cells carry viridis by value (set inline); the state is shown by outline, fading and border */
+.fls.now{outline:2.5px solid var(--ink);outline-offset:-1px;font-weight:700}
+.fls.used{color:var(--ink)}
+.fls.hbm{border:2px solid var(--warn)}
 .fls.msk{background:repeating-linear-gradient(45deg,var(--line) 0 2px,transparent 2px 6px);border-color:transparent}
 .lg i.fls{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:4px;border:1px solid var(--line)}
+.lg i.fls.now,.lg i.fls.hbm{background:#35b779}.lg i.fls.used{background:color-mix(in srgb,#35b779 40%,var(--surface))}
 /* mixture-of-experts routing (Part D) */
 .moel{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .moet small{display:flex;gap:3px;justify-content:center;margin-top:2px}
@@ -219,17 +224,17 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 .atl-l{color:var(--muted);white-space:nowrap}
 @media (max-width:600px){.atl{grid-template-columns:1fr;gap:2px}.atl-l{margin-top:6px}}
 /* embedding arithmetic (Part B) */
-.arv{stroke:var(--accent);stroke-width:2}
-#sc-ah path{fill:var(--accent)}
-.arp{stroke:var(--accent);stroke-width:2.5;fill:none}
-#sc-ar tr.hit td{background:var(--accent-soft);font-weight:700}
+.arv{stroke:var(--d1);stroke-width:2}
+#sc-ah path{fill:var(--d1)}
+.arp{stroke:var(--d1);stroke-width:2.5;fill:none}
+#sc-ar tr.hit td{background:color-mix(in srgb,var(--d1) 16%,var(--surface));font-weight:700}
 /* LoRA: the adapter's matrices beside the change the task needs */
 #lo-svg{max-width:440px;margin:8px auto}
 /* speculative decoding: each pass of the big model underlined, tokens coloured by where they came from */
 .sptext{font:500 .92rem var(--mono);font-variant-ligatures:none;line-height:2.3;margin:8px 0}
 .spp{border-bottom:2px solid var(--line);padding-bottom:3px}
 /* accepted draft tokens are plain; the big model's own tokens are marked by shape as well as colour */
-.spt.fix,.spt.bonus{color:var(--accent);font-weight:700;border-radius:4px;padding:1px 3px}
-.spt.fix{background:var(--accent-soft)}.spt.bonus{outline:1.5px dashed var(--accent);outline-offset:-1px}
+.spt.fix,.spt.bonus{color:var(--d1);font-weight:700;border-radius:4px;padding:1px 3px}
+.spt.fix{background:color-mix(in srgb,var(--d1) 16%,var(--surface))}.spt.bonus{outline:1.5px dashed var(--d1);outline-offset:-1px}
 /* retrieval results: the chunk column wraps */
 table.numt td.rgc{white-space:normal;font-family:var(--sans);min-width:170px}

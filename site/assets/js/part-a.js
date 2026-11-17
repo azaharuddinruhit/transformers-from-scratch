@@ -86,7 +86,7 @@ function nnAdvance(k){
 }
 function renderNN(){
   const s=NN,G=24,c=240/G;let g='';
-  for(let i=0;i<G;i++)for(let j=0;j<G;j++){const q=nnOut(s.net,-1+(i+0.5)*2/G,1-(j+0.5)*2/G,s.act);g+='<rect x="'+(i*c)+'" y="'+(j*c)+'" width="'+(c+0.5)+'" height="'+(c+0.5)+'" style="fill:color-mix(in srgb,var(--accent) '+Math.round(62*q)+'%,var(--panel))"/>';}
+  for(let i=0;i<G;i++)for(let j=0;j<G;j++){const q=nnOut(s.net,-1+(i+0.5)*2/G,1-(j+0.5)*2/G,s.act);g+='<rect x="'+(i*c)+'" y="'+(j*c)+'" width="'+(c+0.5)+'" height="'+(c+0.5)+'" style="fill:color-mix(in srgb,var('+(q>0.5?'--d1':'--d2')+') '+Math.round(90*Math.abs(q-0.5))+'%,var(--panel))"/>';}
   const P=(p,k)=>'<circle class="np np'+p[2]+' '+k+'" cx="'+((p[0]+1)*120).toFixed(1)+'" cy="'+((1-p[1])*120).toFixed(1)+'" r="'+(k==='t'?4.2:3.6)+'"/>';
   $('#nn-svg').innerHTML=g+s.val.map(p=>P(p,'v')).join('')+s.train.map(p=>P(p,'t')).join('');
   const tr=nnLoss(s.net,s.train,s.act),va=nnLoss(s.net,s.val,s.act);

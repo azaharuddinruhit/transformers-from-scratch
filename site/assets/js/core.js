@@ -21,7 +21,30 @@ function slider(id,f,cb){const e=$('#'+id),o=$('#'+id+'-o'),u=()=>{const t=Strin
 /* d_model -> d<sub>model</sub> for text that widgets rewrite (KaTeX is used for static text) */
 const sym=t=>t.replace(/\b([dnTXEW])_(model|ff|vocab|src|tgt|enc|dec|pos|[kQKVOU])\b/g,(m,a,b)=>'<span class="msym"><i>'+a+'</i><sub>'+(b.length===1?'<i>'+b+'</i>':b)+'</sub></span>');
 function renderTex(root){if(!window.katex)return;$$('.tex',root).forEach(e=>{if(e.dataset.done)return;const src=e.dataset.src||e.textContent;e.dataset.src=src;try{window.katex.render(src,e,{displayMode:e.classList.contains('d'),throwOnError:false});e.dataset.done='1';}catch(err){e.textContent=src;}});}
-window.renderAllTex=function(){renderTex(document);};
+/* display equations never scroll sideways: one wider than its box is set again with its top-level \qquad and \quad gaps
+   as line breaks, then scaled down (to 72% at most) if it is still too wide; refitted when the width changes, a view is
+   shown (rerender) or a collapsed box opens. Hidden equations (width 0) wait until they are shown. */
+function texSplit(src){const parts=[];let d=0,last=0;
+  for(let i=0;i<src.length;i++){const c=src[i];
+    if(c==='{')d++;else if(c==='}')d--;
+    else if(c==='\\'){const m=src.slice(i).match(/^\\([a-zA-Z]+)/);
+      if(!m){i++;continue;}
+      const w=m[1];if(w==='begin'||w==='left')d++;else if(w==='end'||w==='right')d--;
+      else if(!d&&(w==='qquad'||w==='quad')){parts.push(src.slice(last,i));last=i+m[0].length;}
+      i+=m[0].length-1;}}
+  parts.push(src.slice(last));return parts.map(t=>t.trim()).filter(Boolean);}
+function fitTex(){if(!window.katex)return;$$('.tex.d[data-done]').forEach(e=>{const w=e.clientWidth;if(!w||e.dataset.fw==w)return;e.dataset.fw=w;
+  const opt={displayMode:true,throwOnError:false},over=()=>{const k=e.firstElementChild;return e.scrollWidth>e.clientWidth+1||(k&&k.scrollWidth>k.clientWidth+1);};
+  e.style.fontSize='';if(e.dataset.lay){window.katex.render(e.dataset.src,e,opt);delete e.dataset.lay;}
+  if(!over())return;
+  const parts=texSplit(e.dataset.src);
+  if(parts.length>1){window.katex.render('\\begin{gathered}'+parts.join('\\\\')+'\\end{gathered}',e,opt);e.dataset.lay='lines';}
+  let f=1;for(let k=0;k<4&&over()&&f>.72;k++){f=Math.max(.72,f*Math.min(e.clientWidth/e.scrollWidth,e.firstElementChild.clientWidth/e.firstElementChild.scrollWidth)*.97);e.style.fontSize=f.toFixed(3)+'em';}});}
+widgets.push(fitTex);
+document.addEventListener('toggle',()=>fitTex(),true);
+/* KaTeX's fonts arrive after the first fit and make equations wider: fit everything again once they have loaded */
+if(document.fonts)document.fonts.addEventListener('loadingdone',()=>{$$('.tex.d').forEach(e=>{delete e.dataset.fw;});fitTex();});
+window.renderAllTex=function(){renderTex(document);fitTex();};
 window.texFailed=function(){$('#texwarn').hidden=false;};
 
 /* ---------- colour ---------- */
@@ -57,7 +80,7 @@ function signedBars(svg,vals,ymax){
   const W=Math.max(200,Math.round(svg.getBoundingClientRect().width)||300),H=170,mid=H/2,bw=(W-10)/vals.length;
   svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.style.height=H+'px';
   let s='<line x1="0" x2="'+W+'" y1="'+mid+'" y2="'+mid+'" stroke="var(--muted)"/>';
-  vals.forEach((v,i)=>{const h=Math.min(1,Math.abs(v)/ymax)*(mid-20),x=5+i*bw+3,a=Math.abs(v);s+='<rect x="'+x+'" y="'+(v>=0?mid-h:mid)+'" width="'+(bw-6)+'" height="'+Math.max(1,h)+'" rx="3" fill="var(--accent)"/><text class="ax" x="'+(x+(bw-6)/2)+'" y="'+(v>=0?mid-h-4:mid+h+12)+'" text-anchor="middle">'+fmt(v,a>=100?0:a>=10?1:2)+'</text>';});
+  vals.forEach((v,i)=>{const h=Math.min(1,Math.abs(v)/ymax)*(mid-20),x=5+i*bw+3,a=Math.abs(v);s+='<rect x="'+x+'" y="'+(v>=0?mid-h:mid)+'" width="'+(bw-6)+'" height="'+Math.max(1,h)+'" rx="3" fill="'+divColor(Math.sign(v)*(0.45+0.55*Math.min(1,a/ymax)))+'"/><text class="ax" x="'+(x+(bw-6)/2)+'" y="'+(v>=0?mid-h-4:mid+h+12)+'" text-anchor="middle">'+fmt(v,a>=100?0:a>=10?1:2)+'</text>';});
   svg.innerHTML=s;
 }
 

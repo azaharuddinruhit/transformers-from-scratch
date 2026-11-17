@@ -12,7 +12,7 @@ function renderCross(){
   const svg=$('#xa-svg'),W=Math.max(250,Math.round(svg.getBoundingClientRect().width)||600),H=214,bw=Math.min(110,W/4-10),cx=k=>(k+0.5)*W/4;
   svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.style.height=H+'px';
   let s='<text class="ax" x="'+W/2+'" y="12" text-anchor="middle">encoder output: keys and values (source sentence)</text><text class="ax" x="'+W/2+'" y="'+(H-3)+'" text-anchor="middle">decoder: query (target so far → next word)</text>';
-  XA.src.forEach((t,j)=>{const w=c.w[j];s+='<line x1="'+cx(i)+'" y1="150" x2="'+cx(j)+'" y2="56" stroke="var(--accent)" stroke-linecap="round" stroke-width="'+(1+13*w).toFixed(1)+'" opacity="'+(0.25+0.75*w).toFixed(2)+'"/>';});
+  XA.src.forEach((t,j)=>{const w=c.w[j];s+='<line x1="'+cx(i)+'" y1="150" x2="'+cx(j)+'" y2="56" stroke="'+viridis(.25+.7*w)+'" stroke-linecap="round" stroke-width="'+(1+13*w).toFixed(1)+'" opacity="'+(0.25+0.75*w).toFixed(2)+'"/>';});
   XA.src.forEach((t,j)=>{s+='<g class="sr"><rect x="'+(cx(j)-bw/2)+'" y="20" width="'+bw+'" height="36" rx="8"/><text x="'+cx(j)+'" y="43" text-anchor="middle">'+t+'</text></g><text class="pc" x="'+cx(j)+'" y="74" text-anchor="middle">'+Math.round(c.w[j]*100)+'%</text>';});
   XA.out.forEach((t,j)=>{s+='<g class="tg'+(j===i?' on':'')+'" tabindex="0" role="button" aria-label="Decoder step '+(j+1)+': predict '+t+'" data-i="'+j+'"><rect x="'+(cx(j)-bw/2)+'" y="150" width="'+bw+'" height="44" rx="8"/><text x="'+cx(j)+'" y="168" text-anchor="middle">'+esc(XA.din[j])+'</text><text class="ax" x="'+cx(j)+'" y="186" text-anchor="middle">→ '+t+'</text></g>';});
   svg.innerHTML=s;
@@ -27,7 +27,7 @@ function renderCross(){
   $('#xa-ctx').innerHTML='<span class="lab">Context vector handed to the decoder: c = Σ α<sub>j</sub> v<sub>j</sub></span>'+vec(c.ctx,'ctx',null,2)+'<div class="readout">'+[0,1,2,3].map(d=>'c<sub>'+d+'</sub> = '+XA.src.map((t,j)=>fmt(c.w[j])+'·'+String(XA.V[j][d]).replace('-','−')).join(' + ')+' = <b>'+fmt(c.ctx[d])+'</b>').join('<br>')+'</div>';
 }
 function typeGrid(rows,cols,fn){
-  return '<div class="hm maskg'+(cols.length>5?' compact':'')+'" style="grid-template-columns:auto repeat('+cols.length+',minmax(0,1fr))"><span></span>'+cols.map(t=>'<span class="hh">'+esc(t.length>4&&cols.length>5?t.slice(0,3):t)+'</span>').join('')+rows.map((t,i)=>'<span class="hr">'+esc(t)+'</span>'+cols.map((u,j)=>{const k=fn(i,j);return '<span class="hc'+(k?'':' masked')+'" data-tip="'+esc('<b>'+esc(t)+'</b> → <b>'+esc(u)+'</b><br>'+({S:'source reads source',X:'target reads source',T:'target reads earlier target'}[k]||'blocked: −∞ added before softmax'))+'">'+(k||'−∞')+'</span>';}).join('')).join('')+'</div>';
+  return '<div class="hm maskg'+(cols.length>5?' compact':'')+'" style="grid-template-columns:auto repeat('+cols.length+',minmax(0,1fr))"><span></span>'+cols.map(t=>'<span class="hh">'+esc(t.length>4&&cols.length>5?t.slice(0,3):t)+'</span>').join('')+rows.map((t,i)=>'<span class="hr">'+esc(t)+'</span>'+cols.map((u,j)=>{const k=fn(i,j);return '<span class="hc'+(k?' t'+k:' masked')+'" data-tip="'+esc('<b>'+esc(t)+'</b> → <b>'+esc(u)+'</b><br>'+({S:'source reads source',X:'target reads source',T:'target reads earlier target'}[k]||'blocked: −∞ added before softmax'))+'">'+(k||'−∞')+'</span>';}).join('')).join('')+'</div>';
 }
 function renderContrast(){
   const ed=sx.view==='ed';

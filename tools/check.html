@@ -7,7 +7,7 @@
 <h1>Page checks</h1>
 <p>Loads every page at several widths, with every part view shown and every collapsible box opened, and reports:
 maths that KaTeX did not render, symbols written as plain text, elements that stick out of their section,
-clipped text, and text boxes that need sideways scrolling (code, tables and display equations may scroll).
+clipped text, and text boxes that need sideways scrolling (code and tables may scroll; display equations must fit).
 Open this file in Chrome (started with <code>--allow-file-access-from-files</code>), or run it headless with <code>--dump-dom</code>;
 the result appears below when the status line says “done”.</p>
 <p id="st">running…</p>
@@ -39,7 +39,7 @@ function check(D,W,job){
   [...off].filter(e=>!off.has(e.parentElement)).slice(0,10).forEach(e=>found.push('sticks out of its section: '+label(e)+' "'+e.textContent.trim().slice(0,50)+'"'));
   D.querySelectorAll('body *').forEach(e=>{if(!shown(e))return;const c=cs(e);
     if(/hidden|clip/.test(c.overflowX)&&!e.classList.contains('vh')&&c.textOverflow!=='ellipsis'&&e.scrollWidth>e.clientWidth+1&&e.textContent.trim())found.push('clipped text: '+label(e)+' by '+(e.scrollWidth-e.clientWidth)+'px');
-    if(/auto|scroll/.test(c.overflowX)&&e.clientWidth&&e.scrollWidth>e.clientWidth+1&&!e.matches('pre.py,pre.sh,.scroll,.tex.d,.katex-display,.dd-list,#toc')&&!e.closest('svg'))found.push('text box scrolls sideways: '+label(e)+' by '+(e.scrollWidth-e.clientWidth)+'px');});
+    if(/auto|scroll/.test(c.overflowX)&&e.clientWidth&&e.scrollWidth>e.clientWidth+1&&!e.matches('pre.py,pre.sh,.scroll,.dd-list,#toc')&&!e.closest('svg'))found.push('text box scrolls sideways: '+label(e)+' by '+(e.scrollWidth-e.clientWidth)+'px');});
   return found;
 }
 function next(){

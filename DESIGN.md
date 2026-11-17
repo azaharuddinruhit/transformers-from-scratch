@@ -21,6 +21,8 @@ colors:
   key-purple: "#7b3fb0"
   value-green: "#1a7a4b"
   residual-magenta: "#b02a7c"
+  data-amber: "#925d00"
+  data-teal: "#0b7480"
   warning-red: "#b42318"
   done-green: "#1f8a56"
   highlighter-yellow: "#ffe9a3"
@@ -198,6 +200,7 @@ A neutral grey scale for the interface and a small set of semantic hues that eac
 ### Data
 - **Query Blue**, **Key Purple**, **Value Green**: the attention colours, for vectors, diagram borders, legend swatches and text tints.
 - **Residual Magenta**: the residual stream in diagrams, drawn dashed.
+- **Data Amber and Data Teal** (`--d1`, `--d2`; `#f0b849` and `#5fcfc4` in the dark theme): data that is not Q, K, V or a magnitude. Amber is the main or highlighted series (the solid line of a chart, the token being looked at, trained tokens, quantized values, generated text, the big model's tokens); teal is the comparison (the dashed line, the second class, the training data). Who-reads-whom grids use teal for source tokens and amber for target tokens. Signed values (LayerNorm's bars, the positional-encoding heatmap) use the blue–orange diverging scale `divColor()`. Never use `--accent` for data: it is the ink.
 - **Viridis**: bar fills (`bars()` in `core.js`, the home demo) and heatmaps take their colour from their value through `viridis(t)`; a cut bar keeps its hatching instead.
 - **Highlighter Yellow**: `mark`, the current row of a number table, the sampled token in the home demo.
 
@@ -321,7 +324,7 @@ A collapsed "In Python: …" disclosure; inside, a copy button and a 6px-radius 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** use `--q`, `--k`, `--v` for Query, Key and Value, `--res` (dashed) for the residual stream and `viridis()` for magnitudes.
+- **Do** use `--q`, `--k`, `--v` for Query, Key and Value, `--res` (dashed) for the residual stream, `viridis()` for magnitudes, `divColor()` for signed values and `--d1` / `--d2` for any other main and comparison data.
 - **Do** make a new widget's main action an Ink outline (`.controls button.pri`) and show selection with Tint, Ink border and Ink text.
 - **Do** use `--ok` for anything done and `--warn` for anything wrong.
 - **Do** print every number a widget computes in mono, to four decimals where it is a working value.

@@ -243,6 +243,8 @@ function flRun(i){
 }
 function renderFlash(){
   const B=sfl.B,T=FL_T,tiled=sfl.mode==='tiled',tiles=flTiles(),cur=tiled&&sfl.step?tiles[sfl.step-1]:null;
+  /* computed cells take viridis by value: scores scaled over the visible ones, probabilities as they are; a discarded tile keeps a faded copy */
+  const sv=FL.S.flatMap((r,i)=>r.slice(0,i+1)),lo=Math.min(...sv),hi=Math.max(...sv);
   let h='<div class="flg" style="grid-template-columns:auto repeat('+T+',minmax(34px,1fr))"><span></span>';
   for(let j=0;j<T;j++)h+='<span class="flh">key '+(j+1)+'<br>v = '+FL.V[j]+'</span>';
   for(let i=0;i<T;i++){
@@ -250,8 +252,9 @@ function renderFlash(){
     for(let j=0;j<T;j++){
       const ti=tiles.findIndex(t=>t[0]===Math.floor(i/B)&&t[1]===Math.floor(j/B));
       let st='';if(j>i)st='msk';else if(tiled){if(ti>=0&&ti<sfl.step-1)st='used';else if(ti===sfl.step-1)st='now';}else if(sfl.step>=1)st='hbm';
-      const shown=st&&st!=='msk',val=!tiled&&sfl.step>=2?fmt(flExact(i).w[j],2):fmt(FL.S[i][j],1);
-      h+='<span class="flc fls '+st+(tiled&&j%B===0&&j?' tl':'')+(tiled&&i%B===0&&i?' tt':'')+(i===sfl.row?' fol':'')+'">'+(shown?val:'')+'</span>';}
+      const shown=st&&st!=='msk',prob=!tiled&&sfl.step>=2,val=prob?fmt(flExact(i).w[j],2):fmt(FL.S[i][j],1);
+      const t=prob?flExact(i).w[j]:(FL.S[i][j]-lo)/(hi-lo),bg=shown?(st==='used'?'background:color-mix(in srgb,'+viridis(t)+' 40%,var(--surface))':'background:'+viridis(t)+';color:'+vtext(t)):'';
+      h+='<span class="flc fls '+st+(tiled&&j%B===0&&j?' tl':'')+(tiled&&i%B===0&&i?' tt':'')+(i===sfl.row?' fol':'')+'"'+(bg?' style="'+bg+'"':'')+'>'+(shown?val:'')+'</span>';}
   }
   $('#fl-grid').innerHTML=h+'</div>';
   const n=flTotal(),vis=T*(T+1)/2;

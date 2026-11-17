@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-17T17:41:47.684Z",
+  "generatedAt": "2026-11-17T18:02:46.773Z",
   "title": "Design System: Transformers and LLMs from Scratch",
   "extensions": {
     "colorMeta": {
@@ -553,7 +553,7 @@
       }
     ],
     "dos": [
-      "**Do** use `--q`, `--k`, `--v` for Query, Key and Value, `--res` (dashed) for the residual stream and `viridis()` for magnitudes.",
+      "**Do** use `--q`, `--k`, `--v` for Query, Key and Value, `--res` (dashed) for the residual stream, `viridis()` for magnitudes, `divColor()` for signed values and `--d1` / `--d2` for any other main and comparison data.",
       "**Do** make a new widget's main action an Ink outline (`.controls button.pri`) and show selection with Tint, Ink border and Ink text.",
       "**Do** use `--ok` for anything done and `--warn` for anything wrong.",
       "**Do** print every number a widget computes in mono, to four decimals where it is a working value.",
