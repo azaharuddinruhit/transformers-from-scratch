@@ -91,9 +91,8 @@ footer{padding:30px 0;color:var(--muted);font-size:.9rem}
 .doneBtn{font:600 .88rem var(--sans);min-height:38px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
 .doneBtn:hover{border-color:var(--v)}
 .doneBtn.on{border-color:var(--v);color:var(--v)}
-.nextBtn{justify-self:end;display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;padding:9px 18px;border-radius:10px;background:transparent;border:1.5px solid var(--accent);color:var(--accent);text-decoration:none;font-weight:600;font-size:.98rem;max-width:100%}
+.nextBtn{justify-self:end;display:inline-flex;align-items:center;padding:9px 18px;border-radius:10px;background:transparent;border:1.5px solid var(--accent);color:var(--accent);text-decoration:none;font-weight:600;font-size:.98rem;max-width:100%}
 .nextBtn:hover{background:var(--accent-soft)}
-.nextBtn small{color:inherit;opacity:.8;font-size:.8rem;font-weight:500}
 /* home */
 .pre{color:var(--muted)}
 .journey h2,.more h2{font-size:1.4rem;margin:1.6em 0 .6em}

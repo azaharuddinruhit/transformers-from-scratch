@@ -170,6 +170,8 @@
   <div class="term"><dt>Reranker</dt><dd>A model that reads a query and a passage together and scores their relevance; more accurate and slower than embedding search.</dd></div>
   <div class="term"><dt>HNSW</dt><dd>Hierarchical navigable small world: a graph index for fast approximate nearest-neighbour search.</dd></div>
   <div class="term"><dt>Chunking</dt><dd>Splitting documents into passages of manageable size before embedding them.</dd></div>
+<div class="term"><dt>Hybrid search</dt><dd>Running keyword search and vector search together and merging their results, so that both exact terms and paraphrases are found.</dd></div>
+<div class="term"><dt>Reciprocal rank fusion</dt><dd>Merging ranked lists by giving each item 1 / (60 + its rank) from every list that contains it; it uses ranks, so the lists’ scores need not be comparable.</dd></div>
   <div class="term"><dt>SFT</dt><dd>Supervised fine-tuning on prompt and ideal-response pairs.</dd></div>
   <div class="term"><dt>LoRA</dt><dd>Low-rank adaptation: fine-tuning by learning a small low-rank update to frozen weight matrices.</dd></div>
   <div class="term"><dt>QLoRA</dt><dd>LoRA trained on top of a base model stored in 4-bit precision.</dd></div>
@@ -193,7 +195,10 @@
   <div class="term"><dt>Quantization</dt><dd>Storing weights (and sometimes activations or the KV cache) in fewer bits to save memory and bandwidth.</dd></div>
   <div class="term"><dt>Group size (quantization)</dt><dd>How many weights share one scale, typically 32 to 128. Smaller groups limit the damage an outlier does, at the cost of storing more scales.</dd></div>
   <div class="term"><dt>GPTQ and AWQ</dt><dd>Post-training methods that quantize weights to about 4 bits using a little calibration data, choosing roundings or scales that keep the layer’s outputs close to the original.</dd></div>
-  <div class="term"><dt>Speculative decoding</dt><dd>A small draft model proposes tokens that the large model verifies in one pass, speeding up generation.</dd></div>
+  <div class="term"><dt>Speculative decoding</dt><dd>A small draft model proposes tokens that the large model verifies in one pass, speeding up generation without changing the output’s distribution.</dd></div>
+<div class="term"><dt>Continuous batching</dt><dd>Scheduling after every decode step, so finished requests leave the batch at once and waiting ones join, instead of the batch waiting for its longest request.</dd></div>
+<div class="term"><dt>Paged KV memory</dt><dd>Storing the KV cache in fixed-size blocks given out as a request grows, located through a block table (PagedAttention in vLLM), so almost no memory is reserved and left empty.</dd></div>
+<div class="term"><dt>Prefix caching</dt><dd>Keeping the keys and values of a prompt’s beginning, so later requests that start with the same tokens skip their prefill.</dd></div>
   <div class="term"><dt>GPU</dt><dd>A processor with thousands of simple cores that apply the same operation to many numbers at once; it runs nearly all model training and inference.</dd></div>
   <div class="term"><dt>Tensor core</dt><dd>A unit inside a GPU that multiplies a small block of a matrix in one step, at reduced precision such as bf16 or fp8.</dd></div>
   <div class="term"><dt>VRAM</dt><dd>The GPU’s own memory. The weights, the KV cache and intermediate values must fit in it.</dd></div>
@@ -244,7 +249,10 @@
     <tr><th scope="row"><span class="tex">B</span></th><td>batch size: sequences processed together</td><td>integer</td></tr>
     <tr><th scope="row"><span class="tex">M_{\text{KV}},\ R,\ F</span></th><td>KV-cache memory; a GPU’s memory bandwidth; its usable compute</td><td>bytes; bytes per second; operations per second</td></tr>
     <tr><th scope="row"><span class="tex">P,\ n</span></th><td>prompt length; number of tokens generated</td><td>integers</td></tr>
+    <tr><th scope="row"><span class="tex">a,\ n_{\text{draft}},\ c_{\text{draft}}</span></th><td>in speculative decoding: the chance a draft token is accepted; tokens drafted per pass; the cost of a draft step as a share of a big-model step</td><td>0 … 1; integer; 0 … 1</td></tr>
     <tr><th scope="row"><span class="tex">D</span></th><td>number of training tokens</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">A,\ B,\ r,\ \alpha</span></th><td>in LoRA: the two trained matrices (the names the paper and libraries use; this <span class="tex">B</span> is not the batch size); the rank; the scale of the update</td><td><code>[d_in, r]</code>; <code>[r, d_out]</code>; integer; positive number</td></tr>
+    <tr><th scope="row"><span class="tex">N_{\text{LoRA}}</span></th><td>number of numbers a LoRA adapter trains</td><td>integer</td></tr>
     <tr><th scope="row"><span class="tex">\Delta,\ q,\ q_{\max},\ \hat w</span></th><td>in quantization: the scale of a group; the stored integer; the largest integer (7 for 4 bits); the weight the model computes with</td><td>positive number; integer; integer; number</td></tr>
     <tr><th scope="row"><span class="tex">m_i,\ r_i,\ o_i</span></th><td>in FlashAttention: the running largest score, sum of exponentials and weighted sum of values for query <span class="tex">i</span></td><td>numbers; a vector like <span class="tex">v_j</span></td></tr>
     <tr><th scope="row"><span class="tex">W_{\text{patch}}</span></th><td>the matrix that turns a flattened image patch into a vector</td><td><code>[pixels per patch × 3, d_model]</code></td></tr>
@@ -252,6 +260,7 @@
     <tr><th scope="row"><span class="tex">\bar\alpha</span></th><td>in diffusion: the share of the clean example kept, set by the noise level</td><td>0 … 1</td></tr>
     <tr><th scope="row"><span class="tex">\varepsilon,\ \hat\varepsilon,\ \varepsilon_\theta</span></th><td>in diffusion: the noise added; its prediction; the network that predicts it</td><td>same shape as <span class="tex">u_0</span></td></tr>
     <tr><th scope="row"><span class="tex">s</span></th><td>in diffusion: the guidance scale</td><td>positive number</td></tr>
+    <tr><th scope="row"><span class="tex">e_{\text{query}},\ e_{\text{chunk}}</span></th><td>in retrieval: the embeddings of a question and of a chunk of text</td><td>one vector each, usually of length 1</td></tr>
   </tbody>
 </table></div>
 <p>Where a source uses different letters (the 2017 paper writes <span class="tex">pos</span>, <span class="tex">n</span> and <span class="tex">d</span>, for instance), the section says so.</p>

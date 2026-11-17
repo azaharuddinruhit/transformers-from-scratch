@@ -372,7 +372,7 @@ print(f"{len(tokens)} tokens, loss on {sum(trained)}:",
 # 35 tokens, loss on 8: The cat sat on the mat . &lt;|im_end|&gt;</code></pre></details>
 <h3 class="opt">Common misconceptions</h3>
 <ul class="pit opt">
-  <li><b>“Fine-tuning is how you teach a model new facts.”</b> Post-training mostly shapes behaviour and format; the broad knowledge comes from pretraining. For facts that change, retrieval (see <a class="xref" data-ref="iv-rag"></a>) usually works better.</li>
+  <li><b>“Fine-tuning is how you teach a model new facts.”</b> Post-training mostly shapes behaviour and format; the broad knowledge comes from pretraining. For facts that change, retrieval (see <a class="xref" data-ref="rag"></a>) usually works better.</li>
   <li><b>“The whole conversation is training data.”</b> Only the assistant’s replies carry the loss. The rest is context.</li>
   <li><b>Pitfall:</b> using a base model for chat. It continues your text instead of answering it.</li>
 </ul>
@@ -513,10 +513,129 @@ for n in (1, 5, 9):
 <fieldset><legend>3. Why does a reasoning model usually take longer to answer?</legend><button type="button" class="qo">It has more parameters</button><button type="button" class="qo" data-ok="1">It generates many thinking tokens before the answer</button><button type="button" class="qo">It runs at a higher temperature</button><p class="qx" hidden aria-live="polite"><b></b> Each thinking token is a decode step, so latency and cost grow with the length of the working.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>If we used a model to judge answers for preference tuning or evaluation, what blind spots might it have, and how would we notice reward hacking?</li><li>Where in our products would a reasoning model’s extra latency and cost be worth it, and where not?</li></ul></details>
-<p class="bridge">However it was tuned, the model still gives one probability distribution per step. <a class="xref" data-ref="generation"></a> is about how to choose a token from it.</p>
+<p class="bridge">Both kinds of tuning above train the whole model. <a class="xref" data-ref="lora"></a> shows how to adapt a model on a single GPU instead.</p>
 </div>
 </section>
 
+<section class="ch" id="lora" data-title="Fine-tuning and LoRA">
+<h2>Fine-tuning and LoRA: adapting a model on one GPU</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Decide whether a task needs a better prompt, retrieval or fine-tuning.</li><li>Write the LoRA update and count its trainable numbers.</li><li>Work out the memory of full fine-tuning, LoRA and QLoRA for a given model.</li><li>Choose the rank, the scale and the matrices that get adapters.</li></ul></div><p class="needs"><b>Builds on</b> Supervised fine-tuning in <a class="xref" data-ref="posttrain"></a>, and the training step in <a class="xref" data-ref="training"></a>.</p></div>
+<div class="story"><p>A support team wants every answer from Llama 3.1 8B as three short bullet points followed by a ticket category. A careful prompt gets the format right most of the time, not every time. The team has 2,000 good examples. Training all 8 billion weights on them would need about 128 GB of GPU memory before activations. A LoRA adapter trains 42 million numbers instead, half a percent of the model, and with the frozen weights stored in 4 bits the whole job fits on one 24 GB card.</p></div>
+<p><b>Fine-tuning</b> continues training a pretrained model on your own examples, with the loss of supervised fine-tuning: the cross-entropy of the answer tokens. <b>Full fine-tuning</b> updates every weight, so memory must hold the weights, their gradients and the optimizer’s state. With Adam in mixed precision that is about 16 bytes per parameter, as <a class="xref" data-ref="hardware"></a> works out, so 128 GB for an 8B model.</p>
+<p><b>LoRA</b> (low-rank adaptation, 2021) freezes the pretrained weights and learns a small correction for some of the weight matrices. The correction is the product of two thin matrices, so it has few numbers to train. The bet behind it: adapting a model to one task needs a change in only a few directions, even though each matrix has thousands of them. On GPT-3 (175 billion parameters) the LoRA paper cut the trainable numbers by 10,000 times and the GPU memory by 3 times, with no extra time per token at inference.</p>
+<div class="flow" role="img" aria-label="Diagram: the input row goes through the frozen pretrained matrix and, in parallel, through two small trained matrices that squeeze it to a few numbers and expand it back; the two results are added">
+  <div><b>Input row</b><small>one token’s vector</small></div><i>→</i>
+  <div><b>Frozen matrix</b><small>pretrained, never updated</small></div><i>+</i>
+  <div class="fa"><b>A, then B</b><small>down to a few numbers and back up; trained</small></div><i>→</i>
+  <div><b>Sum</b><small>the layer’s output, slightly changed</small></div>
+</div>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>What is learned?</b> Take one weight matrix <span class="tex">W</span> of shape <code>[d_in, d_out]</code>. LoRA adds a correction made of two small matrices: <span class="tex">A</span> of shape <code>[d_in, r]</code> and <span class="tex">B</span> of shape <code>[r, d_out]</code>. Their product has the shape of <span class="tex">W</span>, but its rank is at most <span class="tex">r</span>, typically 8 to 64:</p>
+<div class="tex d">W' = W + \frac{\alpha}{r}\,AB,\qquad xW' = xW + \frac{\alpha}{r}\,(xA)\,B</div>
+<p class="sym"><span class="tex">x</span> is the input row. <span class="tex">W</span> is frozen; only <span class="tex">A</span> and <span class="tex">B</span> are trained. <span class="tex">r</span> is the rank. <span class="tex">\alpha</span> is a fixed scale chosen with it, so that a change of rank does not change the size of the update. These are the names the LoRA paper and the libraries use; here <span class="tex">B</span> is a matrix, not the batch size. During training the product <span class="tex">AB</span> is never formed: the input is squeezed to <span class="tex">r</span> numbers by <span class="tex">A</span> and expanded back by <span class="tex">B</span>.</p>
+<p><b>Where does it start?</b> <span class="tex">A</span> starts with small random numbers and <span class="tex">B</span> with zeros, so <span class="tex">AB=0</span> and the adapted model starts exactly as the pretrained one. <span class="tex">B</span> gets a gradient at the first step because <span class="tex">A</span> is not zero, and <span class="tex">A</span> starts to move once <span class="tex">B</span> has.</p>
+<p><b>How many numbers are trained?</b> <span class="tex">A</span> and <span class="tex">B</span> together hold</p>
+<div class="tex d">r\,(d_{\text{in}}+d_{\text{out}})\quad\text{instead of}\quad d_{\text{in}}\times d_{\text{out}}</div>
+<p class="sym">For a 4,096 × 4,096 matrix at rank 16: 16 × 8,192 = 131,072 numbers instead of 16,777,216, under 1%.</p>
+<p><b>What does it cost at inference?</b> Nothing, if you merge: <span class="tex">W'</span> has the shape of <span class="tex">W</span>, so it can be computed once and the model runs exactly as fast as before. Or keep the adapter as a separate file, a few megabytes to a few hundred, and switch adapters per task over one shared base model.</p>
+<p><b>And memory in training?</b> The frozen weights need no gradients and no optimizer state, only storage. Each trained number needs about 16 bytes, as in full fine-tuning:</p>
+<div class="tex d">M_{\text{LoRA}}\approx N\times\text{bytes per parameter}+16\,N_{\text{LoRA}}\ \text{bytes, before activations}</div>
+<p class="sym"><span class="tex">N</span> is the model’s parameter count and <span class="tex">N_{\text{LoRA}}</span> the adapter’s. With the frozen weights in bf16, that is 2 bytes per parameter. <b>QLoRA</b> (2023) stores them in NF4, a 4-bit format (see <a class="xref" data-ref="quant"></a>), turns each block back to 16 bits only while it is used, and trains a LoRA adapter on top: about half a byte per frozen parameter. The QLoRA paper fine-tuned a 65-billion-parameter model on a single 48 GB GPU.</p>
+<div class="worked">
+  <h4>Worked example: Llama 3.1 8B on one card</h4>
+  <p>Rank 16 on every linear layer of every block gives 42 million trainable numbers, 0.52% of the model. Full fine-tuning needs about 128 GB before activations: two 80 GB GPUs at least. LoRA over bf16 weights needs about 17 GB. QLoRA needs about 6.4 GB, so it fits on a 24 GB card with room for activations.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>From the model’s configuration: width 4,096, keys and values 1,024 wide (8 KV heads of 128, grouped-query attention), MLP width 14,336, 32 blocks, 8.03 billion parameters. Rank 16 on each of the seven linear layers of a block:</p>
+  <div class="scroll"><table class="numt"><thead><tr><th>Matrix</th><th>Shape</th><th>LoRA numbers at rank 16</th></tr></thead><tbody>
+  <tr><td>query, output</td><td>4,096 × 4,096</td><td>16 × 8,192 = 131,072 each</td></tr>
+  <tr><td>key, value</td><td>4,096 × 1,024</td><td>16 × 5,120 = 81,920 each</td></tr>
+  <tr><td>gate, up, down</td><td>4,096 × 14,336</td><td>16 × 18,432 = 294,912 each</td></tr>
+  <tr><td>one block</td><td></td><td>2 × 131,072 + 2 × 81,920 + 3 × 294,912 = 1,310,720</td></tr>
+  <tr><td>32 blocks</td><td></td><td>41,943,040, which is 0.52% of 8.03 B</td></tr></tbody></table></div>
+  <p>Full fine-tuning: <span class="tex">16 \times 8.03 \times 10^9 = 128.5</span> GB. LoRA: frozen weights <span class="tex">2 \times 8.03 \times 10^9 = 16.1</span> GB, plus <span class="tex">16 \times 41.9 \times 10^6 = 0.67</span> GB for the adapter, its gradients and Adam’s state: 16.7 GB.</p>
+  <p>QLoRA: the 6.98 billion weights of the blocks’ linear layers in NF4 take 4.127 bits each with their scales (QLoRA quantizes the scales too, its “double quantization”): 3.60 GB. The token embeddings and the output layer, 1.05 billion numbers, usually stay in bf16: 2.10 GB. With the adapter, 6.4 GB before activations.</p></details>
+</div>
+<div class="widget" id="w-lora">
+  <h4 class="wt">Interactive · train a LoRA adapter</h4>
+  <p class="look"><b>The point:</b> A low-rank adapter learns a change with a few strong patterns from a fraction of the numbers. <b>Do this:</b> Train at rank 1, then at ranks 2 and 4, then “Full”. <b>Watch for:</b> Where each loss curve levels off, and how the learned change fills in the needed one, strongest pattern first.</p>
+  <div class="controls">
+    <div class="ctl"><span>Rank</span><div class="chips" id="lo-r" role="group" aria-label="Rank"></div></div>
+  </div>
+  <div class="controls"><button class="pri" id="lo-go">Train 400 steps</button><button id="lo-reset">Clear all runs</button></div>
+  <svg id="lo-svg" viewBox="0 0 360 230" role="img" aria-label="The adapter’s matrices A and B, their product, the learned change, beside the change the task needs, as grids of coloured cells"></svg>
+  <span class="lab">Loss left, as a share of the starting loss (log scale)</span>
+  <svg id="lo-chart" role="img" aria-label="Loss curves of the runs trained so far"></svg>
+  <div class="stats" id="lo-stats" aria-live="polite"></div>
+  <small>What is simplified: one 16 × 16 layer instead of hundreds of large ones, and a target change made by hand, of rank 3, with patterns of strength 2, 1 and 0.4. The loss is the squared error of the layer’s output on 64 random inputs, not a language model’s loss, and training is plain gradient descent at a fixed step size, without the scale <span class="tex">\alpha / r</span>. A and B are each coloured on their own scale.</small>
+  <div class="wjh"><b>What just happened?</b> At every rank the learned change started at zero, because <span class="tex">B</span> did. Rank 1 can hold one pattern, so it learned the strongest and levelled off at about a fifth of the starting loss. Rank 2 learned two patterns and levelled off near 3%, the share of the weakest. Ranks 4 and 8 have room for all three and kept falling towards zero. “Full” got there fastest, but trained 256 numbers where rank 4 trained 128; at real sizes the gap is a hundredfold. Real fine-tuning works with LoRA for the same reason: the change a task needs is dominated by a few patterns.</div>
+</div>
+<details class="callout code opt"><summary>In Python: count LoRA’s numbers and the memory it needs</summary>
+<div class="cbar"><small>Runs on its own · Python 3</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s12d_lora.py"><code># Llama 3.1 8B, from its config.json
+d_model, d_kv, d_ff, layers = 4096, 1024, 14336, 32   # keys and values: 8 KV heads of 128
+vocab = 128256
+r = 16                                                # LoRA rank
+
+shapes = {"query": (d_model, d_model), "key": (d_model, d_kv), "value": (d_model, d_kv),
+          "output": (d_model, d_model), "gate": (d_model, d_ff), "up": (d_model, d_ff), "down": (d_ff, d_model)}
+
+linear = layers * sum(d_in * d_out for d_in, d_out in shapes.values())
+norms = (2 * layers + 1) * d_model
+tables = 2 * vocab * d_model                          # token embeddings and the output layer (not tied)
+N = linear + norms + tables
+lora = layers * sum(r * (d_in + d_out) for d_in, d_out in shapes.values())
+print(f"parameters      {N:,}")
+print(f"LoRA, rank {r}   {lora:,} = {lora / N:.2%} of the model")
+
+GB = 1e9
+nf4 = 4 + 8 / 64 + 32 / (64 * 256)                    # 4 bits, plus scales quantized again ("double quantization")
+print(f"\nfull fine-tuning  {16 * N / GB:6.1f} GB  (16 bytes per parameter)")
+print(f"LoRA over bf16    {(2 * N + 16 * lora) / GB:6.1f} GB")
+print(f"QLoRA             {(linear * nf4 / 8 + 2 * (tables + norms) + 16 * lora) / GB:6.1f} GB  ({nf4:.3f} bits per block weight)")
+print("(all before activations)")
+
+# Output:
+# parameters      8,030,261,248
+# LoRA, rank 16   41,943,040 = 0.52% of the model
+#
+# full fine-tuning   128.5 GB  (16 bytes per parameter)
+# LoRA over bf16      16.7 GB
+# QLoRA                6.4 GB  (4.127 bits per block weight)
+# (all before activations)</code></pre></details>
+<h3>When to fine-tune</h3>
+<ul>
+  <li><b>Try a better prompt first.</b> Instructions and a few examples in the prompt cost nothing to change.</li>
+  <li><b>Use retrieval for knowledge</b>, especially knowledge that changes or must be cited: <a class="xref" data-ref="rag"></a>. Fine-tuning is an unreliable way to add facts.</li>
+  <li><b>Fine-tune for behaviour</b>: a fixed format, a style, a narrow task done consistently, or a small model taught to match a large one on that task, which is cheaper to run.</li>
+  <li><b>Quality beats quantity.</b> The LIMA paper fine-tuned a 65B model on only 1,000 carefully chosen examples. Hundreds to a few thousand good examples is a common start; check them by hand.</li>
+</ul>
+<h3 class="opt">Choosing the settings</h3>
+<ul class="opt">
+  <li><b>Which matrices.</b> The LoRA paper adapted the attention’s query and value matrices. The QLoRA paper found that adapters on all the linear layers of each block were needed to match full fine-tuning.</li>
+  <li><b>Rank and scale.</b> Ranks of 8 to 64 are common; past a point a higher rank adds little. <span class="tex">\alpha</span> is often set to <span class="tex">r</span> or <span class="tex">2r</span>.</li>
+  <li><b>Learning rate.</b> Usually higher than for full fine-tuning, because only the small matrices move.</li>
+  <li><b>Preference tuning too.</b> DPO from <a class="xref" data-ref="prefs"></a> trains with LoRA in the same way; the frozen base model can even serve as the reference model.</li>
+  <li><b>Many adapters, one model.</b> Servers such as vLLM can load many LoRA adapters over one copy of the base model and choose one per request.</li>
+</ul>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Fine-tuning is how you teach a model your documents.”</b> It mainly changes behaviour. For facts, put the documents in the prompt with retrieval.</li>
+  <li><b>“LoRA makes the model slower.”</b> Merged into the weights, it costs nothing at inference.</li>
+  <li><b>“LoRA is as good as full fine-tuning.”</b> Often close on narrow tasks. A 2024 study titled “LoRA Learns Less and Forgets Less” found it learns new domains less well than full fine-tuning, but keeps more of what the base model knew.</li>
+  <li><b>Pitfall:</b> fine-tuning on a different chat template from the one used at inference (<a class="xref" data-ref="posttrain"></a>).</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Full fine-tuning needs about 16 bytes per parameter for weights, gradients and Adam’s state, before activations.</li><li>LoRA freezes <span class="tex">W</span> and trains <span class="tex">A</span> and <span class="tex">B</span>, of rank <span class="tex">r</span>: <span class="tex">r(d_{\text{in}}+d_{\text{out}})</span> numbers per matrix, often under 1% of the model.</li><li><span class="tex">B</span> starts at zero, so training starts from the pretrained model; afterwards the update can be merged at no cost.</li><li>QLoRA keeps the frozen weights in 4 bits, so an 8B model fine-tunes on one 24 GB card.</li><li>Fine-tune for behaviour and format; use retrieval for knowledge.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. A 4,096 × 4,096 matrix gets a rank-8 LoRA adapter. How many numbers does the adapter train?</legend><button type="button" class="qo" data-ok="1">65,536</button><button type="button" class="qo">32,768</button><button type="button" class="qo">16,777,216</button><p class="qx" hidden aria-live="polite"><b></b> 8 × (4,096 + 4,096) = 65,536. 32,768 counts only one of the two matrices; 16,777,216 is the whole matrix.</p></fieldset>
+<fieldset><legend>2. Why does <span class="tex">B</span> start at zero?</legend><button type="button" class="qo">To save memory</button><button type="button" class="qo" data-ok="1">So that the adapted model starts exactly as the pretrained one</button><button type="button" class="qo">So that the rank stays low</button><p class="qx" hidden aria-live="polite"><b></b> With <span class="tex">B=0</span> the product <span class="tex">AB</span> is zero, so training starts from the pretrained model’s behaviour.</p></fieldset>
+<fieldset><legend>3. Which task most calls for fine-tuning rather than retrieval?</legend><button type="button" class="qo">Answering from a handbook that changes every month</button><button type="button" class="qo" data-ok="1">Always answering in a fixed format and tone</button><button type="button" class="qo">Quoting the source of each answer</button><p class="qx" hidden aria-live="polite"><b></b> Format and tone are behaviour, which fine-tuning changes well. Changing knowledge and citations call for retrieval.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Which of our tasks would gain from fine-tuning, and which are really retrieval problems?</li><li>Where would 1,000 good examples for our most important task come from, and who would check them?</li></ul></details>
+<p class="bridge">However a model was tuned, it still gives one probability distribution per step. <a class="xref" data-ref="generation"></a> is about how to choose a token from it.</p>
+</div>
+</section>
 <section class="ch" id="generation" data-title="Generation and decoding">
 <h2>Generation and decoding</h2>
 <div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain how temperature reshapes the distribution and why.</li><li>Describe greedy decoding, top-k and top-p and when each is useful.</li><li>Predict qualitatively what a change of settings does to the output.</li></ul></div><p class="needs"><b>Builds on</b> Softmax and the generation loop from <a class="xref" data-ref="intro"></a>; a trained model from <a class="xref" data-ref="training"></a>, made into an assistant in <a class="xref" data-ref="posttrain"></a>.</p></div>
@@ -654,7 +773,7 @@ print("tau=2.0:  ", repr(generate("the ", 30, rng, tau=2.0)))
   <li><b>“The KV cache changes the result.”</b> It is purely a speed optimization; outputs are identical.</li>
   <li><b>Pitfall:</b> text outside the context window is forgotten completely. Nothing about it remains inside the model.</li>
 </ul>
-<div class="callout note"><b>Why models make things up</b><p>The model does not look facts up; it samples a plausible next token. When its training text held no clear answer, a fluent wrong answer can be just as probable as a right one, and it is written with the same confidence. This is called <b>hallucination</b>. Giving the model the facts in its context (retrieval, see <a class="xref" data-ref="iv-rag"></a>), asking it to say when it does not know, and checking its claims all reduce it; lowering the temperature does not, because the wrong answer may be the most probable one.</p></div>
+<div class="callout note"><b>Why models make things up</b><p>The model does not look facts up; it samples a plausible next token. When its training text held no clear answer, a fluent wrong answer can be just as probable as a right one, and it is written with the same confidence. This is called <b>hallucination</b>. Giving the model the facts in its context (retrieval, see <a class="xref" data-ref="rag"></a>), asking it to say when it does not know, and checking its claims all reduce it; lowering the temperature does not, because the wrong answer may be the most probable one.</p></div>
 <div class="wrapup">
 <h3>Key takeaways</h3>
 <ul class="take"><li>Temperature <span class="tex">\tau</span> divides the logits: below 1 sharpens the distribution, above 1 flattens it.</li><li>Greedy = always the top token: deterministic and often repetitive.</li><li>Top-k keeps the <span class="tex">k</span> most probable tokens; top-p keeps the smallest set whose probabilities total at least <span class="tex">p</span>.</li><li>These are settings applied at generation time. They do not change the model.</li></ul>
@@ -1072,7 +1191,138 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
 <fieldset><legend>3. A 7B model fits on a 24 GB card in testing but runs out of memory when many people use it. What grew?</legend><button type="button" class="qo">The weights</button><button type="button" class="qo" data-ok="1">The KV cache: one per request, growing with each conversation</button><button type="button" class="qo">The CUDA libraries</button><p class="qx" hidden aria-live="polite"><b></b> The weights are fixed. Each request adds its own cache, and it grows with every token.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>We want to run an open 70B model for 50 internal users. Would you buy GPUs, buy a DGX Spark, rent cloud GPUs or use a hosted API, and what would change your answer?</li><li>For serving our users, would we rather have more memory, more bandwidth or more compute, and why?</li></ul></details>
-<p class="bridge">Memory and bandwidth both come down to bytes per weight. <a class="xref" data-ref="quant"></a> shows how to use fewer.</p>
+<p class="bridge">One GPU can run many requests at once. <a class="xref" data-ref="serving"></a> shows how servers schedule them, and get more tokens from each pass.</p>
+</div>
+</section>
+<section class="ch" id="serving" data-title="Serving at scale">
+<h2>Serving at scale: many users on one GPU</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Name the measures a model service is judged by.</li><li>Explain why static batching wastes the GPU, and how continuous batching fixes it.</li><li>Explain how paged KV memory lets more requests share the GPU.</li><li>Work out the expected speed-up of speculative decoding from its acceptance rate.</li><li>Say when prefix caching saves work.</li></ul></div><p class="needs"><b>Builds on</b> The KV cache, prefill and decode in <a class="xref" data-ref="inference"></a>, and bandwidth and batching in <a class="xref" data-ref="hardware"></a>.</p></div>
+<div class="story"><p>One H100 serves a chat assistant. One user sends “the cat sat on the” and wants one word back; another wants a two-page essay. Requests arrive at random times, all begin with the same long system prompt, and stop at different lengths. The model is the same in every case. What changes is how the server schedules the work, and that decides how many users the GPU can serve, and how fast each one sees text appear.</p></div>
+<p>A server answers to three measures. <b>Time to first token</b>: the wait in the queue plus the prefill of the prompt. <b>Time per output token</b>: how fast the text then streams. <b>Throughput</b>: tokens per second across all users, which sets the cost. <a class="xref" data-ref="hardware"></a> showed the trade between them: running more requests at once shares each read of the weights, so throughput rises, while each request gets a little slower. The techniques below raise throughput, or speed per request, without changing the model’s output.</p>
+<div class="flow" role="img" aria-label="Diagram: requests wait in a queue; a scheduler adds them to the running batch after every step; their keys and values live in fixed-size memory blocks; each step the model reads its weights once for the whole batch">
+  <div><b>Queue</b><small>requests as they arrive</small></div><i>→</i>
+  <div class="fa"><b>Scheduler</b><small>after every step: finished out, waiting in</small></div><i>→</i>
+  <div><b>Running batch</b><small>one decode step for all</small></div><i>→</i>
+  <div class="fa"><b>KV blocks</b><small>16 tokens each, given out as needed</small></div>
+</div>
+<h3>Continuous batching</h3>
+<p><b>Static batching</b> starts a group of requests together and keeps the group until the longest one finishes. A request that stopped after ten tokens holds its place while another writes two hundred, and new requests wait for the whole group. <b>Continuous batching</b> (iteration-level scheduling, from the Orca paper of 2022) lets the scheduler act after every decode step: finished requests leave at once and waiting ones take their places. New prompts are prefilled alongside the running requests, often in chunks so that one long prompt does not stall everyone (“chunked prefill”).</p>
+<div class="worked">
+  <h4>Worked example: four places, four requests</h4>
+  <p>Four requests that want 10, 200, 30 and 50 tokens run together. Static batching runs 200 steps with four places: 800 place-steps, of which 290 produce a token, so 36% of the batch does useful work. Continuous batching refills the three short requests’ places from the queue as soon as they finish, so while requests are waiting, every place produces a token at every step.</p>
+</div>
+<h3>Paged KV memory</h3>
+<p>Each request’s keys and values grow by one token per step, and nobody knows in advance how long a reply will be. Earlier servers reserved one contiguous piece of memory per request, big enough for the longest possible reply. Most of it stayed empty, and the gaps between pieces could not be used. Measured in the vLLM paper, only 20.4% to 38.2% of the KV memory in those systems held real keys and values.</p>
+<p><b>PagedAttention</b> (vLLM, 2023) borrows the paging of an operating system’s virtual memory. The cache is cut into blocks of 16 tokens, a request gets a new block only when its last one is full, and a per-request block table records where its blocks are. The attention kernel reads the blocks wherever they are. At most one block per request is partly empty, and in the paper 96.3% of the memory held real keys and values. More requests fit, so the batch is larger: 2 to 4 times the throughput of the earlier systems at the same latency. Blocks can also be shared, for example by several samples of one prompt.</p>
+<p><b>How much does one token take?</b> With grouped-query attention, only the KV heads are stored:</p>
+<div class="tex d">\text{bytes per token}=2\times L\times n_{\text{kv}}\times d_k\times\text{bytes per number}</div>
+<p class="sym"><span class="tex">L</span> is the number of layers, <span class="tex">n_{\text{kv}}</span> the number of key–value heads and <span class="tex">d_k</span> the width of each. The 2 counts keys and values. Llama 3.1 8B in 16 bits: <span class="tex">2 \times 32 \times 8 \times 128 \times 2 = 131{,}072</span> bytes per token.</p>
+<div class="worked">
+  <h4>Worked example: reserve or page?</h4>
+  <p>A Llama 3.1 8B request has 500 tokens so far, and may grow to 8,192. Reserving the maximum takes 1.07 GB, of which 6% is used. Paging takes 32 blocks of 16 tokens, 67 MB, with 12 token places unused.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>Reserved: <span class="tex">8{,}192 \times 131{,}072 = 1{,}073{,}741{,}824</span> bytes, 1.07 GB. Used: <span class="tex">500 \times 131{,}072 = 65{,}536{,}000</span> bytes, 65.5 MB, which is 6.1%. Paged: <span class="tex">\lceil 500/16 \rceil = 32</span> blocks, <span class="tex">32 \times 16 = 512</span> token places, <span class="tex">512 \times 131{,}072 = 67{,}108{,}864</span> bytes, 67.1 MB. On an 80 GB H100, about 60 GB is left after the 16 GB of weights and a margin: room for 55 reservations, or about 890 paged requests of this length.</p></details>
+</div>
+<h3>Speculative decoding</h3>
+<p>With few requests running, a decode step is limited by reading the weights, not by arithmetic (<a class="xref" data-ref="hardware"></a>). Scoring five tokens in one pass therefore costs about the same as scoring one, just as prefill scores a whole prompt at once. Speculative decoding (2022) exploits this. A small, fast <b>draft model</b> guesses the next few tokens. The big model then scores all of them in one pass, keeps the guesses it agrees with, and writes one token of its own: the correction at the first guess it rejects, or one more token if it accepts all of them. Each pass of the big model now yields one token or more.</p>
+<p><b>How many tokens per pass?</b> Say each guess is accepted with probability <span class="tex">a</span>, independently, and the draft proposes <span class="tex">n_{\text{draft}}</span> tokens. The <span class="tex">j</span>-th guess counts only if all the guesses before it were accepted, and the big model always adds one token:</p>
+<div class="tex d">\text{tokens per pass}=1+a+a^2+\dots+a^{\,n_{\text{draft}}}=\frac{1-a^{\,n_{\text{draft}}+1}}{1-a}</div>
+<p><b>And the speed-up?</b> A pass costs one big-model step plus the draft’s steps:</p>
+<div class="tex d">\text{speed-up}=\frac{1-a^{\,n_{\text{draft}}+1}}{(1-a)\,(1+n_{\text{draft}}\,c_{\text{draft}})}</div>
+<p class="sym"><span class="tex">a</span> is the acceptance rate, <span class="tex">n_{\text{draft}}</span> the number of tokens drafted per pass, and <span class="tex">c_{\text{draft}}</span> the cost of one draft step as a fraction of one big-model step. The formula assumes every guess has the same chance of acceptance; real text has easy and hard stretches.</p>
+<details class="why"><summary>Why is the output exactly the big model’s?</summary><p>Let <span class="tex">p</span> be the big model’s probabilities for the next token and <span class="tex">q</span> the draft’s. The draft samples a token <span class="tex">x</span> from <span class="tex">q</span>; it is accepted with probability <span class="tex">\min(1, p(x)/q(x))</span>. On a rejection, the big model samples from the leftover <span class="tex">\max(0, p - q)</span>, rescaled to sum to 1. A token then comes out with probability <span class="tex">\min(p, q)</span> through acceptance plus <span class="tex">\max(0, p - q)</span> through the leftover, which is exactly <span class="tex">p</span>. With greedy decoding the rule becomes “accept if it is the big model’s top token”, and the text is identical. The 2022 paper reported 2 to 3 times faster T5-XXL with identical outputs.</p></details>
+<div class="worked">
+  <h4>Worked example: four tokens drafted</h4>
+  <p>The draft model guesses right 80% of the time and proposes 4 tokens per pass, each draft step costing 5% of a big-model step. Each pass yields 3.36 tokens on average instead of 1 and costs 1.2 big-model steps, so text appears 2.8 times as fast.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>Tokens per pass: <span class="tex">1 + 0.8 + 0.64 + 0.512 + 0.4096 = 3.3616</span>, which matches <span class="tex">(1 - 0.8^5)/(1 - 0.8) = 0.67232/0.2</span>. Cost per pass: <span class="tex">1 + 4 \times 0.05 = 1.2</span> big-model steps. Speed-up: <span class="tex">3.3616 / 1.2 = 2.80</span>. With 8 tokens drafted instead: <span class="tex">(1 - 0.8^9)/0.2 = 4.33</span> tokens for <span class="tex">1.4</span> steps, 3.09 times; with 2 tokens drafted: <span class="tex">2.44 / 1.1 = 2.22</span> times.</p></details>
+</div>
+<div class="widget" id="w-spec">
+  <h4 class="wt">Interactive · speculative decoding</h4>
+  <p class="look"><b>The point:</b> A cheap draft model lets each pass of the big model produce several tokens, and the text is still the big model’s. <b>Do this:</b> Press “Run one pass” a few times and read each pass. Then lower the acceptance rate, and try drafting 1 token and 8. <b>Watch for:</b> The measured tokens per pass approaching the expected value, and the draft length that gives the highest speed-up in the chart.</p>
+  <div class="controls">
+    <label class="ctl"><span class="row"><span>Acceptance rate <span class="tex">a</span></span> <output id="sp-a-o"></output></span><input type="range" id="sp-a" min="0.3" max="0.95" step="0.05" value="0.8"></label>
+    <label class="ctl"><span class="row">Tokens drafted per pass <output id="sp-n-o"></output></span><input type="range" id="sp-n" min="1" max="8" step="1" value="4"></label>
+    <div class="ctl"><span>Cost of a draft step</span><div class="chips" id="sp-c" role="group" aria-label="Cost of a draft step, as a share of a big-model step"></div></div>
+  </div>
+  <div class="controls"><button class="pri" id="sp-one">Run one pass</button><button id="sp-ten">Run 10 passes</button><button id="sp-reset">Reset</button></div>
+  <p class="cap" id="sp-cap" aria-live="polite"></p>
+  <p id="sp-text" class="sptext"></p>
+  <div class="lg"><span><span class="spt ok">cat</span> draft token, accepted</span><span><span class="spt fix">mat</span> big model’s token after a rejection (shaded)</span><span><span class="spt bonus">and</span> big model’s extra token after all were accepted (dashed)</span><span>underline: one pass</span></div>
+  <div class="stats" id="sp-stats"></div>
+  <span class="lab">Expected speed-up for each draft length, at this acceptance rate and draft cost</span>
+  <svg id="sp-chart" role="img" aria-label="Line chart of expected speed-up against the number of tokens drafted per pass, with a line at no speed-up"></svg>
+  <small>What is simplified: no model runs here. The text is fixed: it is what the big model would write on its own, which is what speculative decoding guarantees. Each guess is accepted with the same probability, independently, and the draft’s wrong guesses are picked from a short list of words.</small>
+  <div class="wjh"><b>What just happened?</b> Each pass of the big model checked all the draft’s guesses at once and kept the ones up to the first rejection, then added a token of its own, so every pass wrote at least one token and often four or five. The text is the same as without a draft model; only the number of big-model passes changed. A lower acceptance rate wastes more of the draft’s work, and drafting more tokens helps only while later guesses still have a fair chance of surviving: the chart’s peak is the best draft length. A cheaper draft step moves the peak to longer drafts.</div>
+</div>
+<details class="callout code opt"><summary>In Python: the acceptance rule keeps the big model’s distribution</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s11e_speculative.py"><code>import numpy as np
+
+rng = np.random.default_rng(0)
+vocab = ["mat", "rug", "chair", "bed", "floor"]
+p = np.array([0.60, 0.20, 0.10, 0.06, 0.04])   # the big model's next-token probabilities
+q = np.array([0.40, 0.35, 0.05, 0.15, 0.05])   # the draft model's
+leftover = np.maximum(p - q, 0) / np.maximum(p - q, 0).sum()
+
+
+def speculate(n_samples):
+    """The draft samples from q; keep its token with probability min(1, p/q), else sample from the leftover of p."""
+    x = rng.choice(len(q), size=n_samples, p=q)
+    accepted = rng.random(n_samples) &lt; np.minimum(1, p[x] / q[x])
+    return np.where(accepted, x, rng.choice(len(p), size=n_samples, p=leftover)), accepted
+
+
+# 1. The tokens that come out follow p, the big model, not q
+out, accepted = speculate(1_000_000)
+for i, word in enumerate(vocab):
+    print(f"{word:6} big model {p[i]:.2f}  draft {q[i]:.2f}  speculative output {np.mean(out == i):.3f}")
+
+# 2. Tokens per big-model pass when n tokens are drafted (here every position has the same p and q)
+a = np.minimum(p, q).sum()                       # the chance that one draft token is accepted
+print(f"\nacceptance rate: measured {accepted.mean():.3f}, sum of min(p, q) = {a:.2f}")
+for n in [1, 2, 4, 8]:
+    kept = speculate(200_000 * n)[1].reshape(-1, n)
+    run = np.cumprod(kept, axis=1).sum(axis=1)   # accepted until the first rejection
+    print(f"draft {n}: {np.mean(run + 1):.2f} tokens per pass, formula {(1 - a ** (n + 1)) / (1 - a):.2f}")
+
+# Output:
+# mat    big model 0.60  draft 0.40  speculative output 0.600
+# rug    big model 0.20  draft 0.35  speculative output 0.200
+# chair  big model 0.10  draft 0.05  speculative output 0.100
+# bed    big model 0.06  draft 0.15  speculative output 0.060
+# floor  big model 0.04  draft 0.05  speculative output 0.040
+#
+# acceptance rate: measured 0.750, sum of min(p, q) = 0.75
+# draft 1: 1.75 tokens per pass, formula 1.75
+# draft 2: 2.32 tokens per pass, formula 2.31
+# draft 4: 3.05 tokens per pass, formula 3.05
+# draft 8: 3.70 tokens per pass, formula 3.70</code></pre></details>
+<p><b>Where do drafts come from?</b> A small model of the same family that shares the tokenizer; extra prediction heads trained on the big model itself (Medusa, EAGLE); or text copied from the prompt, which works well when a reply repeats much of its input, such as an edited document. Speculative decoding helps most with few requests at once. In a large batch the GPU is already busy with arithmetic, and checking guesses that get rejected costs real time.</p>
+<h3>Prefix caching</h3>
+<p>A token’s keys and values depend only on the tokens before it. Two requests that begin with the same tokens, such as the same system prompt, the same examples, the same document or the earlier turns of a chat, therefore have identical keys and values for that beginning. <b>Prefix caching</b> keeps those blocks and reuses them, so prefill runs only on the new part. vLLM does it automatically by matching blocks of tokens; API providers offer it as prompt caching, with cached input tokens billed at a discount. A 2,000-token system prompt followed by a 100-token question needs prefill for 100 tokens instead of 2,100.</p>
+<h3 class="opt">Beyond one GPU</h3>
+<ul class="opt">
+  <li><b>Tensor parallelism</b> splits each weight matrix across the GPUs of one server; they exchange partial results in every layer, so they need fast links such as NVLink.</li>
+  <li><b>Pipeline parallelism</b> gives each GPU a run of layers, passing activations from one to the next.</li>
+  <li><b>Separate prefill and decode</b>: prefill is compute-bound and decode bandwidth-bound, so some large deployments run them on different GPUs and move the KV cache between them.</li>
+</ul>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“Speculative decoding changes the answers.”</b> With the acceptance rule above, the output follows the big model’s distribution exactly.</li>
+  <li><b>“Bigger batches are always better.”</b> Throughput rises but each user’s text streams more slowly. Services set latency targets and cap the batch to meet them.</li>
+  <li><b>“Any shared text is cached.”</b> Only an identical beginning is reused. One changed token early in the prompt changes the keys and values of every token after it.</li>
+  <li><b>Pitfall:</b> putting the date, a request ID or the user’s name at the start of the system prompt, which defeats prefix caching. Put the fixed part first and the changing part last.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Servers are judged by time to first token, time per output token and throughput; larger batches raise throughput and slow each request.</li><li>Continuous batching swaps requests in and out after every step, so no place in the batch waits for the longest request.</li><li>Paged KV memory hands out blocks of 16 tokens as needed, so almost no memory is wasted and more requests fit.</li><li>Speculative decoding yields <span class="tex">(1-a^{\,n_{\text{draft}}+1})/(1-a)</span> tokens per big-model pass, with the big model’s output unchanged.</li><li>Prefix caching reuses the keys and values of an identical beginning; put the fixed part of the prompt first.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. Each draft token is accepted with probability 0.5, and 2 are drafted per pass. How many tokens does a pass yield on average?</legend><button type="button" class="qo">1.5</button><button type="button" class="qo" data-ok="1">1.75</button><button type="button" class="qo">3</button><p class="qx" hidden aria-live="polite"><b></b> 1 + 0.5 + 0.25 = 1.75: the big model’s own token, plus the first guess half the time, plus the second a quarter of the time.</p></fieldset>
+<fieldset><legend>2. Why can the big model check four draft tokens in about the time it takes to generate one?</legend><button type="button" class="qo" data-ok="1">Decoding is limited by reading the weights, and one read serves all four positions</button><button type="button" class="qo">The draft tokens are already in the KV cache</button><button type="button" class="qo">The big model skips layers for easy tokens</button><p class="qx" hidden aria-live="polite"><b></b> With few requests the GPU waits on memory, not arithmetic, so scoring several positions per read of the weights is almost free.</p></fieldset>
+<fieldset><legend>3. Which change keeps prefix caching useful?</legend><button type="button" class="qo">Put today’s date at the start of the system prompt</button><button type="button" class="qo">Shuffle the order of the examples for each request</button><button type="button" class="qo" data-ok="1">Put the fixed instructions first and the user’s question last</button><p class="qx" hidden aria-live="polite"><b></b> Only an identical beginning can be reused, so the parts that never change go first.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>What time to first token and what streaming speed do our users need, and how many requests at once does that leave per GPU?</li><li>Which parts of our prompts are identical across requests, and are they at the start?</li></ul></details>
+<p class="bridge">Serving shares the hardware among many requests. <a class="xref" data-ref="quant"></a> makes each one lighter, with fewer bits per weight.</p>
 </div>
 </section>
 <section class="ch" id="quant" data-title="Quantization">

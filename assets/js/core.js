@@ -46,7 +46,9 @@ function lineChart(svg,series,o){
   (o.xt||[]).forEach(v=>{s+='<text class="ax" x="'+X(v)+'" y="'+(H-m.b+15)+'" text-anchor="middle">'+(o.xf?o.xf(v):v)+'</text>';});
   if(o.xl)s+='<text class="ax" x="'+(m.l+W-m.r)/2+'" y="'+(H-5)+'" text-anchor="middle">'+o.xl+'</text>';
   if(o.yl)s+='<text class="ax" transform="rotate(-90)" x="'+(-(m.t+H-m.b)/2)+'" y="11" text-anchor="middle">'+o.yl+'</text>';
-  series.forEach(se=>{if(se.pts.length>1)s+='<polyline class="ln '+se.cls+'" points="'+se.pts.map(p=>X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)).join(' ')+'"/>';});
+  series.forEach(se=>{if(se.pts.length>1)s+='<polyline class="ln '+se.cls+'" points="'+se.pts.map(p=>X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)).join(' ')+'"/>';
+    /* an optional label at the line's end, at height ly when given (to keep labels apart) */
+    if(se.label&&se.pts.length){const p=se.pts[se.pts.length-1];s+='<text class="ax" x="'+(X(p[0])-4)+'" y="'+(Y(se.ly!=null?se.ly:p[1])-8)+'" text-anchor="end" paint-order="stroke" stroke="var(--surface)" stroke-width="3">'+se.label+'</text>';}});
   (o.dots||[]).forEach(d=>{const x=X(d[0]),y=Y(d[1]),end=x>W*0.65;s+='<circle class="dotm" cx="'+x+'" cy="'+y+'" r="6"/>'+(d[2]?'<text class="ax" style="font-weight:700" x="'+(end?x-10:x+10)+'" y="'+(y-9)+'" text-anchor="'+(end?'end':'start')+'">'+d[2]+'</text>':'');});
   svg.innerHTML=s;
 }

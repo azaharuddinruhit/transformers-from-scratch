@@ -288,4 +288,124 @@ function initFlash(){
   reg(renderFlash);
 }
 
-PAGE_INITS.push(initTrain,initGen,initHW,initInfer,initChat,initPref,initQuant,initFlash);
+/* ================= Fine-tuning and LoRA: a low-rank update trained in the browser ================= */
+/* A frozen 16 × 16 layer must change by a set amount: three patterns of strengths 2, 1 and 0.4 (a rank-3 change).
+   Only A [16, r] and B [r, 16] are trained, by gradient descent on the squared error over 64 inputs; B starts at
+   zero, so the adapter starts as no change. "Full" trains all 256 numbers of the change directly. */
+const LO_D=16,LO_N=64,LO_LR=0.3,LO_STEPS=400;
+const LO=(()=>{const r=mulberry32(7),orth=()=>{const B=[];for(let k=0;k<3;k++){let v=Array.from({length:LO_D},()=>randn(r));
+    B.forEach(b=>{const d=v.reduce((a,x,i)=>a+x*b[i],0);v=v.map((x,i)=>x-d*b[i]);});const n=Math.hypot(...v);B.push(v.map(x=>x/n));}return B;};
+  const S=[2,1,0.4],U=orth(),V=orth();
+  return{T:U[0].map((_,i)=>V[0].map((_,j)=>S.reduce((a,s,k)=>a+s*U[k][i]*V[k][j],0))),
+    X:Array.from({length:LO_N},()=>Array.from({length:LO_D},()=>randn(r))),
+    A0:Array.from({length:LO_D},()=>Array.from({length:8},()=>randn(r)/Math.sqrt(LO_D)))};})();
+const loZeros=(a,b)=>Array.from({length:a},()=>new Array(b).fill(0));
+const loNew=rank=>({rank,step:0,curve:[],A:rank?LO.A0.map(row=>row.slice(0,rank)):null,B:rank?loZeros(rank,LO_D):null,W:rank?null:loZeros(LO_D,LO_D)});
+function loDelta(s){if(!s.rank)return s.W;const D=loZeros(LO_D,LO_D);
+  for(let i=0;i<LO_D;i++)for(let j=0;j<LO_D;j++){let v=0;for(let k=0;k<s.rank;k++)v+=s.A[i][k]*s.B[k][j];D[i][j]=v;}return D;}
+/* mean squared error of x(learned − needed) over the inputs, and its gradient with respect to the learned change */
+function loLoss(M,grad){const G=grad?loZeros(LO_D,LO_D):null;let L=0;
+  LO.X.forEach(x=>{const e=new Array(LO_D).fill(0);for(let i=0;i<LO_D;i++)for(let j=0;j<LO_D;j++)e[j]+=x[i]*(M[i][j]-LO.T[i][j]);
+    for(let j=0;j<LO_D;j++)L+=e[j]*e[j];if(G)for(let i=0;i<LO_D;i++)for(let j=0;j<LO_D;j++)G[i][j]+=2*x[i]*e[j]/(LO_N*LO_D);});
+  return{L:L/(LO_N*LO_D),G};}
+const LO_L0=loLoss(loZeros(LO_D,LO_D)).L;
+function loStep(s){const {L,G}=loLoss(loDelta(s),true);s.curve.push([s.step,100*L/LO_L0]);
+  if(!s.rank){for(let i=0;i<LO_D;i++)for(let j=0;j<LO_D;j++)s.W[i][j]-=LO_LR*G[i][j];}
+  else{const r=s.rank,gA=loZeros(LO_D,r),gB=loZeros(r,LO_D);   /* chain rule through AB: dA = G Bᵀ, dB = Aᵀ G */
+    for(let i=0;i<LO_D;i++)for(let k=0;k<r;k++)for(let j=0;j<LO_D;j++){gA[i][k]+=G[i][j]*s.B[k][j];gB[k][j]+=s.A[i][k]*G[i][j];}
+    for(let i=0;i<LO_D;i++)for(let k=0;k<r;k++)s.A[i][k]-=LO_LR*gA[i][k];
+    for(let k=0;k<r;k++)for(let j=0;j<LO_D;j++)s.B[k][j]-=LO_LR*gB[k][j];}
+  s.step++;}
+const slo={rank:4,run:null,runs:{},timer:0};
+const loName=r=>+r?'rank '+r:'full';
+function renderLora(){
+  const s=slo.run||loNew(slo.rank),M=loDelta(s),c=7,XD=84,YD=88,XT=236;
+  const grid=(A,x0,y0,mx)=>A.map((row,i)=>row.map((v,j)=>'<rect x="'+(x0+j*c)+'" y="'+(y0+i*c)+'" width="'+(c-0.6)+'" height="'+(c-0.6)+'" fill="'+divColor(v/mx)+'"/>').join('')).join('');
+  const mx=Math.max(...LO.T.flat().map(Math.abs));
+  let g=grid(M,XD,YD,mx)+grid(LO.T,XT,YD,mx);
+  if(s.rank){const r=s.rank,big=A=>Math.max(1e-9,...A.flat().map(Math.abs));
+    g+=grid(s.A,XD-8-r*c,YD,big(s.A))+grid(s.B,XD,YD-8-r*c,big(s.B));
+    g+='<text class="ax" x="'+(XD-12)+'" y="'+(YD-6)+'" text-anchor="end">A: 16 × '+r+'</text><text class="ax" x="'+(XD+16*c+6)+'" y="'+(YD-4-r*c/2)+'">B: '+r+' × 16</text>';}
+  else g+='<text class="ax" x="'+(XD+8*c)+'" y="'+(YD-12)+'" text-anchor="middle">all 256 numbers trained</text>';
+  g+='<text class="ax" x="'+(XD+8*c)+'" y="'+(YD+16*c+16)+'" text-anchor="middle">learned change'+(s.rank?', A × B':'')+'</text><text class="ax" x="'+(XT+8*c)+'" y="'+(YD+16*c+16)+'" text-anchor="middle">change the task needs</text>';
+  $('#lo-svg').innerHTML=g;
+  /* loss curves: this run in the accent colour, earlier runs of other ranks dotted, labels kept apart */
+  const lg=v=>Math.log10(Math.max(v,1e-4)),pts=cv=>cv.filter((p,i)=>i%4===0||i===cv.length-1).map(p=>[p[0],lg(p[1])]);
+  const series=Object.keys(slo.runs).filter(k=>+k!==s.rank||slo.run).map(k=>({pts:pts(slo.runs[k]),cls:'c',label:loName(k)}));
+  if(s.curve.length)series.push({pts:pts(s.curve),cls:'a',label:loName(s.rank)});
+  series.sort((a,b)=>b.pts[b.pts.length-1][1]-a.pts[a.pts.length-1][1]);
+  series.forEach((se,i)=>{const y=Math.max(-1.9,se.pts[se.pts.length-1][1]);se.ly=i?Math.min(y,series[i-1].ly-0.3):y;});
+  lineChart($('#lo-chart'),series,{x0:0,x1:LO_STEPS,y0:-2,y1:2,h:220,xt:[0,100,200,300,400],yt:[-2,-1,0,1,2],yf:v=>[0.01,0.1,1,10,100][v+2]+'%',xl:'training steps'});
+  const left=100*loLoss(M).L/LO_L0,n=s.rank?2*LO_D*s.rank:LO_D*LO_D;
+  $('#lo-stats').innerHTML=[['Numbers trained',n+' of 256'],['Loss left, of the start',fmt(left,left<1?3:1)+'%'],['Steps',s.step+' of '+LO_STEPS],
+    ['Same rank on a 4096 × 4096 matrix',s.rank?(8192*s.rank).toLocaleString('en-GB')+' ('+fmt(100*8192*s.rank/16777216,2)+'%)':'16,777,216 (100%)']]
+    .map(r=>'<div><b>'+r[1]+'</b><span>'+r[0]+'</span></div>').join('');
+  $$('#lo-r button').forEach(b=>{const o=+b.dataset.v===slo.rank;b.classList.toggle('on',o);b.setAttribute('aria-pressed',o);});
+  $('#lo-go').disabled=!!slo.timer;
+}
+function initLora(){
+  const stop=()=>{cancelAnimationFrame(slo.timer);slo.timer=0;};
+  $('#lo-r').innerHTML=[1,2,4,8,0].map(r=>'<button class="chip" data-v="'+r+'" aria-pressed="false">'+(r?r:'Full')+'</button>').join('');
+  $('#lo-r').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;stop();slo.rank=+b.dataset.v;slo.run=null;renderLora();b.focus();});
+  $('#lo-go').addEventListener('click',()=>{
+    if(!slo.run||slo.run.step>=LO_STEPS)slo.run=loNew(slo.rank);
+    const per=matchMedia('(prefers-reduced-motion: reduce)').matches?LO_STEPS:5;
+    const tick=()=>{for(let i=0;i<per&&slo.run.step<LO_STEPS;i++)loStep(slo.run);
+      if(slo.run.step<LO_STEPS)slo.timer=requestAnimationFrame(tick);else{slo.timer=0;slo.runs[slo.rank]=slo.run.curve;}
+      renderLora();};
+    slo.timer=requestAnimationFrame(tick);renderLora();});
+  $('#lo-reset').addEventListener('click',()=>{stop();slo.runs={};slo.run=null;renderLora();});
+  reg(renderLora);
+}
+
+/* ================= Serving at scale: speculative decoding ================= */
+/* The text is what the big model writes on its own. Each draft token is accepted with the same probability a,
+   independently of the others: the assumption behind the expected-tokens formula. */
+const SP_TEXT='the cat sat on the mat and looked at the dog by the door . the dog was asleep , so the cat walked to the window and sat in the warm sun . soon the cat was asleep too , and the house was quiet .'.split(' ');
+const SP_WRONG=['rug','a','chair','bed','ran','big','floor','was','her','up','then','it'];
+const ssp={a:0.8,n:4,c:0.05};
+const spExpect=(a,n)=>a>=1?n+1:(1-Math.pow(a,n+1))/(1-a);
+function spReset(){Object.assign(ssp,{pos:0,passes:0,out:[],last:null,rng:mulberry32(11)});}
+function spPass(){
+  const left=SP_TEXT.length-ssp.pos;if(left<=0)return;
+  const drafted=Math.min(ssp.n,left-1),pass=[];let rej=null;
+  for(let j=0;j<drafted;j++){if(ssp.rng()<ssp.a){pass.push({t:SP_TEXT[ssp.pos+j],k:'ok'});continue;}
+    const real=SP_TEXT[ssp.pos+j];do{rej=SP_WRONG[Math.floor(ssp.rng()*SP_WRONG.length)];}while(rej===real);break;}
+  pass.push({t:SP_TEXT[ssp.pos+pass.length],k:rej?'fix':'bonus'});
+  ssp.pos+=pass.length;ssp.passes++;ssp.out.push(pass);ssp.last={pass,rej,drafted};
+}
+function renderSpec(){
+  const q=s=>'“'+esc(s)+'”';
+  $('#sp-text').innerHTML=ssp.out.length?ssp.out.map(p=>'<span class="spp">'+p.map(t=>'<span class="spt '+t.k+'">'+esc(t.t)+'</span>').join(' ')+'</span>').join(' '):'<span class="spt">Press “Run one pass”.</span>';
+  const L=ssp.last;let cap='The draft model will propose '+ssp.n+' token'+(ssp.n>1?'s':'')+' at a time; the big model checks them all in one pass.';
+  if(L){const acc=L.pass.filter(t=>t.k==='ok').map(t=>q(t.t)),own=q(L.pass[L.pass.length-1].t),dropped=L.drafted-acc.length-1;
+    cap='Pass '+ssp.passes+': the draft proposed '+L.drafted+' token'+(L.drafted===1?'':'s')+'. '+
+      (L.rej?'The big model accepted '+(acc.length?acc.join(' '):'none')+', rejected '+q(L.rej)+(dropped>0?' (and dropped the '+dropped+' after it)':'')+' and wrote '+own+' in its place':
+        (L.drafted?'The big model accepted all of them and added one of its own, '+own:'Only one token was left; the big model wrote '+own))+
+      ': '+L.pass.length+' token'+(L.pass.length>1?'s':'')+' from one pass.';}
+  if(ssp.pos>=SP_TEXT.length)cap+=' That is the end of the text; Reset to start again.';
+  $('#sp-cap').textContent=cap;
+  const E=spExpect(ssp.a,ssp.n),cost=1+ssp.n*ssp.c,made=ssp.pos;
+  $('#sp-stats').innerHTML=[['Big-model passes',String(ssp.passes)],['Tokens written',String(made)],['Tokens per pass, measured',ssp.passes?fmt(made/ssp.passes,2):'–'],
+    ['Tokens per pass, expected',fmt(E,2)],['Cost of a pass, in big-model steps',fmt(cost,2)],['Expected speed-up',fmt(E/cost,2)+'×']]
+    .map(r=>'<div><b>'+r[1]+'</b><span>'+r[0]+'</span></div>').join('');
+  const curve=[];for(let n=1;n<=10;n++)curve.push([n,spExpect(ssp.a,n)/(1+n*ssp.c)]);
+  const top=Math.max(2,Math.ceil(Math.max(...curve.map(p=>p[1]))));
+  lineChart($('#sp-chart'),[{pts:[[1,1],[10,1]],cls:'c'},{pts:curve,cls:'a'}],{x0:1,x1:10,y0:0,y1:top,h:200,xt:[1,2,3,4,5,6,7,8,9,10],
+    yt:Array.from({length:top+1},(_,i)=>i),yf:v=>v+'×',xl:'tokens drafted per pass',yl:'speed-up',dots:[[ssp.n,E/cost,fmt(E/cost,2)+'×']]});
+  $$('#sp-c button').forEach(b=>{const o=+b.dataset.v===ssp.c;b.classList.toggle('on',o);b.setAttribute('aria-pressed',o);});
+  $('#sp-one').disabled=$('#sp-ten').disabled=ssp.pos>=SP_TEXT.length;
+}
+function initSpec(){
+  spReset();
+  slider('sp-a',v=>v.toFixed(2),v=>{ssp.a=v;spReset();renderSpec();});
+  slider('sp-n',v=>String(v),v=>{ssp.n=v;spReset();renderSpec();});
+  $('#sp-c').innerHTML=[0.02,0.05,0.1,0.2].map(v=>'<button class="chip" data-v="'+v+'" aria-pressed="false">'+Math.round(100*v)+'%</button>').join('');
+  $('#sp-c').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;ssp.c=+b.dataset.v;renderSpec();b.focus();});
+  $('#sp-one').addEventListener('click',()=>{spPass();renderSpec();});
+  $('#sp-ten').addEventListener('click',()=>{for(let i=0;i<10;i++)spPass();renderSpec();});
+  $('#sp-reset').addEventListener('click',()=>{spReset();renderSpec();});
+  reg(renderSpec);
+}
+
+PAGE_INITS.push(initTrain,initGen,initHW,initInfer,initChat,initPref,initLora,initSpec,initQuant,initFlash);

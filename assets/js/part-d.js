@@ -264,4 +264,69 @@ function initMoe(){
   reg(renderMoe);
 }
 
-PAGE_INITS.push(initCross,initCrossKeys,initLR,initRope,initGqa,initMoe,initPatch,initDiff);
+/* ================= Retrieval: keyword, vector and hybrid search over a small handbook ================= */
+const RG_DOCS=['Reset your password from the account settings page.',
+  'Forgotten password? Use the self-service reset link on the sign-in page.',
+  'Expense claims must be filed within 30 days of purchase, with receipts.',
+  'Annual leave requests go to your line manager for approval.',
+  'Update the VPN client before connecting from home.',
+  'Error E-1042 on the VPN client means your certificate has expired: ask the service desk for a new one.',
+  'Laptops are replaced every four years; report damage to the service desk.',
+  'Flights and hotels over 500 need approval from finance before booking.'];
+const RG_DIMS=['accounts','money','leave','network','devices','time','approval','problems'];
+/* a hand-made embedding, not a trained one: each known word adds weight to one or more of eight meanings */
+const RG_EMB={password:[[0,1]],reset:[[0,.7],[7,.3]],account:[[0,1]],'sign-in':[[0,.9]],login:[[0,.9]],log:[[0,.6]],
+  forgot:[[0,.5],[7,.5]],forgotten:[[0,.5],[7,.5]],locked:[[0,.6],[7,.5]],'self-service':[[0,.3]],link:[[0,.2]],settings:[[0,.5],[4,.3]],
+  expense:[[1,1]],expenses:[[1,1]],claims:[[1,.8]],claim:[[1,.8]],money:[[1,1]],spent:[[1,.8]],spend:[[1,.8]],purchase:[[1,.8]],bought:[[1,.8]],
+  receipts:[[1,.7]],refund:[[1,.8]],cost:[[1,.8]],paid:[[1,.8]],'500':[[1,.4]],flights:[[1,.5],[6,.3]],hotels:[[1,.5],[6,.3]],booking:[[1,.4]],
+  travel:[[1,.5]],finance:[[1,.8],[6,.3]],leave:[[2,1]],holiday:[[2,1]],holidays:[[2,1]],vacation:[[2,1]],annual:[[2,.6],[5,.3]],off:[[2,.5]],
+  manager:[[6,.9]],approval:[[6,1]],approve:[[6,1]],requests:[[6,.4]],request:[[6,.4]],
+  vpn:[[3,1]],network:[[3,1]],wifi:[[3,1]],internet:[[3,1]],connect:[[3,.8]],connecting:[[3,.8]],home:[[3,.4]],remote:[[3,.6]],client:[[3,.4],[4,.3]],
+  certificate:[[3,.5],[7,.3],[0,.3]],update:[[4,.5]],laptop:[[4,1]],laptops:[[4,1]],computer:[[4,1]],screen:[[4,.8]],replaced:[[4,.5]],replace:[[4,.5]],
+  new:[[4,.3]],damage:[[4,.5],[7,.6]],broken:[[4,.4],[7,.8]],desk:[[4,.3],[7,.2]],
+  days:[[5,.8]],within:[[5,.8]],long:[[5,.6]],deadline:[[5,1]],years:[[5,.6]],when:[[5,.4]],late:[[5,.6],[7,.3]],
+  error:[[7,1]],problem:[[7,.9]],fails:[[7,.8]],failed:[[7,.8]],wrong:[[7,.7]],expired:[[7,.5],[5,.4]]};
+const RG_STOP=new Set('a an the i my me to do does how what of on in for from your you is are be it and or with have has can must go get before after over back this that these at by'.split(' '));
+const RG_QS=['how do I reset my password','I forgot my login','how long do I have to claim back money I spent','E-1042 on my laptop'];
+const RG_TOP=5;   /* each search returns its best 5 */
+const rgTok=t=>(t.toLowerCase().match(/[a-z0-9]+(?:-[a-z0-9]+)*/g)||[]).filter(w=>!RG_STOP.has(w));
+const RG_T=RG_DOCS.map(rgTok),RG_AVG=RG_T.reduce((a,d)=>a+d.length,0)/RG_T.length;
+function rgEmbed(toks){const v=new Array(RG_DIMS.length).fill(0);toks.forEach(w=>(RG_EMB[w]||[]).forEach(([d,x])=>{v[d]+=x;}));
+  const n=Math.hypot(...v);return n?v.map(x=>x/n):null;}
+const RG_V=RG_T.map(rgEmbed);
+/* BM25 with the usual settings k1 = 1.2 and b = 0.75 */
+function rgBm25(q){const terms=[...new Set(q)];return RG_T.map(d=>terms.reduce((s,w)=>{const f=d.filter(x=>x===w).length;if(!f)return s;
+  const n=RG_T.filter(x=>x.includes(w)).length,idf=Math.log(1+(RG_T.length-n+0.5)/(n+0.5));
+  return s+idf*f*2.2/(f+1.2*(0.25+0.75*d.length/RG_AVG));},0));}
+/* ranks 1, 2, … for the best RG_TOP scores that pass keep(); 0 for the rest */
+function rgRank(sc,keep){const r=new Array(sc.length).fill(0);
+  sc.map((s,i)=>[s,i]).filter(p=>keep(p[0])).sort((a,b)=>b[0]-a[0]||a[1]-b[1]).slice(0,RG_TOP).forEach((p,k)=>{r[p[1]]=k+1;});return r;}
+function rgSearch(text){const q=rgTok(text),qv=rgEmbed(q),kw=rgBm25(q),cos=RG_V.map(v=>qv&&v?v.reduce((a,x,i)=>a+x*qv[i],0):0);
+  const rk=rgRank(kw,s=>s>0),rv=qv?rgRank(cos,()=>true):new Array(RG_DOCS.length).fill(0);
+  const fused=RG_DOCS.map((_,i)=>(rk[i]?1/(60+rk[i]):0)+(rv[i]?1/(60+rv[i]):0));
+  return{q,qv,kw,cos,rk,rv,fused};}
+const srg={text:RG_QS[1],k:2};
+function renderRag(){
+  const R=rgSearch(srg.text),order=RG_DOCS.map((_,i)=>i).filter(i=>R.fused[i]>0).sort((a,b)=>R.fused[b]-R.fused[a]||a-b),top=order.slice(0,srg.k);
+  $('#rg-toks').innerHTML='Words searched for: '+(R.q.length?R.q.map(w=>'<span class="chip tok" style="cursor:default">'+esc(w)+(RG_EMB[w]?'':'<small>not in the embedding</small>')+'</span>').join(' '):'none (all were common words)');
+  $('#rg-vec').innerHTML=R.qv?bars(RG_DIMS.map((d,i)=>({label:d,p:R.qv[i],right:fmt(R.qv[i],2)})),1):'<p class="cap">The embedding knows none of these words, so vector search has nothing to go on.</p>';
+  const cell=(s,r,n)=>r?fmt(s,n)+' <small>#'+r+'</small>':'–';
+  $('#rg-tab').innerHTML='<thead><tr><th>Chunk</th><th>Keyword (BM25)</th><th>Vector (cosine)</th><th>Fused (RRF)</th></tr></thead><tbody>'+
+    order.map(i=>{const c=top.includes(i)?' cur':'',td=(h,k)=>'<td class="'+(k||'')+c+'">'+h+'</td>';
+      return '<tr>'+td(esc(RG_DOCS[i]),'rgc')+td(cell(R.kw[i],R.rk[i],2))+td(cell(R.cos[i],R.rv[i],3))+td(fmt(R.fused[i],4))+'</tr>';}).join('')+'</tbody>';
+  $('#rg-prompt').innerHTML=top.length?'Answer using only the sources below, and cite them by number. If they do not contain the answer, say so.<br><br>'+
+    top.map((i,k)=>'['+(k+1)+'] '+esc(RG_DOCS[i])).join('<br>')+'<br><br>Question: '+esc(srg.text):'Nothing was found, so the prompt would have no sources. A good system says so instead of guessing.';
+  $$('#rg-q button').forEach(b=>{const o=RG_QS[+b.dataset.v]===srg.text;b.classList.toggle('on',o);b.setAttribute('aria-pressed',o);});
+  $$('#rg-k button').forEach(b=>{const o=+b.dataset.v===srg.k;b.classList.toggle('on',o);b.setAttribute('aria-pressed',o);});
+}
+function initRag(){
+  $('#rg-q').innerHTML=RG_QS.map((q,i)=>'<button class="chip" data-v="'+i+'" aria-pressed="false">'+esc(q)+'</button>').join('');
+  $('#rg-q').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;srg.text=RG_QS[+b.dataset.v];$('#rg-in').value=srg.text;renderRag();b.focus();});
+  $('#rg-k').innerHTML=[2,3].map(k=>'<button class="chip" data-v="'+k+'" aria-pressed="false">'+k+'</button>').join('');
+  $('#rg-k').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;srg.k=+b.dataset.v;renderRag();b.focus();});
+  $('#rg-in').value=srg.text;
+  $('#rg-in').addEventListener('input',e=>{srg.text=e.target.value;renderRag();});
+  reg(renderRag);
+}
+
+PAGE_INITS.push(initCross,initCrossKeys,initLR,initRope,initGqa,initMoe,initPatch,initDiff,initRag);

@@ -812,7 +812,156 @@ for steps in (1, 3, 10, 50):
 <fieldset><legend>3. How does a text-to-image model let the image follow the prompt?</legend><button type="button" class="qo" data-ok="1">The prompt’s vectors are fed to the denoising network, which reads them through cross-attention at every step</button><button type="button" class="qo">An LLM writes a description, and the image is searched for</button><button type="button" class="qo">The prompt is added to the noise at the start</button><p class="qx" hidden aria-live="polite"><b></b> The prompt’s vectors are read through cross-attention in every step.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>Generating an image takes a fixed number of steps, each a full pass of a large network. What does that mean for the cost and speed of an image feature compared with a text one?</li><li>The same prompt gives different images each time. When is that a feature for us, and when do we need a fixed seed?</li></ul></details>
-<p class="bridge">That completes the explanation of the models. The <a href="interview.html">interview drill</a> turns it into interview answers and adds the applied topics: retrieval, fine-tuning, agents and production.</p>
+<p class="bridge">That completes the models themselves. <a class="xref" data-ref="rag"></a> shows how to give a model your own documents when it answers.</p>
+</div>
+</section>
+<section class="ch" id="rag" data-title="Retrieval and embeddings (RAG)">
+<h2>Retrieval-augmented generation: giving the model your documents</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain why retrieval, not retraining, is the usual way to give a model your documents.</li><li>Compute cosine similarity, and rank text chunks by it.</li><li>Combine keyword and vector search with reciprocal rank fusion.</li><li>Find where a retrieval system fails: chunking, search, the prompt or the answer.</li></ul></div><p class="needs"><b>Builds on</b> Embeddings in <a class="xref" data-ref="tokens"></a>, the encoder in <a class="xref" data-ref="encdec"></a>, and when to fine-tune in <a class="xref" data-ref="lora"></a>.</p></div>
+<div class="story"><p>Ask an assistant “how long do I have to claim back money I spent?” and it answers confidently, but it has never seen your company’s handbook, so the number is a guess. Put the handbook’s paragraph on expense claims into the prompt, and it answers “30 days, with receipts”, and can say where that came from. Retrieval is the step that finds that paragraph among thousands.</p></div>
+<p>A model’s weights hold what it learned in pretraining, up to a cutoff date, and none of your private documents. <b>Retrieval-augmented generation</b> (RAG, named in a 2020 paper) leaves the weights alone. At request time it searches your documents for the passages that bear on the question and puts them into the prompt, where the model reads them with attention like any other text. Updating the knowledge means updating the search index, not training; answers can cite their sources; and each user can be shown only the documents they may see.</p>
+<div class="flow" role="img" aria-label="Diagram: documents are split into chunks and embedded ahead of time; at request time the question is embedded, the nearest chunks are found and reordered, and the best go into the prompt for the language model">
+  <div><b>Documents</b><small>split into chunks, ahead of time</small></div><i>→</i>
+  <div class="fa"><b>Embed and index</b><small>one vector per chunk</small></div><i>→</i>
+  <div><b>Search</b><small>the question’s vector, plus keywords</small></div><i>→</i>
+  <div class="fa"><b>Rerank</b><small>keep the best few</small></div><i>→</i>
+  <div><b>Prompt and answer</b><small>chunks, question, citations</small></div>
+</div>
+<h3>Embeddings for search</h3>
+<p>An <b>embedding model</b> turns a whole passage into one vector. It is usually a Transformer encoder, reading in both directions as in <a class="xref" data-ref="encdec"></a>, whose output vectors are averaged into one, for example 384 numbers for the small all-MiniLM-L6-v2 model. It is trained with pairs such as a question and the passage that answers it: each pair’s vectors are pulled together, and other passages are pushed away. Texts with the same meaning end up pointing in similar directions even when they share no words. This is not the token embedding table <span class="tex">E</span> of <a class="xref" data-ref="tokens"></a>, which gives one vector per token before any context; it gives one vector per passage, after the whole model.</p>
+<h3>The equations, and the reasoning behind them</h3>
+<p><b>How close are two meanings?</b> Compare directions, not lengths, so a long chunk and a short question can still match. The cosine of the angle between the two vectors is 1 when they point the same way and 0 when they are unrelated:</p>
+<div class="tex d">\cos(e_{\text{query}}, e_{\text{chunk}})=\frac{e_{\text{query}}\cdot e_{\text{chunk}}}{\lVert e_{\text{query}}\rVert\,\lVert e_{\text{chunk}}\rVert}</div>
+<p class="sym"><span class="tex">e_{\text{query}}</span> and <span class="tex">e_{\text{chunk}}</span> are the embeddings of the question and of one chunk; <span class="tex">\lVert\cdot\rVert</span> is a vector’s length. Most systems scale every vector to length 1 when storing it, so the cosine is a plain dot product, and searching all chunks is one matrix product.</p>
+<p><b>What does keyword search add?</b> <b>BM25</b>, the standard keyword score, rates a chunk by the question’s words it contains, giving rare words more weight and damping repeated words and long chunks. It finds exact strings, such as product names and error codes, that embedding models blur; vectors find paraphrases that keywords miss. <b>Hybrid search</b> runs both and merges the two ranked lists.</p>
+<p><b>How are two lists merged?</b> BM25 scores and cosines are on different scales, so <b>reciprocal rank fusion</b> uses only each chunk’s rank in each list:</p>
+<div class="tex d">\text{score}(\text{chunk})=\sum_{\text{lists}}\frac{1}{60+\text{rank in that list}}</div>
+<p class="sym">A list that does not contain the chunk adds nothing. The constant 60, from the 2009 paper that proposed the method, keeps a single first place from outweighing good places in both lists.</p>
+<div class="worked">
+  <h4>Worked example: a cosine and a fusion</h4>
+  <p>A question’s vector is close in direction to one chunk’s and further from another’s: cosines of 0.96 and 0.48, so the first chunk ranks higher. In fusion, a chunk ranked 1st by keywords and 2nd by vectors beats a chunk ranked 1st by vectors alone, because it scores in both lists.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>Unit vectors <span class="tex">e_{\text{query}}=[0.6,\ 0.8,\ 0]</span>, chunk one <span class="tex">[0.8,\ 0.6,\ 0]</span>, chunk two <span class="tex">[0,\ 0.6,\ 0.8]</span>. Cosines: <span class="tex">0.48+0.48+0=0.96</span> and <span class="tex">0+0.48+0=0.48</span>.</p>
+  <p>Fusion: <span class="tex">\tfrac{1}{61}+\tfrac{1}{62}=0.016393+0.016129=0.032522</span> for the chunk in both lists, against <span class="tex">\tfrac{1}{61}=0.016393</span> for the chunk in one. This is the “E-1042 on my laptop” case in the interactive.</p></details>
+</div>
+<div class="widget" id="w-rag">
+  <h4 class="wt">Interactive · a small hybrid retriever</h4>
+  <p class="look"><b>The point:</b> Keyword search finds exact words, vector search finds meanings, and fusing their ranks catches both. <b>Do this:</b> Try each question in turn, then type your own about the eight chunks in the table. <b>Watch for:</b> A question that keyword search misses completely, and the code “E-1042”, which vector search cannot place.</p>
+  <div class="controls"><div class="ctl" style="max-width:none"><span>Question</span><div class="chips" id="rg-q" role="group" aria-label="Example questions"></div></div></div>
+  <label class="ctl" style="max-width:none">Or type a question<input type="text" id="rg-in" maxlength="100" autocomplete="off"></label>
+  <p class="cap" id="rg-toks" aria-live="polite"></p>
+  <span class="lab">The question’s embedding: eight hand-made meanings</span>
+  <div id="rg-vec"></div>
+  <span class="lab">Search results; highlighted rows go into the prompt</span>
+  <div class="scroll"><table class="numt" id="rg-tab"></table></div>
+  <div class="controls"><div class="ctl"><span>Chunks put in the prompt</span><div class="chips" id="rg-k" role="group" aria-label="Chunks put in the prompt"></div></div></div>
+  <span class="lab">The prompt the language model would receive</span>
+  <p class="readout" id="rg-prompt"></p>
+  <small>What is simplified: the embedding is made by hand, not trained: each of about 75 known words adds weight to some of eight meanings, and a text’s vector is the sum, scaled to length 1. Real embedding models learn hundreds of dimensions from data and know every word. BM25 uses the usual settings (k1 = 1.2, b = 0.75) over eight one-sentence chunks, with common words removed and no stemming, so “claim” does not match “claims”. Each search returns its best 5. No language model runs: the widget stops at the prompt.</small>
+  <div class="wjh"><b>What just happened?</b> For “how do I reset my password” both searches agree. “I forgot my login” shares no word with any chunk, so keyword search returns nothing, yet vector search puts the forgotten-password chunk first, because “forgot” and “login” carry the same meanings as “forgotten” and “sign-in”. “E-1042 on my laptop” is the other way round: the embedding does not know the code and follows “laptop” to the wrong chunk, while keyword search finds the code exactly. Fusion puts the error-code chunk first, because it is high in both lists. The chunks that win go into the prompt with numbers, so the answer can cite them.</div>
+</div>
+<details class="callout code opt"><summary>In Python: split a document into chunks and search them with BM25</summary>
+<div class="cbar"><small>Runs on its own · Python 3</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s18_rag.py"><code>import math
+import re
+
+handbook = """Passwords. Reset your password from the account settings page. Forgotten password? Use the self-service reset link on the sign-in page.
+
+Expenses. Expense claims must be filed within 30 days of purchase, with receipts. Flights and hotels over 500 need approval from finance before booking.
+
+Remote work. Update the VPN client before connecting from home. Error E-1042 on the VPN client means your certificate has expired: ask the service desk for a new one."""
+
+STOP = set("a an the i my me to do does how what of on in for from your you is are be it and or with have has can must".split())
+
+
+def words(text):
+    return [w for w in re.findall(r"[a-z0-9]+(?:-[a-z0-9]+)*", text.lower()) if w not in STOP]
+
+
+def chunk(text, size=12, overlap=4):
+    """Chunks of `size` words, each sharing `overlap` words with the one before, and each keeping its section title."""
+    chunks = []
+    for section in text.split("\n\n"):
+        title, body = section.split(". ", 1)
+        body = body.split()
+        for start in range(0, len(body), size - overlap):
+            chunks.append(f"{title}: " + " ".join(body[start:start + size]))
+            if start + size &gt;= len(body):
+                break
+    return chunks
+
+
+class BM25:
+    def __init__(self, chunks, k1=1.2, b=0.75):
+        self.docs = [words(c) for c in chunks]
+        self.avg = sum(map(len, self.docs)) / len(self.docs)
+        self.k1, self.b = k1, b
+
+    def idf(self, w):                            # rare words count more
+        n = sum(w in d for d in self.docs)
+        return math.log(1 + (len(self.docs) - n + 0.5) / (n + 0.5))
+
+    def score(self, query, d):
+        s = 0.0
+        for w in set(words(query)):
+            f = d.count(w)                       # repeats help, but less and less
+            s += self.idf(w) * f * (self.k1 + 1) / (f + self.k1 * (1 - self.b + self.b * len(d) / self.avg))
+        return s
+
+    def search(self, query, k=2):
+        scores = [self.score(query, d) for d in self.docs]
+        best = sorted(range(len(scores)), key=lambda i: -scores[i])[:k]
+        return [i for i in best if scores[i] &gt; 0], scores    # a chunk with none of the words is no match
+
+
+chunks = chunk(handbook)
+print(f"{len(chunks)} chunks, for example:\n  {chunks[0]}\n  {chunks[1]}\n")
+index = BM25(chunks)
+for question in ["what does error E-1042 mean", "how many days to file expense claims"]:
+    best, scores = index.search(question)
+    print(question)
+    for i in best:
+        print(f"  {scores[i]:.2f}  {chunks[i]}")
+
+# Output:
+# 8 chunks, for example:
+#   Passwords: Reset your password from the account settings page. Forgotten password? Use the
+#   Passwords: Forgotten password? Use the self-service reset link on the sign-in page.
+#
+# what does error E-1042 mean
+#   2.45  Remote work: Update the VPN client before connecting from home. Error E-1042 on the
+#   2.45  Remote work: Error E-1042 on the VPN client means your certificate has expired: ask
+# how many days to file expense claims
+#   5.38  Expenses: Expense claims must be filed within 30 days of purchase, with receipts.</code></pre></details>
+<h3>Building one that works</h3>
+<ul>
+  <li><b>Chunking.</b> Chunks of a few hundred tokens, split at headings and paragraphs, often overlapping a little. Keep the document’s title and heading with each chunk, or “It must be filed within 30 days” loses what “it” is. Too small loses context; too large blurs the vector and costs prompt tokens.</li>
+  <li><b>Reranking.</b> A <b>cross-encoder</b> reads the question and one chunk together, so attention can connect their words directly. It is more accurate than comparing two separate vectors, but costs one model pass per chunk, so it only reorders the top 20 to 100 results.</li>
+  <li><b>The prompt.</b> Number the chunks, ask for citations, and tell the model to say when the sources do not contain the answer.</li>
+  <li><b>Measure the two halves apart.</b> Retrieval: does the right chunk reach the top few? Generation: is every claim in the answer supported by the chunks? The drill has more: <a class="xref" data-ref="iv-rag"></a>.</li>
+</ul>
+<h3 class="opt">At scale</h3>
+<ul class="opt">
+  <li><b>Approximate search.</b> Comparing a question with millions of vectors one by one is slow, so indexes such as HNSW, a graph of near neighbours, find almost all of the nearest chunks in milliseconds. FAISS, pgvector and the vector databases provide them.</li>
+  <li><b>Why not paste in everything?</b> Long contexts cost prefill on every request, and models use information at the start and end of a long context better than in the middle, as the 2023 paper “Lost in the Middle” measured. Retrieval keeps prompts short and relevant.</li>
+</ul>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“RAG stops hallucination.”</b> It reduces it. The model can still ignore, misread or blend its sources; ask for citations and check them.</li>
+  <li><b>“The vector database is the hard part.”</b> Most failures come from chunking and from the right chunk never being retrieved. Measure retrieval on its own.</li>
+  <li><b>“Vector search understands everything.”</b> Codes, names and rare terms are where keyword search does better; use both.</li>
+  <li><b>Pitfall:</b> embedding the questions with a different model, or a different version, from the one that embedded the chunks. The vectors are then not comparable, and the results are quietly wrong.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>RAG searches your documents at request time and puts the best chunks in the prompt; the model’s weights do not change.</li><li>An embedding model maps a passage to one vector; cosine similarity compares directions, and with unit vectors it is a dot product.</li><li>Keyword search (BM25) finds exact terms, vector search finds meanings; reciprocal rank fusion merges their ranks.</li><li>Chunking, reranking and a prompt that asks for citations decide much of the quality; measure retrieval and answers separately.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. Two unit vectors are <span class="tex">[0.6, 0.8]</span> and <span class="tex">[0.8, 0.6]</span>. What is their cosine similarity?</legend><button type="button" class="qo">0.48</button><button type="button" class="qo" data-ok="1">0.96</button><button type="button" class="qo">1.4</button><p class="qx" hidden aria-live="polite"><b></b> 0.6 × 0.8 + 0.8 × 0.6 = 0.96. Both have length 1, so the dot product is the cosine.</p></fieldset>
+<fieldset><legend>2. Users search for error codes such as “E-1042”, and vector search keeps missing them. What helps most?</legend><button type="button" class="qo">A larger language model</button><button type="button" class="qo" data-ok="1">Adding keyword search and fusing the two rankings</button><button type="button" class="qo">Longer chunks</button><p class="qx" hidden aria-live="polite"><b></b> Keyword search matches the exact string; fusion keeps the paraphrases that vector search finds.</p></fieldset>
+<fieldset><legend>3. A chunk is 2nd in the keyword list and 3rd in the vector list. What is its fused score?</legend><button type="button" class="qo">1/62</button><button type="button" class="qo" data-ok="1">1/62 + 1/63 ≈ 0.0320</button><button type="button" class="qo">1/5</button><p class="qx" hidden aria-live="polite"><b></b> Each list adds 1/(60 + rank): 0.016129 + 0.015873 = 0.032002.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Which questions do our users ask that need our own documents, and which documents may each user see?</li><li>How would we build a set of 50 questions with known correct chunks to measure our retrieval?</li></ul></details>
+<p class="bridge">That completes the explanations. The <a href="interview.html">interview drill</a> turns them into interview answers and adds the applied topics: agents, evaluation and production.</p>
 </div>
 </section>
 <section class="view complete" id="complete" data-title="Part D complete"><div id="partDone"></div></section>

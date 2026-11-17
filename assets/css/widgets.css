@@ -223,3 +223,13 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 #sc-ah path{fill:var(--accent)}
 .arp{stroke:var(--accent);stroke-width:2.5;fill:none}
 #sc-ar tr.hit td{background:var(--accent-soft);font-weight:700}
+/* LoRA: the adapter's matrices beside the change the task needs */
+#lo-svg{max-width:440px;margin:8px auto}
+/* speculative decoding: each pass of the big model underlined, tokens coloured by where they came from */
+.sptext{font:500 .92rem var(--mono);line-height:2.3;margin:8px 0}
+.spp{border-bottom:2px solid var(--line);padding-bottom:3px}
+/* accepted draft tokens are plain; the big model's own tokens are marked by shape as well as colour */
+.spt.fix,.spt.bonus{color:var(--accent);font-weight:700;border-radius:4px;padding:1px 3px}
+.spt.fix{background:var(--accent-soft)}.spt.bonus{outline:1.5px dashed var(--accent);outline-offset:-1px}
+/* retrieval results: the chunk column wraps */
+table.numt td.rgc{white-space:normal;font-family:var(--sans);min-width:170px}

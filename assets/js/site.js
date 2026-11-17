@@ -5,15 +5,16 @@ const SITE_VERSION='__SITE_VERSION__';
 const PARTS=[
   {id:'a',name:'The big picture',goal:'What an LLM computes, how neural networks learn and generate, and why the Transformer replaced earlier networks.',secs:['intro','nn','genai','why']},
   {id:'b',name:'Building the model',goal:'Every layer of a decoder-only Transformer, from text to the probabilities of the next token.',secs:['tokens','position','attention','multihead','block','architecture']},
-  {id:'c',name:'Training and using it',goal:'How the model learns, how it generates text, and what it takes to run it.',secs:['training','posttrain','prefs','generation','inference','hardware','quant','flash']},
-  {id:'d',name:'The wider picture',goal:'The original encoder–decoder Transformer from the 2017 paper, what today’s models change, and how models read and make images.',secs:['encdec','modern','multimodal','diffusion']}];
+  {id:'c',name:'Training and using it',goal:'How the model learns and is adapted, how it generates text, and what it takes to run and serve it.',secs:['training','posttrain','prefs','lora','generation','inference','hardware','serving','quant','flash']},
+  {id:'d',name:'The wider picture',goal:'The original encoder–decoder Transformer from the 2017 paper, what today’s models change, how models read and make images, and how retrieval gives a model your documents.',secs:['encdec','modern','multimodal','diffusion','rag']}];
 /* title, core and optional study minutes, then the level (an index into LEVELS). Minutes: words / 110 + 3 per
    interactive, rounded to 5, code boxes left out. Core leaves out the .opt material and the exact worked examples;
    optional is what they add. Recount when a section changes a lot. */
 const SECS={intro:['What is an LLM?',10,0,0],nn:['Neural networks in 15 minutes',15,0,0],genai:['Generative AI: the big picture',15,0,0],why:['Why Transformers?',10,0,0],tokens:['Tokenization and embeddings',15,5,0],position:['Positional information',15,0,1],
   attention:['Self-attention from scratch',15,0,1],multihead:['Multi-head attention',10,0,1],block:['FFN, residuals and normalization',15,5,1],architecture:['Full decoder-only architecture',10,5,1],training:['Training an LLM',15,5,1],generation:['Generation and decoding',10,0,0],
   hardware:['GPUs and CUDA',15,5,1],quant:['Quantization',10,5,1],flash:['FlashAttention',10,5,2],inference:['Inference in practice',10,5,1],posttrain:['From base model to assistant',10,0,1],prefs:['Preference tuning and reasoning',10,5,1],
-  encdec:['Encoder–decoder and the 2017 paper',15,10,1],modern:['What modern LLMs change',20,5,2],multimodal:['Multimodal LLMs: reading images',10,5,1],diffusion:['How diffusion models make images',15,0,1]};
+  encdec:['Encoder–decoder and the 2017 paper',15,10,1],modern:['What modern LLMs change',20,5,2],multimodal:['Multimodal LLMs: reading images',10,5,1],diffusion:['How diffusion models make images',15,0,1],
+  lora:['Fine-tuning and LoRA',15,5,1],serving:['Serving at scale',20,0,2],rag:['Retrieval and embeddings (RAG)',15,0,1]};
 const LEVELS=['Foundation','Core','Deep dive'];
 const TOPICS={'iv-core':'Transformer fundamentals','iv-rag':'RAG and embeddings','iv-ft':'Fine-tuning and alignment','iv-agents':'Agents and tool use','iv-prod':'Evaluation and production','iv-hw':'Hardware'};
 const partOf=id=>PARTS.find(p=>p.secs.includes(id));
@@ -328,7 +329,7 @@ function initPart(){
     const nav=document.createElement('nav');nav.className='snav';nav.setAttribute('aria-label','Section navigation');
     nav.innerHTML='<div class="snrow"><a class="prev" href="#'+prev+'">← '+(prev==='start'?'Part overview':'Previous')+'</a>'
       +'<button type="button" class="doneBtn" aria-pressed="false"></button></div>'
-      +'<a class="nextBtn" href="#'+nx+'"><small>Next</small><span>'+(nx==='complete'?'Finish Part '+L:label(nx))+' →</span></a>';
+      +'<a class="nextBtn" href="#'+nx+'"><span>'+(nx==='complete'?'Finish Part '+L:label(nx))+' →</span></a>';
     if(bridge)nav.insertBefore(bridge,$('.nextBtn',nav));
     s.appendChild(nav);
     $('.doneBtn',nav).addEventListener('click',()=>{P.done[s.id]=!P.done[s.id];store.save();paint();});
