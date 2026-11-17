@@ -362,7 +362,9 @@ function initPart(){
   function paintComplete(){
     const st=partStats(part);let got=0,n=0;secs.forEach(s=>{const q=quizScore(s);if(q){got+=q.got;n+=q.n;}});
     $('#partDone').innerHTML='<p class="kicker">Part '+L+'</p><h1>'+(st.n===st.total?'Part '+L+' complete':st.n+' of '+st.total+' sections done')+'</h1>'
-      +'<p class="lede">'+(n?'You have answered '+got+' of '+n+' check questions correctly.':'')+(st.n<st.total?' Sections not yet done: '+secs.filter(s=>!P.done[s.id]).map(s=>'<a href="#'+s.id+'">'+SECS[s.id][0]+'</a>').join(', ')+'.':'')+'</p>'
+      +(n?'<p>You have answered '+got+' of '+n+' check questions correctly.</p>':'')
+      /* the unfinished sections, in the opening screen's list style, each keeping its number in the part */
+      +(st.n<st.total?'<h3>Not yet done</h3><ol class="partlist">'+secs.map((s,i)=>P.done[s.id]?'':'<li style="counter-set:p '+(i+1)+'"><a href="#'+s.id+'">'+SECS[s.id][0]+'</a><small>'+minsOf(s.id)+' min</small></li>').join('')+'</ol>':'')
       +'<p class="acts">'+(next?'<a class="btn pri big" href="'+partUrl(next)+'">Start Part '+next.id.toUpperCase()+': '+next.name+' →</a>':'<a class="btn pri big" href="interview.html">Go to the interview drill →</a>')+' <a class="btn big" href="index.html">All parts</a></p>'
       +'<h2>Key takeaways</h2>'+secs.map(s=>'<h3>'+SECS[s.id][0]+'</h3>'+$('ul.take',s).outerHTML).join('');
     renderTex($('#partDone'));
