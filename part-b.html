@@ -76,10 +76,10 @@
 <p>Multiplying a one-hot row vector by <span class="tex">E</span> picks out exactly one row: <span class="tex">x_t=\mathrm{onehot}(w_t)\,E</span>. Nobody computes it that way because indexing is far cheaper, but it shows that the embedding table is an ordinary weight matrix, trained by gradient descent like every other one.</p></details>
 <div class="worked">
   <h4>Worked example</h4>
-  <div class="x-only"><p>Take <span class="tex">n_{\text{vocab}}=5</span> and <span class="tex">d_{\text{model}}=2</span>:</p>
+  <p>Think of the embedding table as a spreadsheet with one row per token. Token ID 2 means “use row 2”. That row of numbers is the token’s vector.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>Take <span class="tex">n_{\text{vocab}}=5</span> and <span class="tex">d_{\text{model}}=2</span>:</p>
   <div class="tex d">E=\begin{bmatrix}0.1&amp;0.3\\-0.2&amp;0.5\\0.7&amp;-0.4\\0.0&amp;0.9\\0.6&amp;0.6\end{bmatrix},\quad w_t=2 \;\Rightarrow\; \mathrm{onehot}(w_t)=[0,0,1,0,0] \;\Rightarrow\; x_t=E[2]=[0.7,\,-0.4]</div>
-  <p>Rows are counted from 0, so ID 2 is the third row.</p></div>
-  <p class="s-only">Think of the embedding table as a spreadsheet with one row per token. Token ID 2 means “use row 2”. That row of numbers is the token’s vector.</p>
+  <p>Rows are counted from 0, so ID 2 is the third row.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: a greedy subword tokenizer and the embedding lookup</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -301,10 +301,10 @@ for w in ["lowest", "newer", "wider"]:
 <details class="why"><summary>Why add and not concatenate?</summary><div class="whyb">Adding keeps the width at <span class="tex">d_{\text{model}}</span>, so nothing downstream changes size. In hundreds of dimensions there is room for both signals, and the model learns to read content from some directions and position from others.</div></details>
 <div class="worked">
   <h4>Worked example</h4>
-  <div class="x-only"><p>With <span class="tex">d_{\text{model}}=4</span> there are two pairs: <span class="tex">i=0</span> divides by <span class="tex">10000^{0}=1</span> and <span class="tex">i=1</span> divides by <span class="tex">10000^{2/4}=100</span>.</p>
+  <p>Picture a row of clock hands turning at different speeds. The fast hands distinguish position 3 from position 4. The slow hands distinguish position 30 from position 300. Read together, they give every position a unique fingerprint.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>With <span class="tex">d_{\text{model}}=4</span> there are two pairs: <span class="tex">i=0</span> divides by <span class="tex">10000^{0}=1</span> and <span class="tex">i=1</span> divides by <span class="tex">10000^{2/4}=100</span>.</p>
   <div class="tex d">\begin{aligned}PE(0)&amp;=[\sin 0,\ \cos 0,\ \sin 0,\ \cos 0]=[0,\ 1,\ 0,\ 1]\\ PE(1)&amp;=[\sin 1,\ \cos 1,\ \sin 0.01,\ \cos 0.01]=[0.8415,\ 0.5403,\ 0.0100,\ 1.0000]\\ PE(2)&amp;=[\sin 2,\ \cos 2,\ \sin 0.02,\ \cos 0.02]=[0.9093,\ -0.4161,\ 0.0200,\ 0.9998]\end{aligned}</div>
-  <p>The first two numbers change a lot from one position to the next. The last two barely move; they only become informative across hundreds of positions.</p></div>
-  <p class="s-only">Picture a row of clock hands turning at different speeds. The fast hands distinguish position 3 from position 4. The slow hands distinguish position 30 from position 300. Read together, they give every position a unique fingerprint.</p>
+  <p>The first two numbers change a lot from one position to the next. The last two barely move; they only become informative across hundreds of positions.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: sinusoidal position vectors</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -425,10 +425,10 @@ print("shape is unchanged:", X.shape)
 </ul>
 <div class="worked">
   <h4>Worked example: the query “sat”</h4>
-  <div class="x-only"><p>Take <span class="tex">d_k=4</span>, the query <span class="tex">q_{\text{sat}}=[1,2,0,0]</span> and the keys and values shown in the simulator below.</p>
+  <p>The token “sat” asks, in effect, “who did the sitting?”. Its query matches the key of “cat” best, so “cat” gets about 46% of the attention, “sat” itself 28%, and the rest share what is left. The new vector for “sat” is mostly cat-flavoured.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>Take <span class="tex">d_k=4</span>, the query <span class="tex">q_{\text{sat}}=[1,2,0,0]</span> and the keys and values shown in the simulator below.</p>
   <div class="tex d">\begin{aligned}\text{dot products } q\cdot k_j &amp;= [1,\ 4,\ 3,\ 0,\ 1]\\ \text{divide by }\sqrt{4}=2 &amp;\Rightarrow [0.5,\ 2,\ 1.5,\ 0,\ 0.5]\\ \exp &amp;\Rightarrow [1.6487,\ 7.3891,\ 4.4817,\ 1,\ 1.6487],\ \text{sum}=16.1682\\ \alpha &amp;= [0.1020,\ 0.4570,\ 0.2772,\ 0.0618,\ 0.1020]\\ c=\textstyle\sum_j\alpha_jv_j &amp;= [0.7119,\ 1.1912,\ 0.4410,\ 0.3276]\end{aligned}</div>
-  <p>For instance, the second dot product is <span class="tex">1\cdot0+2\cdot2+0\cdot1+0\cdot0=4</span>, and the first entry of <span class="tex">c</span> is <span class="tex">0.1020\cdot0.5+0.4570\cdot1+0.2772\cdot0+0.0618\cdot0+0.1020\cdot2=0.7119</span>.</p></div>
-  <p class="s-only">The token “sat” asks, in effect, “who did the sitting?”. Its query matches the key of “cat” best, so “cat” gets about 46% of the attention, “sat” itself 28%, and the rest share what is left. The new vector for “sat” is mostly cat-flavoured.</p>
+  <p>For instance, the second dot product is <span class="tex">1\cdot0+2\cdot2+0\cdot1+0\cdot0=4</span>, and the first entry of <span class="tex">c</span> is <span class="tex">0.1020\cdot0.5+0.4570\cdot1+0.2772\cdot0+0.0618\cdot0+0.1020\cdot2=0.7119</span>.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: attention for the query “sat”, step by step</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -613,8 +613,8 @@ print("X", X.shape, "-&gt; weights", A.shape, "-&gt; output", out.shape)
 </table></div>
 <div class="worked">
   <h4>Worked example</h4>
-  <p class="x-only">With <span class="tex">d_{\text{model}}=8</span> and <span class="tex">h=2</span>, each head works with <span class="tex">d_k=4</span>. Head 1 produces 4 numbers per token, head 2 another 4; concatenated they give 8 again. Parameters for the query, key and value projections: one head needs <span class="tex">3\times(8\times8)=192</span> weights; two heads need <span class="tex">2\times3\times(8\times4)=192</span>. The same.</p>
-  <p class="s-only">Splitting an 8-number vector between 2 heads gives each head 4 numbers to work with. You get two independent “where should I look?” decisions for the price of one.</p>
+  <p>Splitting an 8-number vector between 2 heads gives each head 4 numbers to work with. You get two independent “where should I look?” decisions for the price of one.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>With <span class="tex">d_{\text{model}}=8</span> and <span class="tex">h=2</span>, each head works with <span class="tex">d_k=4</span>. Head 1 produces 4 numbers per token, head 2 another 4; concatenated they give 8 again. Parameters for the query, key and value projections: one head needs <span class="tex">3\times(8\times8)=192</span> weights; two heads need <span class="tex">2\times3\times(8\times4)=192</span>. The same.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: multi-head attention: split, attend, concatenate</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -731,11 +731,11 @@ print("2 heads:", h * 3 * d_model * d_k, "weights in W_Q, W_K, W_V")
 <details class="why"><summary>Why this form?</summary><div class="whyb">Read <span class="tex">\Phi(a)</span> as a smooth gate: close to 1 for large positive <span class="tex">a</span> (the input passes through), close to 0 for large negative <span class="tex">a</span> (it is blocked), and in between near zero. ReLU is the same gate with a hard on/off switch at 0. The smooth version gives a usable gradient everywhere, which tends to make training better behaved.</div></details>
 <div class="worked">
   <h4>Worked example: a tiny FFN</h4>
-  <div class="x-only"><p>Input <span class="tex">x=[1,2]</span>, <span class="tex">d_{\text{ff}}=3</span>, biases zero.</p>
+  <p>The two input numbers are stretched into three, bent by GELU (big positives pass through, negatives are mostly squashed), then recombined into two. The bending is what lets the network compute things a single matrix cannot.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>Input <span class="tex">x=[1,2]</span>, <span class="tex">d_{\text{ff}}=3</span>, biases zero.</p>
   <div class="tex d">W_1=\begin{bmatrix}1&amp;0.5&amp;-1\\-1&amp;2&amp;1\end{bmatrix},\quad xW_1=[-1,\ 4.5,\ 1],\quad \mathrm{GELU}=[-0.1587,\ 4.5000,\ 0.8413]</div>
   <div class="tex d">W_2=\begin{bmatrix}1&amp;0\\0&amp;1\\1&amp;-1\end{bmatrix},\quad \mathrm{FFN}(x)=[0.6827,\ 3.6586]</div>
-  <p>The first entry of <span class="tex">xW_1</span> is <span class="tex">1\cdot1+2\cdot(-1)=-1</span>. The first output is <span class="tex">-0.1587+0.8413</span> and the second is <span class="tex">4.5000-0.8413</span>. Results are computed at full precision and rounded for display, which is why a last digit can differ by one from adding the rounded terms.</p></div>
-  <p class="s-only">The two input numbers are stretched into three, bent by GELU (big positives pass through, negatives are mostly squashed), then recombined into two. The bending is what lets the network compute things a single matrix cannot.</p>
+  <p>The first entry of <span class="tex">xW_1</span> is <span class="tex">1\cdot1+2\cdot(-1)=-1</span>. The first output is <span class="tex">-0.1587+0.8413</span> and the second is <span class="tex">4.5000-0.8413</span>. Results are computed at full precision and rounded for display, which is why a last digit can differ by one from adding the rounded terms.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: the tiny FFN, GELU and ReLU</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -813,10 +813,10 @@ print("ReLU(a)   =", relu(a))
 <details class="why"><summary>Why step 4?</summary><div class="whyb">Forcing every vector to mean 0 and spread 1 might be too rigid for what a layer needs. <span class="tex">\gamma</span> and <span class="tex">\beta</span> start at 1 and 0 (no effect) and let training choose a different scale and offset per dimension. The scale is then under the model’s control instead of drifting.</div></details>
 <div class="worked">
   <h4>Worked example: LayerNorm</h4>
-  <div class="x-only"><p><span class="tex">x=[2,4,6,8]</span>, with <span class="tex">\gamma=1,\ \beta=0</span> and ignoring <span class="tex">\epsilon</span>.</p>
+  <p>Subtract the average so the numbers centre on zero, then divide by their spread. [2, 4, 6, 8] and [200, 400, 600, 800] come out identical: only the pattern survives, not the scale.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p><span class="tex">x=[2,4,6,8]</span>, with <span class="tex">\gamma=1,\ \beta=0</span> and ignoring <span class="tex">\epsilon</span>.</p>
   <p>Mean <span class="tex">\mu=\tfrac{2+4+6+8}{4}=5</span>. Variance <span class="tex">\sigma^2=\tfrac{9+1+1+9}{4}=5</span>, so <span class="tex">\sigma=2.2361</span>.</p>
-  <div class="tex d">\mathrm{LayerNorm}(x)=\left[\tfrac{-3}{2.2361},\tfrac{-1}{2.2361},\tfrac{1}{2.2361},\tfrac{3}{2.2361}\right]=[-1.3416,\ -0.4472,\ 0.4472,\ 1.3416]</div></div>
-  <p class="s-only">Subtract the average so the numbers centre on zero, then divide by their spread. [2, 4, 6, 8] and [200, 400, 600, 800] come out identical: only the pattern survives, not the scale.</p>
+  <div class="tex d">\mathrm{LayerNorm}(x)=\left[\tfrac{-3}{2.2361},\tfrac{-1}{2.2361},\tfrac{1}{2.2361},\tfrac{3}{2.2361}\right]=[-1.3416,\ -0.4472,\ 0.4472,\ 1.3416]</div></details>
 </div>
 <details class="callout code opt"><summary>In Python: LayerNorm</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -1109,10 +1109,10 @@ print({w: round(float(p), 3) for w, p in zip(vocab, probs[-1])})
 <p class="sym"><span class="tex">L</span> is the number of blocks, <span class="tex">T</span> the context length, <span class="tex">d_{\text{ff}}</span> the MLP’s hidden width. The number of heads <span class="tex">h</span> does not appear: heads slice the same matrices.</p>
 <div class="worked">
   <h4>Worked example</h4>
-  <div class="x-only"><p><span class="tex">n_{\text{vocab}}=50,\ d_{\text{model}}=8,\ T=16,\ L=1,\ d_{\text{ff}}=32</span>, output projection not shared:</p>
+  <p>Two kinds of term dominate. Embeddings grow with vocabulary size × width. The blocks grow with layers × width². Doubling the width roughly quadruples the cost of the blocks.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p><span class="tex">n_{\text{vocab}}=50,\ d_{\text{model}}=8,\ T=16,\ L=1,\ d_{\text{ff}}=32</span>, output projection not shared:</p>
   <p>Token embeddings <span class="tex">50\times8=400</span>. Position embeddings <span class="tex">16\times8=128</span>. Attention <span class="tex">4\times(64+8)=288</span>. MLP <span class="tex">2\times8\times32+32+8=552</span>. Block LayerNorms <span class="tex">4\times8=32</span>. Final LayerNorm <span class="tex">16</span>. Output projection <span class="tex">400</span>.</p>
-  <p>Total: <span class="tex">400+128+288+552+32+16+400=1816</span> parameters.</p></div>
-  <p class="s-only">Two kinds of term dominate. Embeddings grow with vocabulary size × width. The blocks grow with layers × width². Doubling the width roughly quadruples the cost of the blocks.</p>
+  <p>Total: <span class="tex">400+128+288+552+32+16+400=1816</span> parameters.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: counting parameters</summary>
 <div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>

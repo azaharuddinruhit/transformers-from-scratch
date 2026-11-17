@@ -7,18 +7,15 @@ const PARTS=[
   {id:'b',name:'Building the model',goal:'Every layer of a decoder-only Transformer, from text to the probabilities of the next token.',secs:['tokens','position','attention','multihead','block','architecture']},
   {id:'c',name:'Training and using it',goal:'How the model learns, how it generates text, and what it takes to run it.',secs:['training','posttrain','prefs','generation','inference','hardware','quant','flash']},
   {id:'d',name:'The wider picture',goal:'The original encoder–decoder Transformer from the 2017 paper, what today’s models change, and how models read and make images.',secs:['encdec','modern','multimodal','diffusion']}];
-/* title, study minutes for Full depth and Quick tour, then the level (an index into LEVELS).
-   Minutes: words / 110 + 3 per interactive, rounded to 5, code boxes left out (Full depth drops .s-only; Quick tour
-   drops .opt and .x-only). Recount when a section changes a lot. */
-const SECS={intro:['What is an LLM?',10,10,0],nn:['Neural networks in 15 minutes',15,15,0],genai:['Generative AI: the big picture',15,15,0],why:['Why Transformers?',10,10,0],tokens:['Tokenization and embeddings',20,15,0],position:['Positional information',15,15,1],
-  attention:['Self-attention from scratch',15,15,1],multihead:['Multi-head attention',10,10,1],block:['FFN, residuals and normalization',20,15,1],architecture:['Full decoder-only architecture',15,10,1],
-  training:['Training an LLM',20,15,1],generation:['Generation and decoding',10,10,0],hardware:['GPUs and CUDA',20,15,1],quant:['Quantization',15,10,1],flash:['FlashAttention',15,10,2],inference:['Inference in practice',15,10,1],posttrain:['From base model to assistant',10,10,1],prefs:['Preference tuning and reasoning',15,10,1],
-  encdec:['Encoder–decoder and the 2017 paper',25,15,1],modern:['What modern LLMs change',25,20,2],
-  multimodal:['Multimodal LLMs: reading images',15,10,1],diffusion:['How diffusion models make images',15,15,1]};
+/* title, core and optional study minutes, then the level (an index into LEVELS). Minutes: words / 110 + 3 per
+   interactive, rounded to 5, code boxes left out. Core leaves out the .opt material and the exact worked examples;
+   optional is what they add. Recount when a section changes a lot. */
+const SECS={intro:['What is an LLM?',10,0,0],nn:['Neural networks in 15 minutes',15,0,0],genai:['Generative AI: the big picture',15,0,0],why:['Why Transformers?',10,0,0],tokens:['Tokenization and embeddings',15,5,0],position:['Positional information',15,0,1],
+  attention:['Self-attention from scratch',15,0,1],multihead:['Multi-head attention',10,0,1],block:['FFN, residuals and normalization',15,5,1],architecture:['Full decoder-only architecture',10,5,1],training:['Training an LLM',15,5,1],generation:['Generation and decoding',10,0,0],
+  hardware:['GPUs and CUDA',15,5,1],quant:['Quantization',10,5,1],flash:['FlashAttention',10,5,2],inference:['Inference in practice',10,5,1],posttrain:['From base model to assistant',10,0,1],prefs:['Preference tuning and reasoning',10,5,1],
+  encdec:['Encoder–decoder and the 2017 paper',15,10,1],modern:['What modern LLMs change',20,5,2],multimodal:['Multimodal LLMs: reading images',10,5,1],diffusion:['How diffusion models make images',15,0,1]};
 const LEVELS=['Foundation','Core','Deep dive'];
 const TOPICS={'iv-core':'Transformer fundamentals','iv-rag':'RAG and embeddings','iv-ft':'Fine-tuning and alignment','iv-agents':'Agents and tool use','iv-prod':'Evaluation and production','iv-hw':'Hardware'};
-const PATHS={full:{name:'Full depth',desc:'Exact worked examples, every interactive, the maths detail and the Python code.'},
-  quick:{name:'Quick tour',desc:'Simplified worked examples; optional material is hidden. You can switch at any time.'}};
 const partOf=id=>PARTS.find(p=>p.secs.includes(id));
 const partUrl=p=>'part-'+p.id+'.html';
 /* sections that were merged or moved: old links and bookmarks still land in the right place */
@@ -33,17 +30,16 @@ function refInfo(id){
 }
 const fmtMin=m=>m>=60?Math.floor(m/60)+' h'+(m%60?' '+m%60+' min':''):m+' min';
 /* ---------- progress: one saved record, with a time for every item so two browsers' copies merge ---------- */
-/* record: path, done {id: bool}, quiz {section: [question indexes]}, last (url), drill {id: 'got'|'again'},
+/* record: done {id: bool}, quiz {section: [question indexes]}, last (url), drill {id: 'got'|'again'},
    resetAt, and ts, the time each item last changed (a deleted drill mark keeps its time, so the deletion wins too) */
 const PROG_KEY='tfs-progress',PROG_MAPS=['done','quiz','drill'];
 const progObj=o=>o&&typeof o==='object'&&!Array.isArray(o)?o:{};
 function progNorm(raw){
   const d=progObj(raw),t=progObj(d.ts);
-  const r={path:d.path==='quick'?'quick':'full',done:{...progObj(d.done)},quiz:{},last:typeof d.last==='string'?d.last:null,drill:{...progObj(d.drill)},resetAt:+d.resetAt||0,
-    ts:{path:+t.path||0,last:+t.last||0,done:{...progObj(t.done)},quiz:{...progObj(t.quiz)},drill:{...progObj(t.drill)}}};
+  const r={done:{...progObj(d.done)},quiz:{},last:typeof d.last==='string'?d.last:null,drill:{...progObj(d.drill)},resetAt:+d.resetAt||0,
+    ts:{last:+t.last||0,done:{...progObj(t.done)},quiz:{...progObj(t.quiz)},drill:{...progObj(t.drill)}}};
   Object.entries(progObj(d.quiz)).forEach(([k,v])=>{if(Array.isArray(v))r.quiz[k]=v.filter(Number.isInteger);});
   /* an item with no time (a record saved before sync existed) counts as older than any change made since */
-  if(d.path&&!r.ts.path)r.ts.path=1;
   if(r.last&&!r.ts.last)r.ts.last=1;
   PROG_MAPS.forEach(k=>Object.keys(r[k]).forEach(id=>{if(!(+r.ts[k][id]>0))r.ts[k][id]=1;}));
   return r;
@@ -51,8 +47,7 @@ function progNorm(raw){
 /* the newer copy of each item wins; anything not changed after the latest reset on either side is dropped;
    quiz answers only ever add up, so a section keeps the answers of both copies */
 function progMerge(a,b){
-  const R=Math.max(a.resetAt,b.resetAt),o={path:'full',last:null,done:{},quiz:{},drill:{},resetAt:R,ts:{path:0,last:0,done:{},quiz:{},drill:{}}};
-  const w=b.ts.path>a.ts.path?b:a;o.path=w.path;o.ts.path=w.ts.path;
+  const R=Math.max(a.resetAt,b.resetAt),o={last:null,done:{},quiz:{},drill:{},resetAt:R,ts:{last:0,done:{},quiz:{},drill:{}}};
   const wl=b.ts.last>a.ts.last?b:a;if(wl.ts.last>R){o.last=wl.last;o.ts.last=wl.ts.last;}
   ['done','drill'].forEach(k=>{
     new Set([...Object.keys(a.ts[k]),...Object.keys(b.ts[k])]).forEach(id=>{
@@ -67,7 +62,6 @@ function progMerge(a,b){
 /* stamps every item that differs from the last saved copy; true when anything did */
 function progStamp(r,old,now){
   let any=false;const st=k=>{r.ts[k]=now;any=true;};
-  if(r.path!==old.path)st('path');
   if(r.last!==old.last)st('last');
   PROG_MAPS.forEach(k=>new Set([...Object.keys(r[k]),...Object.keys(old[k])]).forEach(id=>{
     if(JSON.stringify(r[k][id])!==JSON.stringify(old[k][id])){r.ts[k][id]=now;any=true;}}));
@@ -76,7 +70,7 @@ function progStamp(r,old,now){
 /* a canonical text of a record, to tell whether a merge changed it */
 function progSig(r){
   const c=v=>v&&typeof v==='object'&&!Array.isArray(v)?'{'+Object.keys(v).sort().map(k=>k+':'+c(v[k])).join(',')+'}':JSON.stringify(v);
-  return c({path:r.path,last:r.last,done:r.done,quiz:r.quiz,drill:r.drill,resetAt:r.resetAt,ts:r.ts});
+  return c({last:r.last,done:r.done,quiz:r.quiz,drill:r.drill,resetAt:r.resetAt,ts:r.ts});
 }
 const onProgress=[];
 const store=(()=>{
@@ -90,19 +84,14 @@ const store=(()=>{
     progStamp(d,snap,Date.now());
     let m=d,cur=null;try{cur=JSON.parse(localStorage.getItem(PROG_KEY));}catch(e){}
     if(cur)m=progMerge(m,progNorm(cur));if(remote)m=progMerge(m,remote);
-    const before=progSig(d),pathWas=d.path;Object.assign(d,m);write();
-    if(progSig(d)!==before)progApplied(d.path!==pathWas);
+    const before=progSig(d);Object.assign(d,m);write();
+    if(progSig(d)!==before)onProgress.forEach(f=>f());
   }
   return{d,absorb,
     save(){if(progStamp(d,snap,Date.now())){absorb(null);syncSoon();}else write();},
-    reset(){const now=Date.now();Object.assign(d,{done:{},quiz:{},drill:{},last:null,resetAt:now,ts:{path:d.ts.path,last:0,done:{},quiz:{},drill:{}}});write();}};
+    reset(){const now=Date.now();Object.assign(d,{done:{},quiz:{},drill:{},last:null,resetAt:now,ts:{last:0,done:{},quiz:{},drill:{}}});write();}};
 })();
 const P=store.d;
-/* a merge brought in changes: redraw what shows progress */
-function progApplied(pathChanged){
-  if(pathChanged){applyPath();rerender();onPathChange.forEach(f=>f());}
-  onProgress.forEach(f=>f());
-}
 window.addEventListener('storage',e=>{if(e.key===PROG_KEY)store.absorb(null);});
 
 /* ---------- sync through a secret GitHub gist ----------
@@ -199,37 +188,43 @@ function initSync(closeSet){
   paintSync();
   syncNow();
 }
-const minsOf=id=>SECS[id][P.path==='quick'?2:1];
+const minsOf=id=>SECS[id][1];
 const partStats=p=>{const n=p.secs.filter(id=>P.done[id]).length;return{n,total:p.secs.length,left:p.secs.filter(id=>!P.done[id]).reduce((a,id)=>a+minsOf(id),0)};};
-const onPathChange=[];
-function applyPath(){
-  const quick=P.path==='quick';
-  state.exact=!quick;document.body.classList.toggle('simple',quick);document.body.classList.toggle('ess',quick);
-  $$('.pathBtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===P.path));
+/* the study time of a section or of the whole guide: core minutes, then what the optional material adds */
+const timeText=(core,opt)=>'about '+fmtMin(core)+(opt?', +'+fmtMin(opt)+' optional':'');
+/* optional material (.opt) gets a small "Optional" pill on each optional heading and box, and at the start of
+   each run of plain optional text; the Python boxes say what they are in their titles, so they are left unmarked */
+function initOptional(){
+  const isOpt=e=>e&&e.classList.contains('opt')&&!e.matches('details.code');
+  $$('.opt').forEach(e=>{
+    const plain=e.matches('p,ul,ol,tr,.tex')||(e.matches('div')&&!e.matches('.widget,.worked,.callout'));
+    if(!isOpt(e)||(plain&&isOpt(e.previousElementSibling)))return;
+    const pill=document.createElement('span');pill.className='optpill';pill.textContent='Optional';
+    if(e.matches('.try'))$('b',e).append(pill);
+    else if(e.matches('details'))$('summary',e).append(pill);
+    else if(e.matches('.widget,.worked'))$('h4',e).append(pill);
+    else if(e.matches('tr'))e.cells[0].append(pill);
+    else if(e.matches('h3'))e.append(pill);
+    else if(!e.matches('ul,ol')){pill.classList.add('lead');e.prepend(pill);}
+  });
 }
-function setPath(p){P.path=p;store.save();applyPath();rerender();onPathChange.forEach(f=>f());}
 /* the Settings menu: an iOS-style grouped list built here once for every page, with sub-pages for the path, progress and
    sync; a popover under its button, a bottom sheet on phones */
-const ICONS={path:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/>',
-  theme:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+const ICONS={theme:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
   prog:'<circle cx="12" cy="12" r="8"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',sync:'<path d="M7 18a4 4 0 0 1-.6-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/>',
-  reset:'<path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v5h5"/>',chev:'<path d="M9 6l6 6-6 6"/>',back:'<path d="M15 6l-6 6 6 6"/>',
-  check:'<path d="M5 12.5l4.5 4.5L19 7"/>'};
+  reset:'<path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v5h5"/>',chev:'<path d="M9 6l6 6-6 6"/>',back:'<path d="M15 6l-6 6 6 6"/>'};
 const svgI=k=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+ICONS[k]+'</svg>';
 const sIc=k=>'<span class="sic ic-'+k+'">'+svgI(k)+'</span>';
 const sNav=(to,k,label,valId)=>'<button type="button" class="sitem" data-go="'+to+'">'+sIc(k)+'<span class="slbl">'+label+'</span><span class="sval" id="'+valId+'"></span><span class="schev">'+svgI('chev')+'</span></button>';
 const sSwitch=(id,k,label)=>'<button type="button" class="sitem" role="switch" aria-checked="false" id="'+id+'">'+sIc(k)+'<span class="slbl">'+label+'</span><span class="swt" aria-hidden="true"></span></button>';
-const SET_PAGES={main:'Settings',path:'Path',prog:'Progress',sync:'GitHub sync'};
+const SET_PAGES={main:'Settings',prog:'Progress',sync:'GitHub sync'};
 const SET_MENU='<div class="smhead"><button type="button" class="sbtn" id="setBack" aria-label="Back to Settings" hidden>'+svgI('back')+'</button><span id="setTitle">Settings</span></div>'
   +'<div class="spages">'
   +'<div class="spage" data-page="main">'
-  +'<div class="sgroup">'+sNav('path','path','Path','pathVal')+sSwitch('thSw','theme','Dark theme')+'</div>'
+  +'<div class="sgroup">'+sSwitch('thSw','theme','Dark theme')+'</div>'
   +'<div class="sgroup">'+sNav('prog','prog','Progress','progVal')+sNav('sync','sync','GitHub sync','syncVal')+'</div>'
   +'<div class="sgroup"><button type="button" class="sitem danger" id="pgReset">'+sIc('reset')+'<span class="slbl">Reset progress</span></button></div>'
   +'<p class="sver" id="setVer"></p></div>'
-  +'<div class="spage" data-page="path"><div class="sgroup">'
-  +Object.keys(PATHS).map(k=>'<button type="button" class="sitem sopt pathBtn" data-p="'+k+'" aria-pressed="false"><span class="slbl"><b>'+PATHS[k].name+'</b><small>'+PATHS[k].desc+'</small><small class="stime" data-p="'+k+'"></small></span><span class="schk">'+svgI('check')+'</span></button>').join('')
-  +'</div><p class="sfoot">Your path is saved, and synced when GitHub sync is on.</p></div>'
   +'<div class="spage" data-page="prog"><div class="sgroup" id="progList"></div><div class="sgroup" id="progDrill"></div><p class="sfoot">A section is done when every quiz question has been answered correctly once, or when you press its Done button.</p></div>'
   +'<div class="spage" data-page="sync"><div class="sgroup"><div class="sitem sinfo"><span class="slbl">Status</span><span class="sval"><i class="sdot" aria-hidden="true" hidden></i><span id="syncStat" aria-live="polite"></span></span></div></div>'
   +'<p class="sfoot" id="syncNote"></p>'
@@ -244,9 +239,6 @@ function paintProgSum(){
     return '<div class="sitem sinfo"><span class="spl'+(st.n===st.total?' full':'')+'" aria-hidden="true">'+p.id.toUpperCase()+'</span><span class="slbl">'+p.name+'<span class="sbar"><i style="width:'+(100*st.n/st.total)+'%"></i></span></span><span class="sval">'+st.n+' of '+st.total+'</span></div>';}).join('');
   const marks=Object.values(P.drill),got=marks.filter(m=>m==='got').length,again=marks.filter(m=>m==='again').length;
   $('#progDrill').innerHTML='<a class="sitem" href="interview.html"><span class="slbl">Interview drill</span><span class="sval">'+(got||again?got+' got it · '+again+' to review':'Not started')+'</span><span class="schev">'+svgI('chev')+'</span></a>';
-  const total=k=>Object.keys(SECS).reduce((a,id)=>a+SECS[id][k==='quick'?2:1],0);
-  $$('.stime').forEach(s=>{s.textContent='About '+fmtMin(total(s.dataset.p))+' of study';});
-  $('#pathVal').textContent=PATHS[P.path].name;
 }
 function initSettings(){
   const setBtn=$('#setBtn'),menu=$('#setMenu');
@@ -262,9 +254,8 @@ function initSettings(){
   const curTheme=()=>root.getAttribute('data-theme')||sysTheme();
   const markTheme=()=>thSw.setAttribute('aria-checked',curTheme()==='dark');
   try{const t=localStorage.getItem('tfs-theme');if(t==='light'||t==='dark')root.setAttribute('data-theme',t);}catch(e){}
-  markTheme();applyPath();
+  markTheme();
   thSw.addEventListener('click',()=>{const t=curTheme()==='dark'?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('tfs-theme',t);}catch(e){}markTheme();});
-  $$('.pathBtn',menu).forEach(b=>b.addEventListener('click',()=>{setPath(b.dataset.p);paintProgSum();}));
   /* sub-pages slide in from the right; the box animates to the new page's height */
   const pages=$('.spages',menu),back=$('#setBack'),title=$('#setTitle');let cur='main',from=null;
   const go=(to,anim)=>{
@@ -296,7 +287,7 @@ function initSettings(){
   document.addEventListener('click',e=>{if(!menu.hidden&&e.target.isConnected&&!inside(e.target))closeSet(false);});
   document.addEventListener('keydown',e=>{if(e.key!=='Escape'||menu.hidden)return;if(cur!=='main')go('main',true);else closeSet(true);});
   menu.addEventListener('focusout',e=>{if(e.relatedTarget&&!inside(e.relatedTarget))closeSet(false);});
-  onProgress.push(paintProgSum);onPathChange.push(paintProgSum);
+  onProgress.push(paintProgSum);
   let rt=null,lastW=window.innerWidth;window.addEventListener('resize',()=>{if(!menu.hidden)place();if(window.innerWidth===lastW)return;lastW=window.innerWidth;clearTimeout(rt);rt=setTimeout(rerender,150);});
   initSync(closeSet);
   const bar=$('#progBar');window.addEventListener('scroll',()=>{const h=document.documentElement;bar.style.width=(100*Math.max(0,Math.min(1,h.scrollTop/Math.max(1,h.scrollHeight-h.clientHeight)))).toFixed(1)+'%';},{passive:true});
@@ -346,7 +337,7 @@ function initPart(){
   function paint(){
     const st=partStats(part),pos=secs.findIndex(s=>s.id===cur);
     secs.forEach((s,i)=>{const on=!!P.done[s.id],q=quizScore(s);
-      $('.rt',s).innerHTML='Part '+L+' · '+(i+1)+' of '+secs.length+' · about '+minsOf(s.id)+' min <span class="lvl">'+LEVELS[SECS[s.id][3]]+'</span>';
+      $('.rt',s).innerHTML='Part '+L+' · '+(i+1)+' of '+secs.length+' · '+timeText(minsOf(s.id),SECS[s.id][2])+' <span class="lvl">'+LEVELS[SECS[s.id][3]]+'</span>';
       const b=$('.doneBtn',s);b.setAttribute('aria-pressed',on);b.classList.toggle('on',on);b.textContent=on?'✓ Done':'Mark as done';
       const qs=$('.qscore',s);if(qs&&q)qs.textContent=q.got?q.got+' of '+q.n+' correct':'';});
     toc.innerHTML='<div class="tochead"><a href="index.html" class="tochome">← All parts</a><button type="button" class="btn tiny" id="tocClose">Close</button></div>'
@@ -388,7 +379,7 @@ function initPart(){
   const route=()=>{const h=decodeURIComponent(location.hash.slice(1));if(MOVED[h]){location.replace(refInfo(h).href);return;}const el=h&&document.getElementById(h),v=el&&el.closest('#main>section');show(v?v.id:h,h);};
   window.addEventListener('hashchange',route);
   initQuiz(()=>paint());
-  onPathChange.push(paint);onProgress.push(paint);
+  onProgress.push(paint);
 
   /* contents: side list on wide screens, bottom sheet behind the pill on narrow ones */
   const openSheet=()=>{mbar.classList.remove('hid');toc.classList.add('open');scrim.hidden=false;mMid.setAttribute('aria-expanded','true');const t=$('li.on a',toc)||$('a',toc);if(t)t.focus({preventScroll:true});};
@@ -414,9 +405,8 @@ function initHome(){
   /* links to the old single page (#attention, #notation, …) */
   const h=location.hash.slice(1),r=h&&refInfo(h);if(r){location.replace(r.href);return;}
   function paint(){
-    const total=p=>Object.keys(SECS).reduce((a,id)=>a+SECS[id][p==='quick'?2:1],0);
-    $('#paths').innerHTML=Object.keys(PATHS).map(k=>'<button type="button" class="pathCard" data-p="'+k+'" aria-pressed="'+(P.path===k)+'"><b>'+PATHS[k].name+'</b><span>'+PATHS[k].desc+'</span><small>About '+fmtMin(total(k))+' of study</small></button>').join('');
-    $$('.pathCard').forEach(b=>b.addEventListener('click',()=>setPath(b.dataset.p)));
+    const sum=i=>Object.keys(SECS).reduce((a,id)=>a+SECS[id][i],0);
+    $('#studyTime').textContent='Study time: '+timeText(sum(1),sum(2))+'.';
     const lastId=P.last&&P.last.split('#')[1];
     $('#resume').innerHTML=lastId&&SECS[lastId]?'<a class="btn pri big" href="'+P.last+'">Continue: '+SECS[lastId][0]+' →</a>':'<a class="btn pri big" href="part-a.html">Start with Part A →</a>';
     $('#journey').innerHTML=PARTS.map(p=>{const st=partStats(p),state=st.n===st.total?'complete':st.n?'started':'';
@@ -426,7 +416,7 @@ function initHome(){
     const got=Object.values(P.drill).filter(v=>v==='got').length;
     if(got)$('#drillStat').textContent=got+' question'+(got>1?'s':'')+' marked “Got it” so far';
   }
-  onPathChange.push(paint);onProgress.push(paint);paint();
+  onProgress.push(paint);paint();
 }
 /* ---------------- interview drill ---------------- */
 function initDrill(){
@@ -466,6 +456,5 @@ function initDrill(){
   const h=location.hash.slice(1);if(h&&document.getElementById(h))document.getElementById(h).scrollIntoView();
 }
 
-applyPath();
-[initSettings,initCode,...PAGE_INITS,initXrefs,initPart,initHome,initDrill,initSelects].forEach(f=>{try{f();}catch(e){console.error(f.name,e);}});
+[initSettings,initOptional,initCode,...PAGE_INITS,initXrefs,initPart,initHome,initDrill,initSelects].forEach(f=>{try{f();}catch(e){console.error(f.name,e);}});
 renderTex(document);

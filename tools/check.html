@@ -5,7 +5,7 @@
 </head>
 <body>
 <h1>Page checks</h1>
-<p>Loads every page at several widths, on both paths, with every part view shown, and reports:
+<p>Loads every page at several widths, with every part view shown and every collapsible box opened, and reports:
 maths that KaTeX did not render, symbols written as plain text, elements that stick out of their section,
 clipped text, and text boxes that need sideways scrolling (code, tables and display equations may scroll).
 Open this file in Chrome (started with <code>--allow-file-access-from-files</code>), or run it headless with <code>--dump-dom</code>;
@@ -15,9 +15,9 @@ the result appears below when the status line says “done”.</p>
 <script>
 'use strict';
 const PAGES=['index','part-a','part-b','part-c','part-d','interview','reference'];
-const RUNS=[[390,'quick'],[390,'full'],[600,'full'],[900,'full'],[1280,'quick'],[1280,'full']];
+const WIDTHS=[390,600,900,1280];
 const SYM=/(?:√|\b[dnTXEW]_(?:model|ff|vocab|src|tgt|enc|dec|pos|[kQKVOU])\b)/;
-const jobs=PAGES.flatMap(p=>RUNS.map(([w,path])=>({p,w,path})));
+const jobs=PAGES.flatMap(p=>WIDTHS.map(w=>({p,w})));
 const lines=[];let problems=0;
 const say=t=>{lines.push(t);out.textContent=lines.join('\n');};
 const label=e=>{const s=e.closest('section,header');return (s?(s.id||s.className):'page')+' > '+e.tagName.toLowerCase()+(typeof e.className==='string'&&e.className?'.'+e.className.trim().split(/\s+/).join('.'):'');};
@@ -26,7 +26,7 @@ function check(D,W,job){
   const shown=e=>e.getBoundingClientRect().width>0&&!e.closest('svg,.katex-mathml');
   const clipAnc=(e,stop)=>{for(let a=e.parentElement;a&&a!==stop;a=a.parentElement)if(cs(a).overflowX!=='visible')return a;return null;};
   if(D.documentElement.scrollWidth>D.documentElement.clientWidth)found.push('page scrolls sideways: '+D.documentElement.scrollWidth+'px in '+D.documentElement.clientWidth+'px');
-  if(job.w===1280&&job.path==='full'){   // width- and path-independent checks, once per page
+  if(job.w===1280){   // width-independent checks, once per page
     const tex=[...D.querySelectorAll('.tex')];
     tex.filter(e=>!e.querySelector('.katex')).slice(0,5).forEach(e=>found.push('unrendered maths: '+label(e)+' "'+e.textContent.slice(0,60)+'"'));
     D.querySelectorAll('.katex-error').forEach(e=>found.push('KaTeX error: '+label(e)+' "'+e.textContent.slice(0,60)+'"'));
@@ -47,15 +47,14 @@ function next(){
   if(!job){st.textContent='done: '+(problems?problems+' problem(s)':'no problems');return;}
   const f=document.createElement('iframe');f.style.width=job.w+'px';f.src='../'+job.p+'.html';document.body.appendChild(f);
   f.onload=()=>setTimeout(()=>{
-    const D=f.contentDocument,W=f.contentWindow,saved=W.eval("P.path");
-    W.setPath(job.path);
+    const D=f.contentDocument,W=f.contentWindow;
     D.querySelectorAll('#main>section').forEach(v=>{v.hidden=false;});   // part pages show one view at a time
+    D.querySelectorAll('details').forEach(d=>{d.open=true;});   // exact worked examples, maths notes and code boxes
     W.rerender();
     setTimeout(()=>{
       let found;try{found=check(D,W,job);}catch(e){found=['check failed: '+e];}
-      W.setPath(saved);
       problems+=found.length;
-      say(job.p+' at '+job.w+'px, '+job.path+': '+(found.length?found.length+' problem(s)':'ok'));
+      say(job.p+' at '+job.w+'px: '+(found.length?found.length+' problem(s)':'ok'));
       found.forEach(t=>say('  '+t));
       f.remove();next();
     },700);

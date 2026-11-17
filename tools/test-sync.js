@@ -11,7 +11,7 @@ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1;};
 const clone=x=>JSON.parse(JSON.stringify(x));
 // an old record (no times) migrates with time 1
 const old=progNorm({path:'quick',done:{tokens:true},quiz:{tokens:[0,1]},last:'part-b.html#tokens',drill:{'iv-core-1':'got'}});
-ok(old.ts.done.tokens===1&&old.ts.quiz.tokens===1&&old.ts.path===1&&old.ts.last===1,'old record gets time 1 on every item');
+ok(old.ts.done.tokens===1&&old.ts.quiz.tokens===1&&old.ts.last===1&&!('path' in old),'old record gets time 1 on every item, and its old path is dropped');
 // two browsers change different things: both survive
 let A=progNorm({}),B=progNorm({});let sa=clone(A),sb=clone(B);
 A.done.tokens=true;A.quiz.tokens=[0];progStamp(A,sa,100);
@@ -28,16 +28,16 @@ delete B.drill['iv-rag-3'];B.done.tokens=true;progStamp(B,sb,250);
 M=progMerge(A,B);
 ok(M.done.tokens===false,'newer change to the same section wins (un-marked at 300 beats 250)');
 ok(!('iv-rag-3' in M.drill)&&M.ts.drill['iv-rag-3']===250,'a deleted drill mark stays deleted (its time is kept)');
-// path and last place: newer wins
-A=clone(M);sa=clone(A);A.path='quick';A.last='part-c.html#flash';progStamp(A,sa,400);
-M=progMerge(M,A);ok(M.path==='quick'&&M.last==='part-c.html#flash','path and Continue place follow the newer copy');
-// reset on one browser clears older items from the other, keeps later ones and the path
-const R=clone(M);R.done={};R.quiz={};R.drill={};R.last=null;R.resetAt=500;R.ts={path:R.ts.path,last:0,done:{},quiz:{},drill:{}};
+// Continue place: newer wins
+A=clone(M);sa=clone(A);A.last='part-c.html#flash';progStamp(A,sa,400);
+M=progMerge(M,A);ok(M.last==='part-c.html#flash','the Continue place follows the newer copy');
+// reset on one browser clears older items from the other and keeps later ones
+const R=clone(M);R.done={};R.quiz={};R.drill={};R.last=null;R.resetAt=500;R.ts={last:0,done:{},quiz:{},drill:{}};
 B=clone(M);sb=clone(B);B.done.flash=true;B.quiz.flash=[1];progStamp(B,sb,600);
 M=progMerge(B,R);
 ok(!M.done.tokens&&!M.done.attention&&!M.quiz.tokens&&M.last===null,'a reset clears everything changed before it, on both copies');
 ok(M.done.flash===true&&JSON.stringify(M.quiz.flash)==='[1]','work done after the reset is kept');
-ok(M.path==='quick'&&M.resetAt===500,'the path survives a reset, and the reset time travels');
+ok(M.resetAt===500,'the reset time travels');
 // round trip through JSON (what the gist stores)
 ok(progSig(progNorm(JSON.parse(JSON.stringify(M))))===progSig(M),'a record survives the trip through the gist unchanged');
 if(!process.exitCode)console.log('all merge checks passed');

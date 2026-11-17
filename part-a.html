@@ -73,11 +73,11 @@
 <p class="sym"><span class="tex">T</span> is the number of tokens and <span class="tex">w_{\lt t}</span> means “all tokens before position <span class="tex">t</span>”.</p>
 <div class="worked">
   <h4>Worked example</h4>
-  <div class="x-only"><p>Three tokens with logits <span class="tex">z=[2.0,\;1.0,\;0.1]</span>.</p>
+  <p>Three candidate tokens get scores 2.0, 1.0 and 0.1. Softmax turns those into roughly 66%, 24% and 10%. The gaps between scores matter, not the scores themselves: adding 5 to every score changes nothing.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>Three tokens with logits <span class="tex">z=[2.0,\;1.0,\;0.1]</span>.</p>
   <p>Exponentiate: <span class="tex">e^{2.0}=7.3891,\; e^{1.0}=2.7183,\; e^{0.1}=1.1052</span>, which sum to <span class="tex">11.2125</span>.</p>
   <p>Divide each by the sum: <span class="tex">p=[0.6590,\;0.2424,\;0.0986]</span>. They add up to 1.</p>
-  <p>Check the “gap” rule: the first two logits differ by 1, and <span class="tex">0.6590/0.2424=2.72</span>.</p></div>
-  <p class="s-only">Three candidate tokens get scores 2.0, 1.0 and 0.1. Softmax turns those into roughly 66%, 24% and 10%. The gaps between scores matter, not the scores themselves: adding 5 to every score changes nothing.</p>
+  <p>Check the “gap” rule: the first two logits differ by 1, and <span class="tex">0.6590/0.2424=2.72</span>.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: softmax, then sampling</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -174,8 +174,8 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
 <p>The weights say how much each input matters, and in which direction. The bias shifts the point at which the neuron switches from low to high.</p>
 <div class="worked">
 <h4>Worked example: one neuron</h4>
-<p class="x-only">Inputs <span class="tex">x=[1,2]</span>, weights <span class="tex">w=[0.5,-1]</span>, bias <span class="tex">b=0.5</span>. The weighted sum is <span class="tex">1\times0.5+2\times(-1)+0.5=-1</span>, and the output is <span class="tex">\tanh(-1)=-0.762</span>. Raise the second weight from −1 to 0 and the sum becomes 1, so the output flips to 0.762.</p>
-<p class="s-only">With inputs 1 and 2, weights 0.5 and −1 and a bias of 0.5, the neuron adds up to −1 and outputs about −0.76. Change one weight and the output can flip to +0.76. Learning means finding good weights.</p>
+<p>With inputs 1 and 2, weights 0.5 and −1 and a bias of 0.5, the neuron adds up to −1 and outputs about −0.76. Change one weight and the output can flip to +0.76. Learning means finding good weights.</p>
+<details class="exact"><summary>Work through the exact numbers</summary><p>Inputs <span class="tex">x=[1,2]</span>, weights <span class="tex">w=[0.5,-1]</span>, bias <span class="tex">b=0.5</span>. The weighted sum is <span class="tex">1\times0.5+2\times(-1)+0.5=-1</span>, and the output is <span class="tex">\tanh(-1)=-0.762</span>. Raise the second weight from −1 to 0 and the sum becomes 1, so the output flips to 0.762.</p></details>
 </div>
 
 <h3>Layers, and why depth helps</h3>
@@ -281,11 +281,11 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
 <div class="worked">
   <h4>Worked example: a generator that learns by counting</h4>
   <p>Train on three names: <b>ana</b>, <b>anna</b> and <b>nina</b>. The “model” looks at one letter of context and counts which letter came next. A dot marks the start and the end of a name.</p>
-  <div class="x-only"><p>After the start: <b>a</b> twice, <b>n</b> once, so <span class="tex">p(\text{a}\mid\text{start})=2/3</span>. After <b>a</b>: the end three times, <b>n</b> twice, so <span class="tex">p(\text{end}\mid\text{a})=3/5</span> and <span class="tex">p(\text{n}\mid\text{a})=2/5</span>. After <b>n</b>: <b>a</b> three times, <b>n</b> once, <b>i</b> once, so <span class="tex">p(\text{a}\mid\text{n})=3/5</span>.</p>
+  <p>After <b>a</b>, the names end three times and continue with <b>n</b> twice, so the model ends a name after <b>a</b> with probability 3/5. Multiplying the step probabilities gives about a 10% chance of generating “ana”, and about 3% for “nana”, a name it never saw: each of its steps was seen, just not in that order.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>After the start: <b>a</b> twice, <b>n</b> once, so <span class="tex">p(\text{a}\mid\text{start})=2/3</span>. After <b>a</b>: the end three times, <b>n</b> twice, so <span class="tex">p(\text{end}\mid\text{a})=3/5</span> and <span class="tex">p(\text{n}\mid\text{a})=2/5</span>. After <b>n</b>: <b>a</b> three times, <b>n</b> once, <b>i</b> once, so <span class="tex">p(\text{a}\mid\text{n})=3/5</span>.</p>
   <p>The chain rule gives the probability of generating “ana”: <span class="tex">\tfrac23\times\tfrac25\times\tfrac35\times\tfrac35=0.096</span>.</p>
   <p>And of “nana”, which is not in the training list: <span class="tex">\tfrac13\times\tfrac35\times\tfrac25\times\tfrac35\times\tfrac35=0.0288</span>. The model has never seen it, but every step in it is one it has seen.</p>
-  <p>“an” is impossible: no training name ends in <b>n</b>, so <span class="tex">p(\text{end}\mid\text{n})=0</span>.</p></div>
-  <p class="s-only">After <b>a</b>, the names end three times and continue with <b>n</b> twice, so the model ends a name after <b>a</b> with probability 3/5. Multiplying the step probabilities gives about a 10% chance of generating “ana”, and about 3% for “nana”, a name it never saw: each of its steps was seen, just not in that order.</p>
+  <p>“an” is impossible: no training name ends in <b>n</b>, so <span class="tex">p(\text{end}\mid\text{n})=0</span>.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: a name generator that learns by counting</summary>
 <div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>

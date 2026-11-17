@@ -93,7 +93,7 @@ function renderTok(){
   const t=toks[s2.sel],V=TOK.vocab.length;
   $('#tk-detail').innerHTML='<span class="lab">Token → ID</span><code>'+esc(t.t)+'</code> is entry <b>'+t.id+'</b> of '+V+' in the vocabulary.'+
     '<span class="lab">One-hot vector (length '+V+')</span><div class="onehot" role="img" aria-label="One-hot vector with a single 1 at index '+t.id+'">'+TOK.vocab.map((_,i)=>'<i'+(i===t.id?' class="on"':'')+'></i>').join('')+'</div><small>'+V+' numbers: a single 1 at index '+t.id+', and 0 everywhere else.</small>'+
-    '<span class="lab">Embedding vector x = E['+t.id+'] ('+sym('d_model')+' = 4)</span>'+vec(TOK.E[t.id],'',2,1.5)+(state.exact?'':' <small>four numbers that training would tune</small>');
+    '<span class="lab">Embedding vector x = E['+t.id+'] ('+sym('d_model')+' = 4)</span>'+vec(TOK.E[t.id],'',2,1.5)+' <small>four numbers that training would tune</small>';
   renderScatter();
 }
 const SHAPES={
@@ -169,7 +169,7 @@ function renderPE(){
 }
 const ORDS={A:['dog','bites','man'],B:['man','bites','dog']};
 function renderOrder(){
-  const on=$('#or-pe').checked,n=state.exact?4:2;
+  const on=$('#or-pe').checked,n=4;
   const vecOf=(w,p)=>ORD[w].map((x,i)=>x+(on?pe(p,i,4):0));
   const block=(name,words)=>'<div><span class="lab">'+name+'</span>'+words.map((w,p)=>'<div style="margin:4px 0"><code>'+w+'</code> <small>slot '+p+'</small><br>'+vec(vecOf(w,p),w==='dog'?'ctx':'',n,2)+'</div>').join('')+'</div>';
   const a=vecOf('dog',0),b=vecOf('dog',2),same=a.every((v,i)=>Math.abs(v-b[i])<1e-12);
@@ -192,7 +192,7 @@ function attnCalc(i){
   return {den:den,dots:dots,scaled:scaled,exps:exps,w:w,ctx:[0,1,2,3].map(c=>w.reduce((s,a,j)=>s+a*AT.V[j][c],0))};
 }
 function renderAttn(){
-  const i=s4.q,c=attnCalc(i),st=s4.step,X=state.exact,tok=AT.tok[i];
+  const i=s4.q,c=attnCalc(i),st=s4.step,tok=AT.tok[i];
   $('#at-toks').innerHTML=AT.tok.map((t,j)=>'<button class="chip'+(j===i?' on':'')+'" data-i="'+j+'" aria-pressed="'+(j===i)+'">'+t+'</button>').join('');
   $('#at-steps').innerHTML=AT_STEP.map((t,k)=>'<li><button data-s="'+k+'" class="'+(k===st?'on':k<st?'done':'')+'"'+(k===st?' aria-current="step"':'')+'>'+(k+1)+'. '+t+'</button></li>').join('');
   $('#at-play').textContent=s4.timer?'⏸ Pause':'▶ Play';
@@ -204,13 +204,13 @@ function renderAttn(){
     '<b>Step 5 · Weighted sum.</b> Multiply each value vector by its weight and add them up. The result is the context vector for “'+tok+'”.'][st];
   $('#at-q').innerHTML='<span class="lab">Query for “'+tok+'”</span><b class="tq">q</b> = '+vec(AT.Q[i],'q',1,2);
   const cell=(k,h)=>'<td class="'+(st<k?'hid':st===k?'cur':'')+'">'+h+'</td>',hd=(k,h)=>'<th class="'+(st<k?'hid':'')+'">'+h+'</th>';
-  let h='<thead><tr><th>Token j</th><th><span class="tk">Key k<sub>j</sub></span></th>'+hd(1,'q · k<sub>j</sub>')+hd(2,'÷ '+fmt(c.den,2))+(X?hd(3,'exp'):'')+hd(3,'Weight α<sub>j</sub>')+'<th><span class="tv">Value v<sub>j</sub></span></th></tr></thead><tbody>';
+  let h='<thead><tr><th>Token j</th><th><span class="tk">Key k<sub>j</sub></span></th>'+hd(1,'q · k<sub>j</sub>')+hd(2,'÷ '+fmt(c.den,2))+hd(3,'exp')+hd(3,'Weight α<sub>j</sub>')+'<th><span class="tv">Value v<sub>j</sub></span></th></tr></thead><tbody>';
   AT.tok.forEach((t,j)=>{const mk=s4.mask&&j>i,ex=AT.Q[i].map((a,x)=>a+'·'+AT.K[j][x]).join(' + ').replace(/-/g,'−');
-    h+='<tr class="'+(mk&&st>=2?'mk':'')+'"><th scope="row">'+t+(mk?' <small>(future)</small>':'')+'</th><td>'+vec(AT.K[j],'k',1,2)+'</td>'+cell(1,'<b>'+fmt(c.dots[j],0)+'</b>'+(X?'<small class="ex">'+ex+'</small>':''))+cell(2,fmt(c.scaled[j]))+(X?cell(3,fmt(c.exps[j])):'')+cell(3,'<b>'+fmt(c.w[j])+'</b>')+'<td>'+vec(AT.V[j],'v',1,2)+'</td></tr>';});
-  if(X)h+='<tr><th scope="row">Σ</th><td></td>'+cell(9,'')+cell(9,'')+cell(3,fmt(c.exps.reduce((a,b)=>a+b,0)))+cell(3,fmt(c.w.reduce((a,b)=>a+b,0)))+'<td></td></tr>';
+    h+='<tr class="'+(mk&&st>=2?'mk':'')+'"><th scope="row">'+t+(mk?' <small>(future)</small>':'')+'</th><td>'+vec(AT.K[j],'k',1,2)+'</td>'+cell(1,'<b>'+fmt(c.dots[j],0)+'</b>'+'<small class="ex">'+ex+'</small>')+cell(2,fmt(c.scaled[j]))+cell(3,fmt(c.exps[j]))+cell(3,'<b>'+fmt(c.w[j])+'</b>')+'<td>'+vec(AT.V[j],'v',1,2)+'</td></tr>';});
+  h+='<tr><th scope="row">Σ</th><td></td>'+cell(9,'')+cell(9,'')+cell(3,fmt(c.exps.reduce((a,b)=>a+b,0)))+cell(3,fmt(c.w.reduce((a,b)=>a+b,0)))+'<td></td></tr>';
   $('#at-table').innerHTML=h+'</tbody>';
   $('#at-soft').innerHTML=st>=3?'<span class="lab">Softmax distribution: how much “'+tok+'” attends to each token</span>'+bars(AT.tok.map((t,j)=>({label:t,p:c.w[j],tip:'α = '+c.w[j].toFixed(6)})),1):'';
-  $('#at-ctx').innerHTML=st>=4?'<span class="lab">Context vector c = Σ α<sub>j</sub> v<sub>j</sub></span>'+vec(c.ctx,'ctx',null,2)+(X?'<div class="readout">'+[0,1,2,3].map(d=>'c<sub>'+d+'</sub> = '+AT.tok.map((t,j)=>fmt(c.w[j])+'·'+AT.V[j][d]).join(' + ')+' = <b>'+fmt(c.ctx[d])+'</b>').join('<br>')+'</div>':'<p><small>Each number is a blend of the green value columns above, weighted by the bars.</small></p>'):'';
+  $('#at-ctx').innerHTML=st>=4?'<span class="lab">Context vector c = Σ α<sub>j</sub> v<sub>j</sub></span>'+vec(c.ctx,'ctx',null,2)+'<div class="readout">'+[0,1,2,3].map(d=>'c<sub>'+d+'</sub> = '+AT.tok.map((t,j)=>fmt(c.w[j])+'·'+AT.V[j][d]).join(' + ')+' = <b>'+fmt(c.ctx[d])+'</b>').join('<br>')+'</div>':'';
   renderMat();
 }
 function renderMat(){
@@ -279,7 +279,7 @@ function renderLN(){
   const x=s6.ln.map(v=>v*s6.scale+s6.shift),n=x.length,mu=x.reduce((a,b)=>a+b,0)/n,sd=Math.sqrt(x.reduce((a,b)=>a+(b-mu)*(b-mu),0)/n+1e-5),y=x.map(v=>(v-mu)/sd);
   signedBars($('#ln-before'),x,Math.max(1,Math.max.apply(null,x.map(Math.abs))));signedBars($('#ln-after'),y,2.6);
   const mu2=y.reduce((a,b)=>a+b,0)/n,sd2=Math.sqrt(y.reduce((a,b)=>a+(b-mu2)*(b-mu2),0)/n);
-  $('#ln-read').innerHTML='before: mean μ = '+fmt(mu,state.exact?4:2)+', std σ = '+fmt(sd,state.exact?4:2)+'<br>after:&nbsp; mean = '+fmt(mu2,state.exact?4:2)+', std = '+fmt(sd2,state.exact?4:2);
+  $('#ln-read').innerHTML='before: mean μ = '+fmt(mu)+', std σ = '+fmt(sd)+'<br>after:&nbsp; mean = '+fmt(mu2)+', std = '+fmt(sd2);
 }
 function renderBlock(){
   $('#bl-svg').classList.toggle('no-res',!s6.res);$('#bl-svg').classList.toggle('no-norm',!s6.norm);

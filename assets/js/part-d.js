@@ -6,7 +6,7 @@ const XA={src:['le','chat','noir','dort'],din:['<s>','the','black','cat'],out:['
 const sx={q:1,view:'ed'};
 function xCalc(i){const dots=XA.K.map(k=>dot(XA.Q[i],k)),scaled=dots.map(s=>s/2),exps=scaled.map(Math.exp),w=softmax(scaled);return {dots:dots,scaled:scaled,exps:exps,w:w,ctx:[0,1,2,3].map(c=>w.reduce((s,a,j)=>s+a*XA.V[j][c],0))};}
 function renderCross(){
-  const i=sx.q,c=xCalc(i),X=state.exact,best=c.w.indexOf(Math.max.apply(null,c.w));
+  const i=sx.q,c=xCalc(i),best=c.w.indexOf(Math.max.apply(null,c.w));
   $('#xa-toks').innerHTML=XA.out.map((t,j)=>'<button class="chip'+(j===i?' on':'')+'" data-i="'+j+'" aria-pressed="'+(j===i)+'">predict “'+t+'”</button>').join('');
   $('#xa-cap').innerHTML='The decoder has read “'+XA.din.slice(0,i+1).map(esc).join(' ')+'” and is predicting <b>“'+XA.out[i]+'”</b>. Its <b class="tq">query</b> is compared with the <b class="tk">keys</b> of all four source tokens; the strongest match is <b>“'+XA.src[best]+'”</b> at '+Math.round(c.w[best]*100)+'%.';
   const svg=$('#xa-svg'),W=Math.max(250,Math.round(svg.getBoundingClientRect().width)||600),H=214,bw=Math.min(110,W/4-10),cx=k=>(k+0.5)*W/4;
@@ -17,14 +17,14 @@ function renderCross(){
   XA.out.forEach((t,j)=>{s+='<g class="tg'+(j===i?' on':'')+'" tabindex="0" role="button" aria-label="Decoder step '+(j+1)+': predict '+t+'" data-i="'+j+'"><rect x="'+(cx(j)-bw/2)+'" y="150" width="'+bw+'" height="44" rx="8"/><text x="'+cx(j)+'" y="168" text-anchor="middle">'+esc(XA.din[j])+'</text><text class="ax" x="'+cx(j)+'" y="186" text-anchor="middle">→ '+t+'</text></g>';});
   svg.innerHTML=s;
   $('#xa-q').innerHTML='<span class="lab">Decoder query at this step</span><b class="tq">q</b> = '+vec(XA.Q[i],'q',1,2);
-  let h='<thead><tr><th>Source token j</th><th><span class="tk">Key k<sub>j</sub></span></th><th>q · k<sub>j</sub></th><th>÷ 2.00</th>'+(X?'<th>exp</th>':'')+'<th>Weight α<sub>j</sub></th><th><span class="tv">Value v<sub>j</sub></span></th></tr></thead><tbody>';
+  let h='<thead><tr><th>Source token j</th><th><span class="tk">Key k<sub>j</sub></span></th><th>q · k<sub>j</sub></th><th>÷ 2.00</th>'+'<th>exp</th>'+'<th>Weight α<sub>j</sub></th><th><span class="tv">Value v<sub>j</sub></span></th></tr></thead><tbody>';
   XA.src.forEach((t,j)=>{const ex=XA.Q[i].map((a,x)=>a+'·'+XA.K[j][x]).join(' + ');
-    h+='<tr><th scope="row">'+t+'</th><td>'+vec(XA.K[j],'k',1,2)+'</td><td><b>'+fmt(c.dots[j],0)+'</b>'+(X?'<small class="ex">'+ex+'</small>':'')+'</td><td>'+fmt(c.scaled[j])+'</td>'+(X?'<td>'+fmt(c.exps[j])+'</td>':'')+'<td'+(j===best?' class="cur"':'')+'><b>'+fmt(c.w[j])+'</b></td><td>'+vec(XA.V[j],'v',1,2)+'</td></tr>';});
-  if(X)h+='<tr><th scope="row">Σ</th><td></td><td></td><td></td><td>'+fmt(c.exps.reduce((a,b)=>a+b,0))+'</td><td>'+fmt(c.w.reduce((a,b)=>a+b,0))+'</td><td></td></tr>';
+    h+='<tr><th scope="row">'+t+'</th><td>'+vec(XA.K[j],'k',1,2)+'</td><td><b>'+fmt(c.dots[j],0)+'</b>'+'<small class="ex">'+ex+'</small>'+'</td><td>'+fmt(c.scaled[j])+'</td>'+'<td>'+fmt(c.exps[j])+'</td>'+'<td'+(j===best?' class="cur"':'')+'><b>'+fmt(c.w[j])+'</b></td><td>'+vec(XA.V[j],'v',1,2)+'</td></tr>';});
+  h+='<tr><th scope="row">Σ</th><td></td><td></td><td></td><td>'+fmt(c.exps.reduce((a,b)=>a+b,0))+'</td><td>'+fmt(c.w.reduce((a,b)=>a+b,0))+'</td><td></td></tr>';
   $('#xa-table').innerHTML=h+'</tbody>';
   $('#xa-soft').innerHTML=bars(XA.src.map((t,j)=>({label:t,p:c.w[j],cls:j===best?'hit':'',tip:'α = '+c.w[j].toFixed(6)})),1);
   $('#xa-mat').innerHTML=heat(XA.out.map((_,k)=>xCalc(k).w),XA.out.map(t=>'→ '+t),XA.src,{click:true,sel:i,tip:(a,b,v)=>'decoder step <b>→ '+XA.out[a]+'</b> attends to source <b>'+XA.src[b]+'</b><br>weight '+v.toFixed(6)});
-  $('#xa-ctx').innerHTML='<span class="lab">Context vector handed to the decoder: c = Σ α<sub>j</sub> v<sub>j</sub></span>'+vec(c.ctx,'ctx',null,2)+(X?'<div class="readout">'+[0,1,2,3].map(d=>'c<sub>'+d+'</sub> = '+XA.src.map((t,j)=>fmt(c.w[j])+'·'+String(XA.V[j][d]).replace('-','−')).join(' + ')+' = <b>'+fmt(c.ctx[d])+'</b>').join('<br>')+'</div>':'<p><small>A blend of the encoder’s value vectors, dominated by “'+XA.src[best]+'”. It is added to this decoder position’s residual stream.</small></p>');
+  $('#xa-ctx').innerHTML='<span class="lab">Context vector handed to the decoder: c = Σ α<sub>j</sub> v<sub>j</sub></span>'+vec(c.ctx,'ctx',null,2)+'<div class="readout">'+[0,1,2,3].map(d=>'c<sub>'+d+'</sub> = '+XA.src.map((t,j)=>fmt(c.w[j])+'·'+String(XA.V[j][d]).replace('-','−')).join(' + ')+' = <b>'+fmt(c.ctx[d])+'</b>').join('<br>')+'</div>';
 }
 function typeGrid(rows,cols,fn){
   return '<div class="hm maskg'+(cols.length>5?' compact':'')+'" style="grid-template-columns:auto repeat('+cols.length+',minmax(0,1fr))"><span></span>'+cols.map(t=>'<span class="hh">'+esc(t.length>4&&cols.length>5?t.slice(0,3):t)+'</span>').join('')+rows.map((t,i)=>'<span class="hr">'+esc(t)+'</span>'+cols.map((u,j)=>{const k=fn(i,j);return '<span class="hc'+(k?'':' masked')+'" data-tip="'+esc('<b>'+esc(t)+'</b> → <b>'+esc(u)+'</b><br>'+({S:'source reads source',X:'target reads source',T:'target reads earlier target'}[k]||'blocked: −∞ added before softmax'))+'">'+(k||'−∞')+'</span>';}).join('')).join('')+'</div>';
@@ -59,7 +59,7 @@ function renderLR(){
   const peak=lrate(sp.d,sp.w,sp.w),top=peak*1.15,cur=lrate(sp.d,sp.w,sp.s),e4=v=>(v*1e4).toFixed(v*1e4<10?2:1);
   lineChart($('#lr-chart'),[{pts:xs.map(s=>[s,lrate(sp.d,sp.w,s)]),cls:'a'}],{x0:0,x1:S,y0:0,y1:top,h:250,ml:52,xt:[0,25000,50000,75000,100000],xf:v=>v?v/1000+'k':'0',yt:[0,top/3,2*top/3,top],yf:e4,xl:'training step',yl:'learning rate (×10⁻⁴)',dots:[[sp.s,cur,'step '+sp.s.toLocaleString('en-US')]]});
   const a=Math.pow(sp.s,-0.5),b=sp.s*Math.pow(sp.w,-1.5);
-  $('#lr-read').innerHTML='Step '+sp.s.toLocaleString('en-US')+': learning rate = <b>'+sci3(cur)+'</b> ('+(sp.s<sp.w?'warm-up, rising linearly':sp.s===sp.w?'the peak':'decay, falling as step⁻⁰·⁵')+')'+(state.exact?'<br>'+sp.d+'⁻⁰·⁵ × min('+sci3(a)+', '+sci3(b)+') = '+fmt(Math.pow(sp.d,-0.5),6)+' × '+sci3(Math.min(a,b)):'')+'<br>Peak at step '+sp.w.toLocaleString('en-US')+': '+sci3(peak)+' = ('+sp.d+' × '+sp.w+')⁻⁰·⁵';
+  $('#lr-read').innerHTML='Step '+sp.s.toLocaleString('en-US')+': learning rate = <b>'+sci3(cur)+'</b> ('+(sp.s<sp.w?'warm-up, rising linearly':sp.s===sp.w?'the peak':'decay, falling as step⁻⁰·⁵')+')'+'<br>'+sp.d+'⁻⁰·⁵ × min('+sci3(a)+', '+sci3(b)+') = '+fmt(Math.pow(sp.d,-0.5),6)+' × '+sci3(Math.min(a,b))+'<br>Peak at step '+sp.w.toLocaleString('en-US')+': '+sci3(peak)+' = ('+sp.d+' × '+sp.w+')⁻⁰·⁵';
 }
 function initLR(){
   slider('lr-d',v=>Math.pow(2,v),v=>{sp.d=Math.pow(2,v);renderLR();});

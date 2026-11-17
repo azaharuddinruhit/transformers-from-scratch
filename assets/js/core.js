@@ -2,14 +2,13 @@
 /* Shared by every page: DOM helpers, the render registry, number formatting, maths rendering, colour,
    shared chart components, tooltips, the Python highlighter and the themed dropdowns. */
 const $=(s,r)=>(r||document).querySelector(s),$$=(s,r)=>Array.from((r||document).querySelectorAll(s));
-const state={exact:true};
 const widgets=[];
 function reg(fn){widgets.push(fn);try{fn();}catch(e){console.error(e);}}
 /* widget init functions this page runs, in order (each part's file adds its own) */
 const PAGE_INITS=[];
 function rerender(){widgets.forEach(f=>{try{f();}catch(e){console.error(e);}});}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function fmt(x,n){if(x===-Infinity)return '−∞';if(!isFinite(x))return '∞';if(n==null)n=state.exact?4:2;let s=x.toFixed(n);if(parseFloat(s)===0)s=(0).toFixed(n);return s.replace('-','−');}
+function fmt(x,n){if(x===-Infinity)return '−∞';if(!isFinite(x))return '∞';if(n==null)n=4;let s=x.toFixed(n);if(parseFloat(s)===0)s=(0).toFixed(n);return s.replace('-','−');}
 function big(n){const a=Math.abs(n);if(a>=1e12)return (n/1e12).toFixed(2)+' T';if(a>=1e9)return (n/1e9).toFixed(2)+' B';if(a>=1e6)return (n/1e6).toFixed(2)+' M';if(a>=1e3)return (n/1e3).toFixed(1)+' K';return String(Math.round(n));}
 function bytes(b){if(b>=1e12)return (b/1e12).toFixed(2)+' TB';if(b>=1e9)return (b/1e9).toFixed(2)+' GB';if(b>=1e6)return (b/1e6).toFixed(1)+' MB';if(b>=1e3)return (b/1e3).toFixed(1)+' KB';return Math.round(b)+' B';}
 const SUP={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};

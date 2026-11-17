@@ -19,18 +19,18 @@ Each section in Parts A to D shows its level (Foundation, Core or Deep dive) and
 
 ## Where to start
 
-- New to the maths, or finding it a lot? Read **The maths you need** on the Reference page first, choose the **Quick tour**, and skip the sections marked **Deep dive** on a first pass.
+- New to the maths, or finding it a lot? Read **The maths you need** on the Reference page first, skip the parts marked **Optional** and the sections marked **Deep dive** on a first pass.
 - Want the core idea quickly? Part A, then tokens, attention and the Transformer block in Part B, then training, generation and inference in Part C.
 - Preparing for interviews? Work through the parts, then use the interview drill.
 
 ## Highlights
 
-- Two paths: **Full depth** (about 5 h 45 min) and **Quick tour** (about 4 h 40 min, simplified worked examples, optional material hidden). You can switch at any time.
+- One path: about 4 h 40 min of core material, plus about 1 h 5 min marked **Optional**. Each worked example starts simple; "Work through the exact numbers" opens the full calculation.
 - A tiny neural network and a tiny Transformer (about 9,600 parameters) that both train in your browser, plus a generation playground with temperature, top-k and top-p.
 - Step-by-step attention, KV-cache, GPU-memory, parameter-count and inference-cost calculators, plus interactives for the chat template, preference tuning, rotary positions and grouped-query attention.
 - "In Python" boxes with runnable NumPy and PyTorch code and its real output, collapsed by default.
 - The interview drill hides each answer behind "Show answer"; mark questions "Got it" or "Review again" and filter by topic or status.
-- Progress (sections done, quiz answers, drill marks, where you left off) is saved in your browser. Optionally, Settings → Sync with GitHub keeps it in a secret gist so it follows you between browsers: paste a GitHub token with the `gist` scope once per browser (it stays in that browser), and the copies merge item by item. Settings also has a progress reset, the path, a Light or Dark theme (the system setting is used until you choose), and whether code boxes start expanded.
+- Progress (sections done, quiz answers, drill marks, where you left off) is saved in your browser. Optionally, Settings → Sync with GitHub keeps it in a secret gist so it follows you between browsers: paste a GitHub token with the `gist` scope once per browser (it stays in that browser), and the copies merge item by item. Settings also has a Light or Dark theme (the system setting is used until you choose) and a progress reset.
 - On phones, a floating bar with previous and next buttons, the current section and a progress line; tapping it opens the contents as a bottom sheet.
 - "The maths you need": a 25-minute refresher on vectors, matrices and tensors, logs, softmax and sigmoid, conditional probability, variance, sine and cosine, gradients and the chain rule, each with one example to check by hand.
 - A six-session plan on the home page for teaching the material to a team.
@@ -55,7 +55,7 @@ To serve it the way GitHub Pages does, run `python -m http.server 8000` and open
 - `python tools/snippets.py --check`: every snippet still prints the output shown on the page (needs NumPy and PyTorch). Run it without `--check` to refresh the boxes after editing a snippet.
 - `node tools/test-model.js`: the toy model still trains to a validation loss of about 0.31.
 - `node tools/test-sync.js`: the progress merge rules for gist sync still hold.
-- `tools/check.html`: open in Chrome started with `--allow-file-access-from-files`. It loads every page at phone, tablet and desktop widths on both paths and reports overflow, clipped text and unrendered maths. It should end with "done: no problems".
+- `tools/check.html`: open in Chrome started with `--allow-file-access-from-files`. It loads every page at phone, tablet and desktop widths and reports overflow, clipped text and unrendered maths. It should end with "done: no problems".
 
 ## Deployment
 

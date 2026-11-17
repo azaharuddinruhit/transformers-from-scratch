@@ -78,11 +78,11 @@
 <details class="why"><summary>Why the minus sign?</summary><div class="whyb">The gradient points in the direction in which the loss increases fastest, so we step the opposite way. <span class="tex">\eta</span> controls how far: too small and training crawls, too large and each step overshoots. It usually warms up from zero, then decays. In practice the <b>optimizer</b> (Adam or AdamW) replaces the raw gradient with a running average that gives each parameter a step size suited to it. <b>One elegant fact:</b> for softmax with this loss, the gradient with respect to each logit is simply “predicted probability minus 1 for the correct token, predicted probability for every other”. The model is pushed in proportion to how wrong it was.</div></details>
 <div class="worked">
   <h4>Worked example</h4>
-  <div class="x-only"><p>Suppose the model gave the three correct next tokens probabilities <span class="tex">0.5,\ 0.25,\ 0.9</span>.</p>
+  <p>Loss measures surprise. A confident correct guess costs almost nothing, an unsure guess costs a little, and a confident wrong guess costs a lot. Training rolls downhill on that number in small steps.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>Suppose the model gave the three correct next tokens probabilities <span class="tex">0.5,\ 0.25,\ 0.9</span>.</p>
   <p>Per-token losses: <span class="tex">-\ln0.5=0.6931,\ \ -\ln0.25=1.3863,\ \ -\ln0.9=0.1054</span>. Mean loss <span class="tex">\mathcal{L}=2.1848/3=0.7283</span>.</p>
   <p>One gradient-descent step on a single weight: <span class="tex">\theta=2.0</span>, gradient <span class="tex">0.5</span>, learning rate <span class="tex">\eta=0.1</span> gives <span class="tex">\theta\leftarrow2.0-0.1\times0.5=1.95</span>.</p>
-  <p>The uniform baseline for the 21-character model below is <span class="tex">\ln 21=3.0445</span>.</p></div>
-  <p class="s-only">Loss measures surprise. A confident correct guess costs almost nothing, an unsure guess costs a little, and a confident wrong guess costs a lot. Training rolls downhill on that number in small steps.</p>
+  <p>The uniform baseline for the 21-character model below is <span class="tex">\ln 21=3.0445</span>.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: teacher forcing, cross-entropy and its gradient</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -257,8 +257,8 @@ print("sample:", "".join(chars[i] for i in idx[0]))
 <p><b>Serving changes the sum.</b> Generating one token costs about <span class="tex">2N</span> operations, paid on every request for as long as the model is in use. So many released models are smaller than that ratio suggests, and are trained on far more text: a smaller model is cheaper to run.</p>
 <div class="worked">
   <h4>Worked example: compute and tokens per parameter</h4>
-  <p class="x-only">A model with <span class="tex">N=10^{9}</span> parameters trained on <span class="tex">D=2\times10^{10}</span> tokens needs about <span class="tex">6\times10^{9}\times2\times10^{10}=1.2\times10^{20}</span> FLOPs. That is <span class="tex">D/N=20</span> tokens per parameter, close to the compute-optimal ratio of about 20 found by Hoffmann et al. (2022). Llama 3 8B was trained on over <span class="tex">15\times10^{12}</span> tokens: about 1,900 per parameter, far past that point, because it was built to be cheap to run.</p>
-  <p class="s-only">A 1-billion-parameter model reading 20 billion tokens costs on the order of a hundred billion billion arithmetic operations to train. That is 20 tokens per parameter, about the compute-optimal ratio. Models built to be cheap to run are trained on far more: Llama 3 8B saw about 1,900 tokens per parameter.</p>
+  <p>A 1-billion-parameter model reading 20 billion tokens costs on the order of a hundred billion billion arithmetic operations to train. That is 20 tokens per parameter, about the compute-optimal ratio. Models built to be cheap to run are trained on far more: Llama 3 8B saw about 1,900 tokens per parameter.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>A model with <span class="tex">N=10^{9}</span> parameters trained on <span class="tex">D=2\times10^{10}</span> tokens needs about <span class="tex">6\times10^{9}\times2\times10^{10}=1.2\times10^{20}</span> FLOPs. That is <span class="tex">D/N=20</span> tokens per parameter, close to the compute-optimal ratio of about 20 found by Hoffmann et al. (2022). Llama 3 8B was trained on over <span class="tex">15\times10^{12}</span> tokens: about 1,900 per parameter, far past that point, because it was built to be cheap to run.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: training compute and tokens per parameter</summary>
 <div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -418,15 +418,15 @@ print(f"{len(tokens)} tokens, loss on {sum(trained)}:",
 <p class="sym"><span class="tex">y</span> is one whole answer. <span class="tex">\pi_{\text{ref}}</span> is the model before preference tuning (after fine-tuning), and <span class="tex">\pi^{*}</span> is the tuned model. <span class="tex">\lambda</span> is the strength of the pull back. <span class="tex">Z</span> rescales the probabilities so they add up to 1. A large <span class="tex">\lambda</span> barely moves the model; a small one hands almost everything to the highest-scoring answer.</p>
 <div class="worked">
 <h4>Worked example</h4>
-<div class="x-only"><p>Take the three answers from the story: A “The mat.”, B the long, flattering answer, and C “The sofa.”, which is wrong.</p>
+<p>Three answers: a short right one, a long flattering one and a wrong one, with probabilities 0.5, 0.3 and 0.2 before tuning. A careful reward model scores them 2, 1 and −2. After tuning with a moderate pull back to the original, the short right answer rises to about 0.81 and the wrong one falls to under 0.01.</p>
+<details class="exact"><summary>Work through the exact numbers</summary><p>Take the three answers from the story: A “The mat.”, B the long, flattering answer, and C “The sofa.”, which is wrong.</p>
 <ol>
 <li>Before tuning, the fine-tuned model gives them <span class="tex">\pi_{\text{ref}}=[0.5,\ 0.3,\ 0.2]</span>.</li>
 <li>A careful reward model scores them <span class="tex">[2,\ 1,\ -2]</span>.</li>
 <li>With <span class="tex">\lambda=1</span>, multiply each probability by <span class="tex">e^{\text{reward}}</span>: <span class="tex">0.5e^{2}=3.69</span>, <span class="tex">0.3e^{1}=0.82</span> and <span class="tex">0.2e^{-2}=0.027</span>.</li>
 <li>Divide by their sum, 4.54: <span class="tex">\pi^{*}=[0.814,\ 0.180,\ 0.006]</span>. The wrong answer almost disappears.</li>
 <li>The model has moved a KL distance of 0.284 nats from where it started. With <span class="tex">\lambda=4</span> it moves less, to <span class="tex">[0.619,\ 0.289,\ 0.091]</span>, a distance of 0.051.</li>
-</ol></div>
-<div class="s-only"><p>Three answers: a short right one, a long flattering one and a wrong one, with probabilities 0.5, 0.3 and 0.2 before tuning. A careful reward model scores them 2, 1 and −2. After tuning with a moderate pull back to the original, the short right answer rises to about 0.81 and the wrong one falls to under 0.01.</p></div>
+</ol></details>
 </div>
 <div class="widget" id="w-pref">
   <h4 class="wt">Interactive · preference tuning on three answers</h4>
@@ -548,11 +548,11 @@ for n in (1, 5, 9):
 <p class="sym">For top-k, <span class="tex">S</span> is the <span class="tex">k</span> most probable tokens. For top-p, <span class="tex">S</span> is the smallest set of most-probable tokens whose probabilities total at least <span class="tex">p</span>.</p>
 <div class="worked">
   <h4>Worked example</h4>
-  <div class="x-only"><p>Logits <span class="tex">z=[2.0,\ 1.0,\ 0.1]</span> again.</p>
+  <p>With scores 2.0, 1.0 and 0.1, the top token wins 66% of the time at temperature 1, 86% at temperature 0.5 and only 50% at temperature 2. Top-k and top-p then cut off the unlikely tail so that a rare unlucky draw cannot derail the text.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>Logits <span class="tex">z=[2.0,\ 1.0,\ 0.1]</span> again.</p>
   <p><span class="tex">\tau=1</span>: <span class="tex">[0.6590,\ 0.2424,\ 0.0986]</span>. &nbsp; <span class="tex">\tau=0.5</span>: <span class="tex">[0.8638,\ 0.1169,\ 0.0193]</span>. &nbsp; <span class="tex">\tau=2</span>: <span class="tex">[0.5017,\ 0.3043,\ 0.1940]</span>.</p>
   <p>For <span class="tex">\tau=0.5</span> the logits become <span class="tex">[4,\ 2,\ 0.2]</span>: every gap has doubled.</p>
-  <p>Top-k and top-p on probabilities <span class="tex">[0.5,\ 0.3,\ 0.15,\ 0.05]</span>: top-k with <span class="tex">k=2</span> keeps the first two and rescales to <span class="tex">[0.625,\ 0.375]</span>. Top-p with <span class="tex">p=0.9</span> keeps tokens until the running total reaches 0.9: <span class="tex">0.5,\ 0.8,\ 0.95</span>, so three tokens survive and rescale to <span class="tex">[0.5263,\ 0.3158,\ 0.1579]</span>.</p></div>
-  <p class="s-only">With scores 2.0, 1.0 and 0.1, the top token wins 66% of the time at temperature 1, 86% at temperature 0.5 and only 50% at temperature 2. Top-k and top-p then cut off the unlikely tail so that a rare unlucky draw cannot derail the text.</p>
+  <p>Top-k and top-p on probabilities <span class="tex">[0.5,\ 0.3,\ 0.15,\ 0.05]</span>: top-k with <span class="tex">k=2</span> keeps the first two and rescales to <span class="tex">[0.625,\ 0.375]</span>. Top-p with <span class="tex">p=0.9</span> keeps tokens until the running total reaches 0.9: <span class="tex">0.5,\ 0.8,\ 0.95</span>, so three tokens survive and rescale to <span class="tex">[0.5263,\ 0.3158,\ 0.1579]</span>.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: temperature, top-k, top-p and the generation loop</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -705,10 +705,10 @@ print("tau=2.0:  ", repr(generate("the ", 30, rng, tau=2.0)))
 
 <div class="worked">
   <h4>Worked example</h4>
-  <div class="x-only"><p><b>Work saved.</b> Prompt of <span class="tex">P=3</span> tokens, generate <span class="tex">n=5</span>. Without a cache the passes process <span class="tex">3+4+5+6+7=25</span> token positions. With a cache: <span class="tex">3</span> in prefill, then <span class="tex">1</span> for each of the 4 later steps, <span class="tex">7</span> in all.</p>
+  <p>Generating 5 tokens after a 3-token prompt takes 25 units of work if the model starts over each time, and 7 if it remembers its earlier work. The memory for that remembering is modest for a small model and several gigabytes per conversation for a large model with a long context.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p><b>Work saved.</b> Prompt of <span class="tex">P=3</span> tokens, generate <span class="tex">n=5</span>. Without a cache the passes process <span class="tex">3+4+5+6+7=25</span> token positions. With a cache: <span class="tex">3</span> in prefill, then <span class="tex">1</span> for each of the 4 later steps, <span class="tex">7</span> in all.</p>
   <p><b>Cache memory.</b> A GPT-2-small-sized model, <span class="tex">L=12,\ d_{\text{model}}=768</span>, with <span class="tex">T=1024</span> tokens of context at 2 bytes per number: <span class="tex">2\times12\times1024\times768\times2=37{,}748{,}736</span> bytes, about 37.7 MB, next to 248.9 MB of weights. A larger model with <span class="tex">L=32,\ d_{\text{model}}=4096</span> and <span class="tex">T=8192</span>: <span class="tex">2\times32\times8192\times4096\times2=4{,}294{,}967{,}296</span> bytes, about 4.29 GB, for one request.</p>
-  <p><b>Response time.</b> Time to first token 0.4 s, then 50 tokens per second, for a 200-token answer: <span class="tex">0.4+200/50=4.4</span> seconds.</p></div>
-  <p class="s-only">Generating 5 tokens after a 3-token prompt takes 25 units of work if the model starts over each time, and 7 if it remembers its earlier work. The memory for that remembering is modest for a small model and several gigabytes per conversation for a large model with a long context.</p>
+  <p><b>Response time.</b> Time to first token 0.4 s, then 50 tokens per second, for a 200-token answer: <span class="tex">0.4+200/50=4.4</span> seconds.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: a KV cache gives identical outputs with less work</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -891,11 +891,11 @@ for B in (1, 16, 256):
 <div class="tex d">M_{\text{train}}\approx16\times N\ \text{bytes, before activations}</div>
 <div class="worked">
   <h4>Worked example</h4>
-  <div class="x-only"><p><b>Does it fit?</b> The running example: <span class="tex">N=7\times10^9</span> in bf16, with <span class="tex">L=32,\ d_{\text{model}}=4096</span>, serving one request at <span class="tex">T=4096</span>. Weights: <span class="tex">7\times10^9\times2</span> bytes = 14 GB. KV cache: <span class="tex">2\times32\times4096\times4096\times2=2{,}147{,}483{,}648</span> bytes, about 2.15 GB. Needed: <span class="tex">1.2\times(14+2.15)\approx19.4</span> GB, which fits in 24 GB.</p>
+  <p>A 7-billion-parameter model in 16-bit numbers needs about 19 GB with a long conversation and a safety margin, so it fits on a 24 GB card. How fast it writes depends on how quickly the card reads its memory: about 62 tokens a second on a fast gaming card, about 19 on a low-power data-centre card with the same memory. Training the same model needs more than 100 GB.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p><b>Does it fit?</b> The running example: <span class="tex">N=7\times10^9</span> in bf16, with <span class="tex">L=32,\ d_{\text{model}}=4096</span>, serving one request at <span class="tex">T=4096</span>. Weights: <span class="tex">7\times10^9\times2</span> bytes = 14 GB. KV cache: <span class="tex">2\times32\times4096\times4096\times2=2{,}147{,}483{,}648</span> bytes, about 2.15 GB. Needed: <span class="tex">1.2\times(14+2.15)\approx19.4</span> GB, which fits in 24 GB.</p>
   <p><b>How fast?</b> On an RTX 4090 (1,008 GB/s): <span class="tex">1008/16.15\approx62</span> tokens per second at most. On an L4 (300 GB/s), which has the same 24 GB: about 19.</p>
   <p><b>A 70B model</b> (<span class="tex">L=80,\ d_{\text{model}}=8192</span>). In bf16: <span class="tex">1.2\times(140+10.7)\approx181</span> GB, so three 80 GB GPUs. In int4: <span class="tex">1.2\times(35+10.7)\approx55</span> GB, which fits on one H100 at up to <span class="tex">3350/45.7\approx73</span> tokens per second, or on one DGX Spark at up to <span class="tex">273/45.7\approx6</span>.</p>
-  <p><b>Training the 7B model</b> needs <span class="tex">16\times7\times10^9</span> bytes = 112 GB before activations: more than any single GPU below.</p></div>
-  <p class="s-only">A 7-billion-parameter model in 16-bit numbers needs about 19 GB with a long conversation and a safety margin, so it fits on a 24 GB card. How fast it writes depends on how quickly the card reads its memory: about 62 tokens a second on a fast gaming card, about 19 on a low-power data-centre card with the same memory. Training the same model needs more than 100 GB.</p>
+  <p><b>Training the 7B model</b> needs <span class="tex">16\times7\times10^9</span> bytes = 112 GB before activations: more than any single GPU below.</p></details>
 </div>
 <details class="callout code opt"><summary>In Python: choose a device, and compare number formats</summary>
 <div class="cbar"><small>Runs on its own · Python 3 + PyTorch</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
@@ -1122,10 +1122,10 @@ print(f"training a 7B model: {16 * 7e9 / 1e9:.0f} GB before activations")
 <p class="sym">With groups of 32, 4-bit weights cost <span class="tex">4+16/32=4.5</span> bits each.</p>
 <div class="worked">
   <h4>Worked example: four weights to 4 bits</h4>
-  <div class="x-only"><p>Weights <span class="tex">[0.12,\;-0.50,\;0.33,\;0.02]</span>. The largest is 0.50, so <span class="tex">\Delta=0.50/7=0.0714</span>.</p>
+  <p>Four weights, the largest 0.50, share a step of 0.50 ÷ 7 ≈ 0.071. Each is rounded to the nearest step: 0.12 becomes 0.143 and 0.33 becomes 0.357, errors of about 0.02. If one weight were 3.0 instead, the step would be 0.43, and 0.12 would round to 0. One large weight spoils its whole group.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>Weights <span class="tex">[0.12,\;-0.50,\;0.33,\;0.02]</span>. The largest is 0.50, so <span class="tex">\Delta=0.50/7=0.0714</span>.</p>
   <p>Divide: <span class="tex">[1.68,\;-7.00,\;4.62,\;0.28]</span>. Round: <span class="tex">q=[2,\;-7,\;5,\;0]</span>. Multiply back: <span class="tex">\hat w=[0.143,\;-0.500,\;0.357,\;0]</span>. Errors: <span class="tex">[0.023,\;0,\;0.027,\;0.020]</span>, all within <span class="tex">\Delta/2=0.036</span>.</p>
-  <p>Now replace the last weight with an outlier, 3.0. The scale becomes <span class="tex">3.0/7=0.429</span>, and the others round to <span class="tex">q=[0,\;-1,\;1]</span>: 0.12 becomes 0, and 0.33 becomes 0.429. One weight has wrecked three.</p></div>
-  <p class="s-only">Four weights, the largest 0.50, share a step of 0.50 ÷ 7 ≈ 0.071. Each is rounded to the nearest step: 0.12 becomes 0.143 and 0.33 becomes 0.357, errors of about 0.02. If one weight were 3.0 instead, the step would be 0.43, and 0.12 would round to 0. One large weight spoils its whole group.</p>
+  <p>Now replace the last weight with an outlier, 3.0. The scale becomes <span class="tex">3.0/7=0.429</span>, and the others round to <span class="tex">q=[0,\;-1,\;1]</span>: 0.12 becomes 0, and 0.33 becomes 0.429. One weight has wrecked three.</p></details>
 </div>
 <div class="widget" id="w-quant">
   <h4 class="wt">Interactive · round weights to fewer bits</h4>
@@ -1250,11 +1250,11 @@ for name, bpw in [("bf16", 16), ("int8", 8 + 16 / 32), ("int4", 4 + 16 / 32)]:
 <details class="why"><summary>Why subtract the largest score at all?</summary><div class="whyb">Softmax gives the same result whatever constant is subtracted from every score, and subtracting the largest keeps every exponential at most 1, so nothing overflows (the same trick as in <a class="xref" data-ref="intro"></a>’s Python box). The factor <span class="tex">e^{m_i-m_i'}</span> converts totals measured from the old largest score into totals measured from the new one.</div></details>
 <div class="worked">
   <h4>Worked example: a softmax in two tiles</h4>
-  <div class="x-only"><p>One query, four keys with scores <span class="tex">[1,\;2,\;3,\;0]</span> and one-number values <span class="tex">[10,\;20,\;30,\;40]</span>, in tiles of two.</p>
+  <p>Scores 1, 2, 3 and 0 for values 10, 20, 30 and 40, taken two at a time. After the first pair the running total is measured from the largest score so far, 2. The second pair brings a 3, so the old total is scaled down by <span class="tex">e^{-1}</span> before the new terms are added. The final answer, 26.21, is exactly what the ordinary softmax gives.</p>
+  <details class="exact"><summary>Work through the exact numbers</summary><p>One query, four keys with scores <span class="tex">[1,\;2,\;3,\;0]</span> and one-number values <span class="tex">[10,\;20,\;30,\;40]</span>, in tiles of two.</p>
   <p>Tile 1, scores 1 and 2: <span class="tex">m=2</span>, <span class="tex">r=e^{-1}+e^{0}=1.3679</span>, <span class="tex">o=10e^{-1}+20=23.679</span>.</p>
   <p>Tile 2, scores 3 and 0: the largest score rises to 3, so the old totals are multiplied by <span class="tex">e^{2-3}=0.3679</span>. Then <span class="tex">r=1.3679\times0.3679+e^{0}+e^{-3}=1.5530</span> and <span class="tex">o=23.679\times0.3679+30+40e^{-3}=40.702</span>.</p>
-  <p>Result: <span class="tex">c=40.702/1.5530=26.21</span>. The ordinary softmax gives weights <span class="tex">[0.087,\;0.237,\;0.644,\;0.032]</span> and the same <span class="tex">26.21</span>.</p></div>
-  <p class="s-only">Scores 1, 2, 3 and 0 for values 10, 20, 30 and 40, taken two at a time. After the first pair the running total is measured from the largest score so far, 2. The second pair brings a 3, so the old total is scaled down by <span class="tex">e^{-1}</span> before the new terms are added. The final answer, 26.21, is exactly what the ordinary softmax gives.</p>
+  <p>Result: <span class="tex">c=40.702/1.5530=26.21</span>. The ordinary softmax gives weights <span class="tex">[0.087,\;0.237,\;0.644,\;0.032]</span> and the same <span class="tex">26.21</span>.</p></details>
 </div>
 <div class="widget" id="w-flash">
   <h4 class="wt">Interactive · attention, one tile at a time</h4>

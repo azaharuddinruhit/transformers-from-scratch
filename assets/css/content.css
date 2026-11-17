@@ -34,7 +34,11 @@ pre.py code,pre.sh code{background:none;border:0;padding:0;font:inherit;white-sp
 .wjh{border-top:1px solid var(--line);margin-top:16px;padding-top:12px;font-size:.96rem}
 .wjh>b{color:var(--accent)}
 ul.pit{padding-left:1.1em}ul.pit li{margin:.45em 0}
-body.simple .x-only{display:none!important}body:not(.simple) .s-only{display:none!important}
+details.exact{margin:10px 0 2px}
+details.exact>summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:.95rem}
+details.exact[open]>summary{margin-bottom:8px}
+.optpill{display:inline-block;margin-left:8px;padding:0 8px;border:1px solid var(--line);border-radius:999px;font:600 .72rem/1.6 var(--sans);color:var(--muted);vertical-align:middle;white-space:nowrap}
+.optpill.lead{margin:0 8px 0 0}div.opt>.optpill.lead{margin-bottom:6px}
 /* equations */
 .tex{font-family:var(--mono);font-size:.86em;text-transform:none;letter-spacing:normal}
 .msym{text-transform:none;letter-spacing:normal;white-space:nowrap}.msym sub{font-size:.75em;line-height:0}
@@ -76,7 +80,6 @@ ul.take li,ul.talk li{margin:.4em 0}
 .qo.wrong{border-color:var(--warn);box-shadow:inset 5px 0 0 var(--warn)}
 .qx{font-size:.92rem;margin:.5em 0 0}
 a.xref{white-space:nowrap}
-body.ess .opt{display:none!important}
 /* interview prep */
 .qa{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px 16px 8px;margin:12px 0;min-width:0;overflow-x:auto;position:relative}
 .qa h4.q{margin:.25em 0 .35em;font:600 1.02rem/1.45 var(--sans);letter-spacing:0;text-transform:none;color:var(--ink);display:flex;gap:10px;align-items:baseline}

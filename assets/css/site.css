@@ -92,12 +92,7 @@ footer{padding:30px 0;color:var(--muted);font-size:.9rem}
 .nextBtn small{color:inherit;opacity:.8;font-size:.8rem;font-weight:500}
 /* home */
 .pre{color:var(--muted)}
-.pathpick h2,.journey h2,.more h2{font-size:1.4rem;margin:1.6em 0 .6em}
-.paths{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
-.pathCard{text-align:left;font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
-.pathCard:hover{border-color:var(--accent)}
-.pathCard[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
-.pathCard b{font-size:1.05rem}.pathCard span{font-size:.92rem;color:var(--muted)}
+.journey h2,.more h2{font-size:1.4rem;margin:1.6em 0 .6em}
 .hint{font-size:.88rem;color:var(--muted)}
 #resume{margin:26px 0 0}
 #journey{list-style:none;margin:0;padding:0;position:relative}
@@ -124,9 +119,8 @@ body[data-page="home"] .hero{position:relative;isolation:isolate}
 body[data-page="home"] .hero::before,body[data-page="home"] .hero::after{content:"";position:absolute;z-index:-1;pointer-events:none;border-radius:50%;filter:blur(40px)}
 body[data-page="home"] .hero::before{left:0;top:-70px;width:min(620px,75%);height:380px;background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) var(--halo),transparent),transparent)}
 body[data-page="home"] .hero::after{right:0;top:30px;width:min(560px,70%);height:360px;background:radial-gradient(closest-side,color-mix(in srgb,var(--k) var(--halo),transparent),transparent),radial-gradient(closest-side at 30% 80%,color-mix(in srgb,var(--v) var(--halo),transparent),transparent)}
-.pathCard,.card,#resume .btn{transition:box-shadow .2s,border-color .2s}
-.pathCard[aria-pressed="true"]{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent),0 10px 32px color-mix(in srgb,var(--accent) 18%,transparent)}
-.pathCard:hover,.card:hover{box-shadow:0 8px 28px color-mix(in srgb,var(--accent) 16%,transparent)}
+.card,#resume .btn{transition:box-shadow .2s,border-color .2s}
+.card:hover{box-shadow:0 8px 28px color-mix(in srgb,var(--accent) 16%,transparent)}
 #resume .btn{box-shadow:0 8px 26px color-mix(in srgb,var(--fill) 38%,transparent)}
 #resume .btn:hover{box-shadow:0 10px 34px color-mix(in srgb,var(--fill) 52%,transparent)}
 #journey>li.started .jl{box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 15%,transparent)}
