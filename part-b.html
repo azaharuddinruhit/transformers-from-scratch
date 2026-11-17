@@ -257,12 +257,21 @@ for w in ["lowest", "newer", "wider"]:
 <p>At the start the vectors are random. Training nudges them so that tokens used in similar contexts end up with similar vectors. Real embeddings have hundreds or thousands of dimensions; squashed to two for plotting, related tokens tend to sit near each other.</p>
 <div class="widget opt" id="w-scatter">
   <h4 class="wt">Interactive · embedding space in two dimensions</h4>
-  <p class="look"><b>The point:</b> After training, tokens used in similar ways end up close together. <b>Do this:</b> Click a point. <b>Watch for:</b> Clusters by kind of word. The axes themselves have no assigned meaning.</p>
+  <p class="look"><b>The point:</b> After training, tokens used in similar ways end up close together, and some relationships become consistent directions. <b>Do this:</b> Click a point to see its nearest neighbours. Then try the four example sums below, and untick “Leave out the three input words” on the last one. <b>Watch for:</b> Clusters by kind of word, the two parallel arrows of a sum, and how far the result lands from its nearest token. The axes themselves have no assigned meaning.</p>
   <svg id="sc-emb" role="group" aria-label="Scatter plot of toy token embeddings; related tokens are clustered"></svg>
   <div class="lg" id="sc-lg"></div>
   <p class="readout" id="sc-out" aria-live="polite">Click or focus a token to see its nearest neighbours.</p>
-  <small>Positions here are placed by hand to show what a trained embedding space typically looks like. Tokens from your sentence above are ringed.</small>
-  <div class="wjh"><b>What just happened?</b> Distance stands in for similarity. The nearest neighbours of an animal are other animals, because a trained model would have learned that they appear in interchangeable contexts.</div>
+  <span class="lab">Vector arithmetic: start from one token, subtract a second, add a third</span>
+  <div class="chips" id="sc-pre" role="group" aria-label="Example sums"></div>
+  <div class="controls">
+    <label class="ctl">Start from<select id="sc-a"></select></label>
+    <label class="ctl">Subtract<select id="sc-b"></select></label>
+    <label class="ctl">Add<select id="sc-c"></select></label>
+    <label class="chk"><input type="checkbox" id="sc-ex" checked> Leave out the three input words</label>
+  </div>
+  <div id="sc-ar" aria-live="polite"></div>
+  <small>What is simplified: positions are placed by hand, in two dimensions, to show what a trained embedding space typically looks like, and the first three sums were placed to come out exactly. In real embeddings with hundreds of dimensions such analogies hold only roughly, tools usually rank by cosine similarity rather than distance, and they leave out the input words, without which the answer is often just the word you added. Tokens from your sentence above are ringed. The arrows show the subtracted-to-start offset, and the same offset applied to the added word; the cross marks the result.</small>
+  <div class="wjh"><b>What just happened?</b> Distance stands in for similarity. The nearest neighbours of an animal are other animals, because a trained model would have learned that they appear in interchangeable contexts. A sum like king − man + woman takes the offset from man to king and applies it to woman; it lands on queen because the same offset separates both pairs. The last example applies the cat-to-dog offset to man, which means nothing for people: with the inputs included, the nearest token is man itself, and with them left out the “answer” is woman, 1.27 away from the result, where no token sits. Analogies only work where the space has a consistent direction for the relationship.</div>
 </div>
 <h3 class="opt">Common misconceptions</h3>
 <ul class="pit opt">

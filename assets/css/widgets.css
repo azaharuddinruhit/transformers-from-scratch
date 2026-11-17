@@ -218,3 +218,8 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 .atl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;align-items:center;font-size:.9rem;margin-top:4px}
 .atl-l{color:var(--muted);white-space:nowrap}
 @media (max-width:600px){.atl{grid-template-columns:1fr;gap:2px}.atl-l{margin-top:6px}}
+/* embedding arithmetic (Part B) */
+.arv{stroke:var(--accent);stroke-width:2}
+#sc-ah path{fill:var(--accent)}
+.arp{stroke:var(--accent);stroke-width:2.5;fill:none}
+#sc-ar tr.hit td{background:var(--accent-soft);font-weight:700}

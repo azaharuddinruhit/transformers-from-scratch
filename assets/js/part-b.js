@@ -16,7 +16,7 @@ const TOK=(function(){
 })();
 const SCATTER=[
   ['cat',2.1,2.3,'animal'],['dog',2.5,1.9,'animal'],['mouse',1.6,2.8,'animal'],['bird',3.0,2.9,'animal'],['horse',3.1,1.5,'animal'],
-  ['man',-2.2,1.9,'person'],['woman',-2.7,2.4,'person'],['king',-1.5,3.0,'person'],['queen',-2.0,3.5,'person'],['prince',-1.0,2.4,'person'],
+  ['man',-2.2,1.9,'person'],['woman',-2.7,2.4,'person'],['king',-1.5,3.0,'person'],['queen',-2.0,3.5,'person'],['prince',-0.5,2.1,'person'],['princess',-1.0,2.6,'person'],
   ['sat',-2.0,-1.6,'verb'],['ran',-2.8,-2.1,'verb'],['walk',-2.4,-2.9,'verb'],['jump',-1.5,-2.6,'verb'],['play',-1.2,-1.8,'verb'],['eat',-3.2,-1.4,'verb'],
   ['the',2.2,-1.8,'function'],['on',1.5,-2.5,'function'],['in',2.0,-3.0,'function'],['under',1.1,-1.9,'function'],['with',2.8,-2.6,'function'],['and',3.1,-1.7,'function'],
   ['happy',0.4,0.7,'adjective'],['sad',-0.4,0.3,'adjective'],['big',0.6,-0.3,'adjective'],['small',-0.2,-0.6,'adjective']
@@ -83,7 +83,7 @@ function paramCounts(c){
   return {tok,pos,attn,mlp,ln,out,total:tok+pos+attn+mlp+ln+out};
 }
 /* ================= tokenizer and embeddings ================= */
-const s2={sel:0,present:[],pt:null};
+const s2={sel:0,present:[],pt:null,ar:{a:'king',b:'man',c:'woman',ex:true}};
 function renderTok(){
   const text=$('#tk-in').value,toks=TOK.tokenize(text);if(s2.sel>=toks.length)s2.sel=0;
   s2.present=toks.map(t=>t.t);
@@ -107,13 +107,43 @@ function renderScatter(){
   const svg=$('#sc-emb'),W=Math.max(260,Math.round(svg.getBoundingClientRect().width)||520),H=340;
   svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.style.height=H+'px';
   const X=x=>20+(x+4.2)/8.4*(W-40),Y=y=>H-16-(y+4)/8.2*(H-32);
-  let s='<line class="grid" x1="'+X(0)+'" x2="'+X(0)+'" y1="8" y2="'+(H-8)+'"/><line class="grid" x1="8" x2="'+(W-8)+'" y1="'+Y(0)+'" y2="'+Y(0)+'"/>';
+  let s='<line class="grid" x1="'+X(0)+'" x2="'+X(0)+'" y1="8" y2="'+(H-8)+'"/><line class="grid" x1="8" x2="'+(W-8)+'" y1="'+Y(0)+'" y2="'+Y(0)+'"/>'+arithSvg(X,Y);
   const sel=SCATTER.find(p=>p.t===s2.pt);let nb=[];
   if(sel){nb=SCATTER.filter(p=>p!==sel).map(p=>({p:p,d:Math.hypot(p.x-sel.x,p.y-sel.y)})).sort((a,b)=>a.d-b.d).slice(0,3);nb.forEach(n=>{s+='<line class="nb" x1="'+X(sel.x)+'" y1="'+Y(sel.y)+'" x2="'+X(n.p.x)+'" y2="'+Y(n.p.y)+'"/>';});}
   SCATTER.forEach(p=>{const x=+X(p.x).toFixed(1),y=+Y(p.y).toFixed(1),pres=s2.present.indexOf(p.t)>=0,right=x>W-70;
     s+='<g class="pt c-'+p.c+(pres?' present':'')+(p===sel?' sel':'')+'" tabindex="0" role="button" aria-label="'+p.t+', '+p.c+'" data-t="'+p.t+'" data-tip="'+esc('<b>'+p.t+'</b> · '+p.c+'<br>('+p.x.toFixed(1)+', '+p.y.toFixed(1)+')'+(pres?'<br>in your sentence':''))+'">'+(pres?'<circle class="ring" cx="'+x+'" cy="'+y+'" r="11"/>':'')+SHAPES[p.c](x,y)+'<text x="'+(right?x-11:x+11)+'" y="'+(y+4)+'" text-anchor="'+(right?'end':'start')+'">'+p.t+'</text></g>';});
   svg.innerHTML=s;
   $('#sc-out').innerHTML=sel?'Nearest to “'+sel.t+'” ('+sel.c+'): '+nb.map(n=>n.p.t+' ('+n.p.c+', distance '+fmt(n.d,2)+')').join(', ')+'.':'Click or focus a token to see its nearest neighbours.';
+  renderArith();
+}
+/* vector arithmetic on the toy embeddings: a − b + c, then rank the nearest tokens */
+const SC_PRE=[['king','man','woman'],['prince','man','woman'],['big','small','sad'],['dog','cat','man']];
+function scArith(a,b,c,ex){
+  const P=t=>SCATTER.find(p=>p.t===t),A=P(a),B=P(b),C=P(c),r={x:A.x-B.x+C.x,y:A.y-B.y+C.y};
+  const rank=SCATTER.filter(p=>!ex||[a,b,c].indexOf(p.t)<0).map(p=>({p,d:Math.hypot(p.x-r.x,p.y-r.y)})).sort((u,v)=>u.d-v.d);
+  return{A,B,C,r,rank};
+}
+function renderArith(){
+  const s=s2.ar,R=scArith(s.a,s.b,s.c,s.ex),f=v=>fmt(v,1).replace('-','−');
+  $('#sc-ar').innerHTML='<p class="readout"><b>'+s.a+'</b> − <b>'+s.b+'</b> + <b>'+s.c+'</b> = ('+f(R.A.x)+', '+f(R.A.y)+') − ('+f(R.B.x)+', '+f(R.B.y)+') + ('+f(R.C.x)+', '+f(R.C.y)+') = <b>('+f(R.r.x)+', '+f(R.r.y)+')</b>. Nearest token'+(s.ex?' other than the three inputs':'')+': <b>'+R.rank[0].p.t+'</b>, at distance '+fmt(R.rank[0].d,2)+'.</p>'+
+    '<div class="scroll"><table class="numt"><thead><tr><th>Rank</th><th>Token</th><th>Kind</th><th>Distance to the result</th></tr></thead><tbody>'+R.rank.slice(0,5).map((n,k)=>'<tr'+(k?'':' class="hit"')+'><td>'+(k+1)+'</td><td>'+n.p.t+'</td><td>'+n.p.c+'</td><td>'+fmt(n.d,2)+'</td></tr>').join('')+'</tbody></table></div>';
+  $$('#sc-pre button').forEach((bt,k)=>{const on=SC_PRE[k].join()===[s.a,s.b,s.c].join();bt.classList.toggle('on',on);bt.setAttribute('aria-pressed',on);});
+  return R;
+}
+function arithSvg(X,Y){
+  const R=scArith(s2.ar.a,s2.ar.b,s2.ar.c,s2.ar.ex),x=X(R.r.x),y=Y(R.r.y),best=R.rank[0].p;
+  const ln=(p,q,cls)=>'<line class="'+cls+'" x1="'+X(p.x)+'" y1="'+Y(p.y)+'" x2="'+X(q.x)+'" y2="'+Y(q.y)+'" marker-end="url(#sc-ah)"/>';
+  return '<defs><marker id="sc-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker></defs>'+
+    ln(R.B,R.A,'arv')+ln(R.C,R.r,'arv')+'<line class="nb" x1="'+x+'" y1="'+y+'" x2="'+X(best.x)+'" y2="'+Y(best.y)+'"/>'+
+    '<path class="arp" d="M'+(x-6)+' '+(y-6)+'L'+(x+6)+' '+(y+6)+'M'+(x+6)+' '+(y-6)+'L'+(x-6)+' '+(y+6)+'"/>';
+}
+function initArith(){
+  const opts=SCATTER.map(p=>p.t).slice().sort().map(t=>'<option value="'+t+'">'+t+'</option>').join('');
+  ['a','b','c'].forEach(k=>{const el=$('#sc-'+k);el.innerHTML=opts;el.value=s2.ar[k];el.addEventListener('change',()=>{s2.ar[k]=el.value;renderScatter();});});
+  $('#sc-pre').innerHTML=SC_PRE.map((p,k)=>'<button class="chip" data-k="'+k+'" aria-pressed="false">'+p[0]+' − '+p[1]+' + '+p[2]+'</button>').join('');
+  $('#sc-pre').addEventListener('click',e=>{const bt=e.target.closest('button');if(!bt)return;const p=SC_PRE[+bt.dataset.k];
+    ['a','b','c'].forEach((k,i)=>{s2.ar[k]=p[i];const el=$('#sc-'+k);el.value=p[i];el.dispatchEvent(new Event('change'));});bt.focus();});
+  $('#sc-ex').addEventListener('change',e=>{s2.ar.ex=e.target.checked;renderScatter();});
 }
 function initTok(){
   $('#tk-in').addEventListener('input',()=>{s2.sel=0;renderTok();});
@@ -121,6 +151,7 @@ function initTok(){
   const pick=e=>{const g=e.target.closest('.pt');if(!g)return;if(e.type==='keydown'){if(e.key!=='Enter'&&e.key!==' ')return;e.preventDefault();}s2.pt=g.dataset.t;renderScatter();const n=$('#sc-emb .pt[data-t="'+s2.pt+'"]');if(n&&e.type==='keydown')n.focus();};
   $('#sc-emb').addEventListener('click',pick);$('#sc-emb').addEventListener('keydown',pick);
   $('#sc-lg').innerHTML=Object.keys(SHAPES).map(c=>'<span><svg width="18" height="18" class="pt c-'+c+'">'+SHAPES[c](9,9)+'</svg> '+c+'</span>').join('')+'<span>◯ ring = in your sentence</span>';
+  initArith();
   reg(renderTok);
 }
 /* ================= positional encoding ================= */
