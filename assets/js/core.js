@@ -32,7 +32,8 @@ function divColor(v){const t=Math.max(-1,Math.min(1,v)),a=t<0?[33,102,172]:[230,
 
 /* ---------- shared components ---------- */
 function vec(vals,kind,n,mx){mx=mx||Math.max(1e-9,Math.max.apply(null,vals.map(Math.abs)));return '<span class="vec '+(kind||'')+'">'+vals.map(v=>'<span class="c" style="--a:'+(0.06+0.5*Math.min(1,Math.abs(v)/mx)).toFixed(2)+'">'+fmt(v,n)+'</span>').join('')+'</span>';}
-function bars(rows,max){max=max||Math.max(1e-9,Math.max.apply(null,rows.map(r=>r.p)));return '<div class="bars">'+rows.map(r=>'<div class="bar-row '+(r.cls||'')+'"'+(r.tip?' tabindex="0" data-tip="'+esc(r.tip)+'"':'')+'><span class="bl">'+r.label+'</span><span class="bt"><span class="bf" style="width:'+(100*Math.max(0,r.p)/max).toFixed(1)+'%"></span></span><span class="bv">'+(r.right!=null?r.right:fmt(r.p))+'</span></div>').join('')+'</div>';}
+/* bar fills take their colour from their value (viridis); a cut bar keeps its hatching */
+function bars(rows,max){max=max||Math.max(1e-9,Math.max.apply(null,rows.map(r=>r.p)));return '<div class="bars">'+rows.map(r=>'<div class="bar-row '+(r.cls||'')+'"'+(r.tip?' tabindex="0" data-tip="'+esc(r.tip)+'"':'')+'><span class="bl">'+r.label+'</span><span class="bt"><span class="bf" style="width:'+(100*Math.max(0,r.p)/max).toFixed(1)+'%'+(/cut/.test(r.cls||'')?'':';background:'+viridis(.25+.7*Math.max(0,r.p)/max))+'"></span></span><span class="bv">'+(r.right!=null?r.right:fmt(r.p))+'</span></div>').join('')+'</div>';}
 function heat(M,rl,cl,o){o=o||{};let h='<div class="hm'+(o.compact?' compact':'')+'" style="grid-template-columns:auto repeat('+cl.length+',minmax(0,1fr))"><span></span>'+cl.map(c=>'<span class="hh">'+c+'</span>').join('');
   M.forEach((row,i)=>{h+='<span class="hr'+(o.sel===i?' on':'')+'">'+rl[i]+'</span>';row.forEach((v,j)=>{const mk=o.mask&&o.mask(i,j);const tp=o.tip?o.tip(i,j,v,mk):fmt(v,4);h+='<span class="hc'+(mk?' masked':'')+(o.sel===i?' selrow':'')+'"'+(o.compact?'':' tabindex="0" role="'+(o.click?'button':'img')+'" aria-label="'+esc(tp.replace(/<br>/g,', ').replace(/<[^>]+>/g,'').replace(/&gt;/g,'greater than').replace(/&lt;/g,'less than'))+'"')+' data-i="'+i+'" data-j="'+j+'" style="background-color:'+viridis(v)+';color:'+vtext(v)+'" data-tip="'+esc(tp)+'">'+(o.compact?Math.round(v*100):fmt(v,2))+'</span>';});});
   return h+'</div>';}
@@ -74,16 +75,23 @@ function gridKeys(sel){$(sel).addEventListener('keydown',e=>{if(e.key!=='Enter'&
 
 function initCode(){
   const KW=new Set('False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield'.split(' '));
-  const BI=new Set('print range len sum min max int float str list dict set tuple enumerate zip sorted round abs isinstance super next iter any all map repr type self Exception ValueError RuntimeError'.split(' '));
-  const re=/(#[^\n]*)|((?:[rRbBfFuU]{1,2})?(?:"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'))|(@[A-Za-z_][\w.]*)|(\b\d[\d_]*(?:\.\d*)?(?:[eE][+-]?\d+)?\b)|([A-Za-z_]\w*)/g;
+  const BI=new Set('print range len sum min max int float str list dict set tuple enumerate zip sorted round abs isinstance super next iter any all map repr type Exception ValueError RuntimeError'.split(' '));
+  const re=/(#[^\n]*)|((?:[rRbBfFuU]{1,2})?(?:"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'))|(@[A-Za-z_][\w.]*)|(\b\d[\d_]*(?:\.\d*)?(?:[eE][+-]?\d+)?\b)|([A-Za-z_]\w*)|([-+*/%=<>!&|^~@]+)/g;
   const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  /* classes: c comment, s string, d decorator, n number, k keyword, f function (defined or called), b builtin, sf self,
+     t class name (capital then a lower-case letter, so T and F stay plain), p keyword argument (name= inside brackets), o operator */
   $$('pre.py code').forEach(code=>{
-    const src=code.textContent;let out='',last=0,prev='',m;re.lastIndex=0;
+    const src=code.textContent;let out='',last=0,prev='',depth=0,m;re.lastIndex=0;
     while((m=re.exec(src))){
-      const t=m[0];let c='';
-      if(m[1])c='c';else if(m[2])c='s';else if(m[3])c='d';else if(m[4])c='n';
-      else if(KW.has(t))c='k';else if(prev==='def'||prev==='class')c='f';else if(BI.has(t)&&src[m.index-1]!=='.')c='b';
-      out+=esc(src.slice(last,m.index))+(c?'<span class="'+c+'">'+esc(t)+'</span>':esc(t));
+      const t=m[0],gap=src.slice(last,m.index),after=src.slice(re.lastIndex,re.lastIndex+40);let c='';
+      for(const ch of gap){if('([{'.includes(ch))depth++;else if(')]}'.includes(ch))depth=Math.max(0,depth-1);}
+      if(m[1])c='c';else if(m[2])c='s';else if(m[3])c='d';else if(m[4])c='n';else if(m[6])c='o';
+      else if(KW.has(t))c='k';else if(t==='self')c='sf';else if(prev==='class')c='t';else if(prev==='def')c='f';
+      else if(depth&&/^\s*=(?!=)/.test(after))c='p';
+      else if(BI.has(t)&&src[m.index-1]!=='.')c='b';
+      else if(/^[A-Z]\w*[a-z]/.test(t))c='t';
+      else if(/^\s*\(/.test(after))c='f';
+      out+=esc(gap)+(c?'<span class="'+c+'">'+esc(t)+'</span>':esc(t));
       last=re.lastIndex;prev=m[5]?t:'';
     }
     code.innerHTML=out+esc(src.slice(last));

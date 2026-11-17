@@ -212,7 +212,7 @@ function initOptional(){
     else if(!e.matches('ul,ol')){pill.classList.add('lead');e.prepend(pill,' ');}
   });
 }
-/* the Settings menu: an iOS-style grouped list built here once for every page, with sub-pages for the path, progress and
+/* the Settings menu: a plain grouped list built here once for every page, with sub-pages for progress and
    sync; a popover under its button, a bottom sheet on phones */
 const ICONS={theme:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
   prog:'<circle cx="12" cy="12" r="8"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',sync:'<path d="M7 18a4 4 0 0 1-.6-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/>',
@@ -293,7 +293,10 @@ function initSettings(){
   onProgress.push(paintProgSum);
   let rt=null,lastW=window.innerWidth;window.addEventListener('resize',()=>{if(!menu.hidden)place();if(window.innerWidth===lastW)return;lastW=window.innerWidth;clearTimeout(rt);rt=setTimeout(rerender,150);});
   initSync(closeSet);
-  const bar=$('#progBar');window.addEventListener('scroll',()=>{const h=document.documentElement;bar.style.width=(100*Math.max(0,Math.min(1,h.scrollTop/Math.max(1,h.scrollHeight-h.clientHeight)))).toFixed(1)+'%';},{passive:true});
+  /* the scroll line: hidden when the page (or the part view shown) is too short to need it */
+  const bar=$('#progBar'),h=document.documentElement;
+  const upd=()=>{const room=h.scrollHeight-h.clientHeight;bar.parentElement.classList.toggle('off',room<200);bar.style.width=(100*Math.max(0,Math.min(1,h.scrollTop/Math.max(1,room)))).toFixed(1)+'%';};
+  window.addEventListener('scroll',upd,{passive:true});if(window.ResizeObserver)new ResizeObserver(upd).observe(document.body);upd();
 }
 /* cross-references show the target's name and link across pages */
 function initXrefs(){
@@ -327,9 +330,9 @@ function initPart(){
     const m=document.createElement('p');m.className='rt';s.querySelector('h2').insertAdjacentElement('afterend',m);
     const prev=ids[ids.indexOf(s.id)-1],nx=ids[ids.indexOf(s.id)+1],bridge=$('.bridge',s);
     const nav=document.createElement('nav');nav.className='snav';nav.setAttribute('aria-label','Section navigation');
-    nav.innerHTML='<div class="snrow"><a class="prev" href="#'+prev+'">← '+(prev==='start'?'Part overview':'Previous')+'</a>'
+    nav.innerHTML='<div class="snrow"><a class="prev" href="#'+prev+'">'+(prev==='start'?'Part overview':'Previous')+'</a>'
       +'<button type="button" class="doneBtn" aria-pressed="false"></button></div>'
-      +'<a class="nextBtn" href="#'+nx+'"><span>'+(nx==='complete'?'Finish Part '+L:label(nx))+' →</span></a>';
+      +'<a class="nextBtn" href="#'+nx+'"><span>'+(nx==='complete'?'Finish Part '+L:label(nx))+'</span></a>';
     if(bridge)nav.insertBefore(bridge,$('.nextBtn',nav));
     s.appendChild(nav);
     $('.doneBtn',nav).addEventListener('click',()=>{P.done[s.id]=!P.done[s.id];store.save();paint();});
@@ -340,11 +343,13 @@ function initPart(){
   function paint(){
     const st=partStats(part),pos=secs.findIndex(s=>s.id===cur);
     secs.forEach((s,i)=>{const on=!!P.done[s.id],q=quizScore(s);
-      $('.rt',s).innerHTML='Part '+L+' · '+(i+1)+' of '+secs.length+' · '+timeText(minsOf(s.id),SECS[s.id][2])+' <span class="lvl lv'+SECS[s.id][3]+'">'+LEVELS[SECS[s.id][3]]+'</span>';
+      /* the top bar and the side list already say which part and which step, so the meta line keeps time and level */
+      const tt=timeText(minsOf(s.id),SECS[s.id][2]);
+      $('.rt',s).innerHTML=tt.charAt(0).toUpperCase()+tt.slice(1)+' <span class="lvl lv'+SECS[s.id][3]+'">'+LEVELS[SECS[s.id][3]]+'</span>';
       const b=$('.doneBtn',s);b.setAttribute('aria-pressed',on);b.classList.toggle('on',on);b.textContent=on?'✓ Done':'Mark as done';
       const qs=$('.qscore',s);if(qs&&q)qs.textContent=q.got?q.got+' of '+q.n+' correct':'';});
-    toc.innerHTML='<div class="tochead"><a href="index.html" class="tochome">← All parts</a><button type="button" class="btn tiny" id="tocClose">Close</button></div>'
-      +'<p class="tocpart">Part '+L+'<b>'+part.name+'</b></p>'
+    toc.innerHTML='<div class="tochead"><a href="index.html" class="tochome">All parts</a><button type="button" class="btn tiny" id="tocClose">Close</button></div>'
+      +'<p class="tocpart"><span class="plet" aria-hidden="true">'+L+'</span><b><span class="vh">Part '+L+': </span>'+part.name+'</b></p>'
       +'<div class="prog"><div class="pline"><b>'+st.n+' of '+st.total+' done</b><span>'+(st.left?'about '+fmtMin(st.left)+' left':'complete')+'</span></div><span class="pbar"><i style="width:'+(100*st.n/st.total)+'%"></i></span></div>'
       +'<ol>'+ids.map(id=>{const s=SECS[id],done=s&&P.done[id];return '<li class="'+(id===cur?'on ':'')+(done?'done':'')+'"><a href="#'+id+'"'+(id===cur?' aria-current="page"':'')+'><span>'+label(id)+(done?'<span class="vh">, done</span>':'')+'</span>'+(s?'<small>'+minsOf(id)+' min</small>':'')+'</a></li>';}).join('')+'</ol>';
     $('#tocClose').addEventListener('click',()=>closeSheet(true));
@@ -358,15 +363,18 @@ function initPart(){
   function paintStart(){
     $('#partList').innerHTML=secs.map(s=>'<li class="'+(P.done[s.id]?'done':'')+'"><a href="#'+s.id+'">'+SECS[s.id][0]+'</a><small>'+minsOf(s.id)+' min</small></li>').join('');
     const first=secs.find(s=>!P.done[s.id]);
-    $('#partGo').innerHTML=first?'<a class="btn out big" href="#'+first.id+'">'+(first===secs[0]?'Start':'Continue')+': '+SECS[first.id][0]+' →</a>':'<a class="btn big" href="#complete">Review the key takeaways →</a>';
+    $('#partGo').innerHTML=first?'<a class="btn out big" href="#'+first.id+'">'+(first===secs[0]?'Start':'Continue')+': '+SECS[first.id][0]+'</a>':'<a class="btn big" href="#complete">Review the key takeaways</a>';
   }
   function paintComplete(){
     const st=partStats(part);let got=0,n=0;secs.forEach(s=>{const q=quizScore(s);if(q){got+=q.got;n+=q.n;}});
-    $('#partDone').innerHTML='<p class="kicker">Part '+L+'</p><h1>'+(st.n===st.total?'Part '+L+' complete':st.n+' of '+st.total+' sections done')+'</h1>'
+    /* the part's name leads; one cell per section shows what is done, as on the home journey */
+    $('#partDone').innerHTML='<h1>End of Part '+L+': '+part.name+'</h1>'
+      +'<p class="pcells"><span class="cells" aria-hidden="true">'+secs.map(s=>'<i'+(P.done[s.id]?' class="on"':'')+'></i>').join('')+'</span>'
+      +(st.n===st.total?'All '+st.total+' sections done':st.n+' of '+st.total+' sections done')+'</p>'
       +(n?'<p>You have answered '+got+' of '+n+' check questions correctly.</p>':'')
       /* the unfinished sections, in the opening screen's list style, each keeping its number in the part */
       +(st.n<st.total?'<h3>Not yet done</h3><ol class="partlist">'+secs.map((s,i)=>P.done[s.id]?'':'<li style="counter-set:p '+(i+1)+'"><a href="#'+s.id+'">'+SECS[s.id][0]+'</a><small>'+minsOf(s.id)+' min</small></li>').join('')+'</ol>':'')
-      +'<p class="acts">'+(next?'<a class="btn out big" href="'+partUrl(next)+'">Start Part '+next.id.toUpperCase()+': '+next.name+' →</a>':'<a class="btn out big" href="interview.html">Go to the interview drill →</a>')+' <a class="btn big" href="index.html">All parts</a></p>'
+      +'<p class="acts">'+(next?'<a class="btn out big" href="'+partUrl(next)+'">Start Part '+next.id.toUpperCase()+': '+next.name+'</a>':'<a class="btn out big" href="interview.html">Go to the interview drill</a>')+' <a class="btn big" href="index.html">All parts</a></p>'
       +'<h2>Key takeaways</h2>'+secs.map(s=>'<h3>'+SECS[s.id][0]+'</h3>'+$('ul.take',s).outerHTML).join('');
     renderTex($('#partDone'));
   }
@@ -413,7 +421,7 @@ function initHome(){
     const sum=i=>Object.keys(SECS).reduce((a,id)=>a+SECS[id][i],0);
     $('#studyTime').innerHTML='Study time: '+timeText(sum(1),sum(2));
     const lastId=P.last&&P.last.split('#')[1];
-    $('#resume').innerHTML=lastId&&SECS[lastId]?'<a class="btn out big" href="'+P.last+'">Continue: '+SECS[lastId][0]+' →</a>':'<a class="btn out big" href="part-a.html">Start with Part A →</a>';
+    $('#resume').innerHTML=lastId&&SECS[lastId]?'<a class="btn out big" href="'+P.last+'">Continue: '+SECS[lastId][0]+'</a>':'<a class="btn out big" href="part-a.html">Start with Part A</a>';
     $('#journey').innerHTML=PARTS.map(p=>{const st=partStats(p),state=st.n===st.total?'complete':st.n?'started':'';
       return '<li class="'+state+'"><a class="jpart" href="'+partUrl(p)+'"><span class="jl">'+p.id.toUpperCase()+'</span><span class="jt"><b>'+p.name+'</b><span>'+p.goal+'</span>'
         +'<small>'+st.total+' sections · '+(state==='complete'?'complete':st.n?st.n+' done, about '+fmtMin(st.left)+' left':'about '+fmtMin(st.left))+'</small></span></a>'
@@ -422,6 +430,23 @@ function initHome(){
     if(got)$('#drillStat').textContent=got+' question'+(got>1?'s':'')+' marked “Got it” so far';
   }
   onProgress.push(paint);paint();
+  initDemo();
+}
+/* The home page's running example, live: the hand-written next-token scores (NEXT in shared.js) turned into
+   probabilities at temperature 1. Bar length is the probability itself; colour is viridis by size. */
+function initDemo(){
+  let k=0,pick=null;
+  function draw(grow){
+    const ex=NEXT[k],p=softmax(ex.logits),mx=Math.max.apply(null,p);
+    $('#dPrompt').innerHTML=esc(ex.text)+' <span class="slot">'+(pick==null?'&nbsp;':esc(ex.toks[pick]))+'</span>';
+    $('#dBars').innerHTML=ex.toks.map((t,i)=>'<div class="dbar'+(i===pick?' pick':'')+'"><span class="t">'+esc(t)+'</span>'
+      +'<span class="tr"><i class="f" data-w="'+(100*p[i]).toFixed(1)+'" style="width:'+(grow?0:100*p[i]).toFixed(1)+'%;background:'+viridis(.25+.7*p[i]/mx)+'"></i></span>'
+      +'<span class="v">'+fmt(p[i])+'</span></div>').join('');
+    if(grow)requestAnimationFrame(()=>requestAnimationFrame(()=>$$('#dBars .f').forEach(f=>{f.style.width=f.dataset.w+'%';})));
+  }
+  $('#dSample').addEventListener('click',()=>{pick=sampleFrom(softmax(NEXT[k].logits),Math.random);draw(false);});
+  $('#dNext').addEventListener('click',()=>{k=(k+1)%NEXT.length;pick=null;draw(true);});
+  draw(true);
 }
 /* ---------------- interview drill ---------------- */
 function initDrill(){

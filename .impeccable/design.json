@@ -1,82 +1,52 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-17T11:29:12.502Z",
+  "generatedAt": "2026-11-17T17:22:09.226Z",
   "title": "Design System: Transformers and LLMs from Scratch",
   "extensions": {
     "colorMeta": {
-      "lamp-amber": {
+      "ink": {
         "role": "primary",
-        "displayName": "Lamp Amber",
-        "canonical": "oklch(47.9% 0.112 60)",
+        "displayName": "Ink",
+        "canonical": "oklch(22.4% 0.010 248)",
         "tonalRamp": [
-          "oklch(15% 0.046 60)",
-          "oklch(26% 0.078 60)",
-          "oklch(38% 0.100 60)",
-          "oklch(49% 0.111 60)",
-          "oklch(61% 0.111 60)",
-          "oklch(72% 0.100 60)",
-          "oklch(84% 0.078 60)",
-          "oklch(95% 0.046 60)"
+          "oklch(15% 0.004 248)",
+          "oklch(26% 0.007 248)",
+          "oklch(38% 0.009 248)",
+          "oklch(49% 0.010 248)",
+          "oklch(61% 0.010 248)",
+          "oklch(72% 0.009 248)",
+          "oklch(84% 0.007 248)",
+          "oklch(95% 0.004 248)"
         ]
       },
-      "amber-fill": {
+      "tint": {
         "role": "primary",
-        "displayName": "Amber Fill",
-        "canonical": "oklch(54.2% 0.127 60)",
+        "displayName": "Tint",
+        "canonical": "oklch(93.7% 0.004 157)",
         "tonalRamp": [
-          "oklch(15% 0.052 60)",
-          "oklch(26% 0.088 60)",
-          "oklch(38% 0.113 60)",
-          "oklch(49% 0.125 60)",
-          "oklch(61% 0.125 60)",
-          "oklch(72% 0.113 60)",
-          "oklch(84% 0.088 60)",
-          "oklch(95% 0.052 60)"
+          "oklch(15% 0.002 157)",
+          "oklch(26% 0.003 157)",
+          "oklch(38% 0.004 157)",
+          "oklch(49% 0.004 157)",
+          "oklch(61% 0.004 157)",
+          "oklch(72% 0.004 157)",
+          "oklch(84% 0.003 157)",
+          "oklch(95% 0.002 157)"
         ]
       },
-      "amber-tint": {
+      "night-ink": {
         "role": "primary",
-        "displayName": "Amber Tint",
-        "canonical": "oklch(95.4% 0.031 80)",
+        "displayName": "Night Ink",
+        "canonical": "oklch(93.7% 0.003 174)",
         "tonalRamp": [
-          "oklch(15% 0.013 80)",
-          "oklch(26% 0.022 80)",
-          "oklch(38% 0.028 80)",
-          "oklch(49% 0.031 80)",
-          "oklch(61% 0.031 80)",
-          "oklch(72% 0.028 80)",
-          "oklch(84% 0.022 80)",
-          "oklch(95% 0.013 80)"
-        ]
-      },
-      "night-periwinkle": {
-        "role": "primary",
-        "displayName": "Night Periwinkle",
-        "canonical": "oklch(74.1% 0.133 272)",
-        "tonalRamp": [
-          "oklch(15% 0.054 272)",
-          "oklch(26% 0.093 272)",
-          "oklch(38% 0.118 272)",
-          "oklch(49% 0.131 272)",
-          "oklch(61% 0.131 272)",
-          "oklch(72% 0.118 272)",
-          "oklch(84% 0.093 272)",
-          "oklch(95% 0.054 272)"
-        ]
-      },
-      "periwinkle-fill": {
-        "role": "primary",
-        "displayName": "Periwinkle Fill",
-        "canonical": "oklch(55.9% 0.187 270)",
-        "tonalRamp": [
-          "oklch(15% 0.076 270)",
-          "oklch(26% 0.131 270)",
-          "oklch(38% 0.167 270)",
-          "oklch(49% 0.185 270)",
-          "oklch(61% 0.185 270)",
-          "oklch(72% 0.167 270)",
-          "oklch(84% 0.131 270)",
-          "oklch(95% 0.076 270)"
+          "oklch(15% 0.001 174)",
+          "oklch(26% 0.002 174)",
+          "oklch(38% 0.003 174)",
+          "oklch(49% 0.003 174)",
+          "oklch(61% 0.003 174)",
+          "oklch(72% 0.003 174)",
+          "oklch(84% 0.002 174)",
+          "oklch(95% 0.001 174)"
         ]
       },
       "query-blue": {
@@ -139,6 +109,21 @@
           "oklch(95% 0.076 348)"
         ]
       },
+      "done-green": {
+        "role": "tertiary",
+        "displayName": "Done Green",
+        "canonical": "oklch(56.2% 0.124 157)",
+        "tonalRamp": [
+          "oklch(15% 0.050 157)",
+          "oklch(26% 0.086 157)",
+          "oklch(38% 0.110 157)",
+          "oklch(49% 0.122 157)",
+          "oklch(61% 0.122 157)",
+          "oklch(72% 0.110 157)",
+          "oklch(84% 0.086 157)",
+          "oklch(95% 0.050 157)"
+        ]
+      },
       "warning-red": {
         "role": "tertiary",
         "displayName": "Warning Red",
@@ -154,24 +139,39 @@
           "oklch(95% 0.074 30)"
         ]
       },
+      "highlighter-yellow": {
+        "role": "tertiary",
+        "displayName": "Highlighter Yellow",
+        "canonical": "oklch(93.6% 0.091 93)",
+        "tonalRamp": [
+          "oklch(15% 0.037 93)",
+          "oklch(26% 0.064 93)",
+          "oklch(38% 0.081 93)",
+          "oklch(49% 0.090 93)",
+          "oklch(61% 0.090 93)",
+          "oklch(72% 0.081 93)",
+          "oklch(84% 0.064 93)",
+          "oklch(95% 0.037 93)"
+        ]
+      },
       "paper": {
         "role": "neutral",
         "displayName": "Paper",
-        "canonical": "oklch(97.9% 0.007 89)",
+        "canonical": "oklch(97.5% 0.002 146)",
         "tonalRamp": [
-          "oklch(15% 0.003 89)",
-          "oklch(26% 0.005 89)",
-          "oklch(38% 0.006 89)",
-          "oklch(49% 0.007 89)",
-          "oklch(61% 0.007 89)",
-          "oklch(72% 0.006 89)",
-          "oklch(84% 0.005 89)",
-          "oklch(95% 0.003 89)"
+          "oklch(15% 0.001 146)",
+          "oklch(26% 0.001 146)",
+          "oklch(38% 0.002 146)",
+          "oklch(49% 0.002 146)",
+          "oklch(61% 0.002 146)",
+          "oklch(72% 0.002 146)",
+          "oklch(84% 0.001 146)",
+          "oklch(95% 0.001 146)"
         ]
       },
-      "card-white": {
+      "surface": {
         "role": "neutral",
-        "displayName": "Card White",
+        "displayName": "Surface",
         "canonical": "oklch(100.0% 0.000 90)",
         "tonalRamp": [
           "oklch(15% 0.000 90)",
@@ -184,116 +184,116 @@
           "oklch(95% 0.000 90)"
         ]
       },
-      "linen-panel": {
+      "panel": {
         "role": "neutral",
-        "displayName": "Linen Panel",
-        "canonical": "oklch(95.3% 0.013 87)",
+        "displayName": "Panel",
+        "canonical": "oklch(94.7% 0.003 165)",
         "tonalRamp": [
-          "oklch(15% 0.005 87)",
-          "oklch(26% 0.009 87)",
-          "oklch(38% 0.011 87)",
-          "oklch(49% 0.013 87)",
-          "oklch(61% 0.013 87)",
-          "oklch(72% 0.011 87)",
-          "oklch(84% 0.009 87)",
-          "oklch(95% 0.005 87)"
+          "oklch(15% 0.001 165)",
+          "oklch(26% 0.002 165)",
+          "oklch(38% 0.002 165)",
+          "oklch(49% 0.002 165)",
+          "oklch(61% 0.002 165)",
+          "oklch(72% 0.002 165)",
+          "oklch(84% 0.002 165)",
+          "oklch(95% 0.001 165)"
         ]
       },
-      "ink": {
+      "muted": {
         "role": "neutral",
-        "displayName": "Ink",
-        "canonical": "oklch(25.3% 0.028 266)",
+        "displayName": "Muted",
+        "canonical": "oklch(47.0% 0.015 244)",
         "tonalRamp": [
-          "oklch(15% 0.011 266)",
-          "oklch(26% 0.020 266)",
-          "oklch(38% 0.025 266)",
-          "oklch(49% 0.028 266)",
-          "oklch(61% 0.028 266)",
-          "oklch(72% 0.025 266)",
-          "oklch(84% 0.020 266)",
-          "oklch(95% 0.011 266)"
+          "oklch(15% 0.006 244)",
+          "oklch(26% 0.011 244)",
+          "oklch(38% 0.014 244)",
+          "oklch(49% 0.015 244)",
+          "oklch(61% 0.015 244)",
+          "oklch(72% 0.014 244)",
+          "oklch(84% 0.011 244)",
+          "oklch(95% 0.006 244)"
         ]
       },
-      "slate-muted": {
+      "rule": {
         "role": "neutral",
-        "displayName": "Slate Muted",
-        "canonical": "oklch(49.8% 0.028 262)",
+        "displayName": "Rule",
+        "canonical": "oklch(90.6% 0.005 165)",
         "tonalRamp": [
-          "oklch(15% 0.011 262)",
-          "oklch(26% 0.019 262)",
-          "oklch(38% 0.025 262)",
-          "oklch(49% 0.028 262)",
-          "oklch(61% 0.028 262)",
-          "oklch(72% 0.025 262)",
-          "oklch(84% 0.019 262)",
-          "oklch(95% 0.011 262)"
+          "oklch(15% 0.002 165)",
+          "oklch(26% 0.004 165)",
+          "oklch(38% 0.005 165)",
+          "oklch(49% 0.005 165)",
+          "oklch(61% 0.005 165)",
+          "oklch(72% 0.005 165)",
+          "oklch(84% 0.004 165)",
+          "oklch(95% 0.002 165)"
         ]
       },
-      "rule-line": {
+      "night-paper": {
         "role": "neutral",
-        "displayName": "Rule Line",
-        "canonical": "oklch(89.3% 0.019 86)",
+        "displayName": "Night Paper",
+        "canonical": "oklch(21.0% 0.007 229)",
         "tonalRamp": [
-          "oklch(15% 0.008 86)",
-          "oklch(26% 0.013 86)",
-          "oklch(38% 0.017 86)",
-          "oklch(49% 0.018 86)",
-          "oklch(61% 0.018 86)",
-          "oklch(72% 0.017 86)",
-          "oklch(84% 0.013 86)",
-          "oklch(95% 0.008 86)"
+          "oklch(15% 0.003 229)",
+          "oklch(26% 0.005 229)",
+          "oklch(38% 0.006 229)",
+          "oklch(49% 0.007 229)",
+          "oklch(61% 0.007 229)",
+          "oklch(72% 0.006 229)",
+          "oklch(84% 0.005 229)",
+          "oklch(95% 0.003 229)"
         ]
       },
-      "night-page": {
+      "night-surface": {
         "role": "neutral",
-        "displayName": "Night Page",
-        "canonical": "oklch(19.6% 0.011 268)",
+        "displayName": "Night Surface",
+        "canonical": "oklch(24.8% 0.009 234)",
         "tonalRamp": [
-          "oklch(15% 0.004 268)",
-          "oklch(26% 0.007 268)",
-          "oklch(38% 0.009 268)",
-          "oklch(49% 0.010 268)",
-          "oklch(61% 0.010 268)",
-          "oklch(72% 0.009 268)",
-          "oklch(84% 0.007 268)",
-          "oklch(95% 0.004 268)"
+          "oklch(15% 0.004 234)",
+          "oklch(26% 0.006 234)",
+          "oklch(38% 0.008 234)",
+          "oklch(49% 0.009 234)",
+          "oklch(61% 0.009 234)",
+          "oklch(72% 0.008 234)",
+          "oklch(84% 0.006 234)",
+          "oklch(95% 0.004 234)"
         ]
       },
-      "night-card": {
+      "night-muted": {
         "role": "neutral",
-        "displayName": "Night Card",
-        "canonical": "oklch(23.9% 0.014 267)",
+        "displayName": "Night Muted",
+        "canonical": "oklch(73.4% 0.009 179)",
         "tonalRamp": [
-          "oklch(15% 0.006 267)",
-          "oklch(26% 0.010 267)",
-          "oklch(38% 0.013 267)",
-          "oklch(49% 0.014 267)",
-          "oklch(61% 0.014 267)",
-          "oklch(72% 0.013 267)",
-          "oklch(84% 0.010 267)",
-          "oklch(95% 0.006 267)"
+          "oklch(15% 0.004 179)",
+          "oklch(26% 0.007 179)",
+          "oklch(38% 0.008 179)",
+          "oklch(49% 0.009 179)",
+          "oklch(61% 0.009 179)",
+          "oklch(72% 0.008 179)",
+          "oklch(84% 0.007 179)",
+          "oklch(95% 0.004 179)"
         ]
       },
-      "night-ink": {
+      "night-rule": {
         "role": "neutral",
-        "displayName": "Night Ink",
-        "canonical": "oklch(94.0% 0.006 265)",
+        "displayName": "Night Rule",
+        "canonical": "oklch(33.1% 0.011 225)",
         "tonalRamp": [
-          "oklch(15% 0.002 265)",
-          "oklch(26% 0.004 265)",
-          "oklch(38% 0.005 265)",
-          "oklch(49% 0.006 265)",
-          "oklch(61% 0.006 265)",
-          "oklch(72% 0.005 265)",
-          "oklch(84% 0.004 265)",
-          "oklch(95% 0.002 265)"
+          "oklch(15% 0.004 225)",
+          "oklch(26% 0.008 225)",
+          "oklch(38% 0.010 225)",
+          "oklch(49% 0.011 225)",
+          "oklch(61% 0.011 225)",
+          "oklch(72% 0.010 225)",
+          "oklch(84% 0.008 225)",
+          "oklch(95% 0.004 225)"
         ]
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Page titles in the hero only."
+        "purpose": "Page titles only."
       },
       "headline": {
         "displayName": "Headline",
@@ -301,25 +301,25 @@
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Subheadings inside a section; wrap-up headings at 1.08rem."
+        "purpose": "Subheadings inside a section."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Prose; 16px at 900px and below."
+        "purpose": "Prose; 16px at 900px and below; lines under about 80 characters."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Control labels, callout titles, buttons, meta lines, pills."
+        "purpose": "Buttons, control labels, callout titles, pills and counters (tabular numerals)."
       },
       "mono": {
         "displayName": "Mono",
-        "purpose": "Numbers, readouts, tables, vectors, code, step counters."
+        "purpose": "Numbers a widget computes, readouts, tables, vectors, shapes and code; never interface labels."
       }
     },
     "shadows": [
       {
         "name": "base-lift",
-        "value": "0 1px 2px rgba(20,25,40,.06), 0 8px 24px rgba(20,25,40,.06)",
+        "value": "0 1px 2px rgba(20,25,30,.06), 0 8px 24px rgba(20,25,30,.07)",
         "purpose": "The --shadow token (dark: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.25)); combined with a larger drop on floating layers."
       },
       {
@@ -329,7 +329,7 @@
       },
       {
         "name": "menu",
-        "value": "var(--shadow), 0 18px 48px rgba(0,0,0,.24)",
+        "value": "0 12px 32px rgba(0,0,0,.16), 0 1px 3px rgba(0,0,0,.08)",
         "purpose": "The Settings popover."
       },
       {
@@ -348,11 +348,6 @@
         "purpose": "The contents bottom sheet on mobile."
       },
       {
-        "name": "accent-glow",
-        "value": "0 8px 28px color-mix(in srgb, var(--accent) 16%, transparent)",
-        "purpose": "Home cards on hover; the Continue button uses 22% (32% on hover). Home page only."
-      },
-      {
         "name": "tooltip",
         "value": "0 6px 20px rgba(0,0,0,.3)",
         "purpose": "The dark mono tooltip over widgets."
@@ -360,9 +355,14 @@
     ],
     "motion": [
       {
+        "name": "bars-grow",
+        "value": ".6s cubic-bezier(.2,.7,.2,1)",
+        "purpose": "The home demo's bars grow on load and on a new prompt; the one unprompted motion on the page."
+      },
+      {
         "name": "menu-in",
-        "value": ".16s ease-out",
-        "purpose": "Settings popover fades and scales in from 97%."
+        "value": ".14s ease-out",
+        "purpose": "Settings popover fades in and drops 4px."
       },
       {
         "name": "sheet-up",
@@ -371,18 +371,13 @@
       },
       {
         "name": "subpage",
-        "value": ".25s ease",
+        "value": ".22s ease",
         "purpose": "Settings sub-pages slide in from the right."
       },
       {
         "name": "pill-hide",
         "value": ".28s ease",
         "purpose": "The mobile pill hides while scrolling down."
-      },
-      {
-        "name": "state",
-        "value": ".15s to .2s",
-        "purpose": "Chevrons, switches, hover glows."
       },
       {
         "name": "reduced-motion",
@@ -401,7 +396,7 @@
       },
       {
         "name": "frame",
-        "value": "1220px"
+        "value": "1100px"
       }
     ]
   },
@@ -410,17 +405,17 @@
       "name": "Default Button",
       "kind": "button",
       "refersTo": "button",
-      "description": "Quiet secondary action; border turns accent on hover.",
-      "html": "<button class=\"ds-btn\">Reset</button>",
-      "css": ".ds-btn{font:600 .88rem var(--sans,system-ui);border:1px solid var(--line,#e1dbce);background:var(--bg,#faf8f3);color:var(--ink,#1c2230);border-radius:9px;padding:8px 14px;min-height:38px;cursor:pointer}.ds-btn:hover{border-color:var(--accent,#8a4b00)}.ds-btn:focus-visible{outline:3px solid var(--accent,#8a4b00);outline-offset:2px}"
+      "description": "Quiet secondary action; the border turns to ink on hover.",
+      "html": "<button class=\"ds-btn\">Try another prompt</button>",
+      "css": ".ds-btn{font:700 .88rem var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif);border:1px solid var(--line,#dde1df);background:var(--surface,#fff);color:var(--ink,#181c20);border-radius:6px;padding:8px 14px;min-height:38px;cursor:pointer}.ds-btn:hover{border-color:var(--ink,#181c20)}.ds-btn:focus-visible{outline:2px solid var(--ink,#181c20);outline-offset:2px}"
     },
     {
       "name": "Outline Button",
       "kind": "button",
       "refersTo": "button-outline",
-      "description": "The main action: Start, Continue, a widget's run button, the next part.",
-      "html": "<button class=\"ds-btn-out\">Run one step</button>",
-      "css": ".ds-btn-out{font:600 .88rem var(--sans,system-ui);background:transparent;border:1.5px solid var(--accent,#8a4b00);color:var(--accent,#8a4b00);border-radius:9px;padding:8px 14px;min-height:38px;cursor:pointer}.ds-btn-out:hover{background:var(--accent-soft,#fbeed9)}.ds-btn-out:focus-visible{outline:3px solid var(--accent,#8a4b00);outline-offset:2px}"
+      "description": "The main action: Start, Continue, a widget's run button, the next part. Fills with ink on hover.",
+      "html": "<button class=\"ds-btn-out\">Sample the next token</button>",
+      "css": ".ds-btn-out{font:700 .88rem var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif);background:transparent;border:1.5px solid var(--ink,#181c20);color:var(--ink,#181c20);border-radius:6px;padding:8px 14px;min-height:38px;cursor:pointer}.ds-btn-out:hover{background:var(--ink,#181c20);color:var(--bg,#f6f7f6)}.ds-btn-out:focus-visible{outline:2px solid var(--ink,#181c20);outline-offset:2px}"
     },
     {
       "name": "Solid Button",
@@ -428,15 +423,23 @@
       "refersTo": "button-solid",
       "description": "The single solid button on the site (Connect in GitHub sync).",
       "html": "<button class=\"ds-btn-solid\">Connect</button>",
-      "css": ".ds-btn-solid{font:600 .88rem var(--sans,system-ui);background:var(--fill,#a35a00);border:1px solid var(--fill,#a35a00);color:var(--on-fill,#fff);border-radius:9px;padding:8px 14px;min-height:38px;cursor:pointer}.ds-btn-solid:hover{background:var(--fill-hover,#8a4b00);border-color:var(--fill-hover,#8a4b00)}.ds-btn-solid:focus-visible{outline:3px solid var(--accent,#8a4b00);outline-offset:2px}"
+      "css": ".ds-btn-solid{font:700 .88rem var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif);background:var(--fill,#181c20);border:1px solid var(--fill,#181c20);color:var(--on-fill,#fff);border-radius:6px;padding:8px 14px;min-height:38px;cursor:pointer}.ds-btn-solid:hover{background:var(--fill-hover,#2e353b);border-color:var(--fill-hover,#2e353b)}.ds-btn-solid:focus-visible{outline:2px solid var(--ink,#181c20);outline-offset:2px}"
     },
     {
       "name": "Chips",
       "kind": "chip",
       "refersTo": "chip-selected",
-      "description": "Choice chips; the selected one takes the accent tint.",
+      "description": "Choice chips; the selected one takes the tint and an ink border.",
       "html": "<div class=\"ds-chips\"><button class=\"ds-chip ds-on\">Greedy</button><button class=\"ds-chip\">Top-k</button><button class=\"ds-chip\">Top-p</button></div>",
-      "css": ".ds-chips{display:flex;flex-wrap:wrap;gap:6px}.ds-chip{font:600 .88rem var(--sans,system-ui);border:1px solid var(--line,#e1dbce);background:var(--bg,#faf8f3);color:var(--ink,#1c2230);border-radius:9px;padding:8px 14px;min-height:38px;cursor:pointer}.ds-chip:hover{border-color:var(--accent,#8a4b00)}.ds-chip.ds-on{background:var(--accent-soft,#fbeed9);border-color:var(--accent,#8a4b00);color:var(--accent,#8a4b00)}.ds-chip:focus-visible{outline:3px solid var(--accent,#8a4b00);outline-offset:2px}"
+      "css": ".ds-chips{display:flex;flex-wrap:wrap;gap:6px}.ds-chip{font:700 .88rem var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif);border:1px solid var(--line,#dde1df);background:var(--surface,#fff);color:var(--ink,#181c20);border-radius:6px;padding:8px 14px;min-height:38px;cursor:pointer}.ds-chip:hover{border-color:var(--ink,#181c20)}.ds-chip.ds-on{background:var(--accent-soft,#e8ebe9);border-color:var(--ink,#181c20);box-shadow:inset 0 0 0 .5px var(--ink,#181c20)}.ds-chip:focus-visible{outline:2px solid var(--ink,#181c20);outline-offset:2px}"
+    },
+    {
+      "name": "Next-token Bars",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "The home demo and widget bars: the fill takes its colour from its value through viridis; values in mono.",
+      "html": "<div class=\"ds-bars\"><div class=\"ds-bar\"><span class=\"ds-t\">mat</span><span class=\"ds-tr\"><i style=\"width:43.8%;background:#fde725\"></i></span><span class=\"ds-v\">0.4378</span></div><div class=\"ds-bar\"><span class=\"ds-t\">sofa</span><span class=\"ds-tr\"><i style=\"width:16.1%;background:#2a788e\"></i></span><span class=\"ds-v\">0.1610</span></div><div class=\"ds-bar\"><span class=\"ds-t\">floor</span><span class=\"ds-tr\"><i style=\"width:9.8%;background:#3b528b\"></i></span><span class=\"ds-v\">0.0977</span></div></div>",
+      "css": ".ds-bars{display:grid;gap:5px;max-width:520px}.ds-bar{display:grid;grid-template-columns:5.2em minmax(0,1fr) 4.6em;gap:12px;align-items:center;font:500 .88rem var(--mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink,#181c20)}.ds-t{font:700 .95rem var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif);text-align:right}.ds-tr{height:14px;background:var(--panel,#eceeed);border-radius:3px;overflow:hidden}.ds-tr i{display:block;height:100%;border-radius:3px}.ds-v{text-align:right;font-variant-numeric:tabular-nums}"
     },
     {
       "name": "Text Field",
@@ -444,7 +447,7 @@
       "refersTo": "input",
       "description": "Text and number inputs inside widgets and dialogs.",
       "html": "<label class=\"ds-ctl\">Prompt<input class=\"ds-input\" type=\"text\" value=\"The cat sat\"></label>",
-      "css": ".ds-ctl{display:flex;flex-direction:column;gap:4px;font:600 .84rem var(--sans,system-ui);color:var(--muted,#5a6373);max-width:300px}.ds-input{font:400 .95rem var(--sans,system-ui);color:var(--ink,#1c2230);background:var(--bg,#faf8f3);border:1px solid var(--line,#e1dbce);border-radius:8px;padding:7px 10px;min-height:38px}.ds-input:hover{border-color:var(--accent,#8a4b00)}.ds-input:focus-visible{outline:3px solid var(--accent,#8a4b00);outline-offset:2px}"
+      "css": ".ds-ctl{display:flex;flex-direction:column;gap:4px;font:700 .84rem var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif);color:var(--muted,#545c63);max-width:300px}.ds-input{font:400 .95rem var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif);color:var(--ink,#181c20);background:var(--bg,#f6f7f6);border:1px solid var(--line,#dde1df);border-radius:6px;padding:7px 10px;min-height:38px}.ds-input:hover{border-color:var(--ink,#181c20)}.ds-input:focus-visible{outline:2px solid var(--ink,#181c20);outline-offset:2px}"
     },
     {
       "name": "Widget Card",
@@ -452,15 +455,15 @@
       "refersTo": "widget-card",
       "description": "The card that holds every interactive widget.",
       "html": "<div class=\"ds-widget\"><p class=\"ds-look\"><b>Look for:</b> the weights always sum to 1.</p><div class=\"ds-readout\">softmax = [0.6652, 0.2447, 0.0900]</div><div class=\"ds-wjh\"><b>What just happened?</b> Larger scores took most of the weight.</div></div>",
-      "css": ".ds-widget{background:var(--surface,#fff);border:1px solid var(--line,#e1dbce);border-radius:14px;padding:18px 22px;color:var(--ink,#1c2230);font:17px/1.65 var(--sans,system-ui)}.ds-look{font-size:.92rem;color:var(--muted,#5a6373);margin:0 0 14px}.ds-look b{color:var(--ink,#1c2230)}.ds-readout{font:500 .9rem var(--mono,ui-monospace,monospace);background:var(--panel,#f3efe6);border-radius:8px;padding:8px 12px}.ds-wjh{border-top:1px solid var(--line,#e1dbce);margin-top:16px;padding-top:12px;font-size:.96rem}.ds-wjh b{color:var(--accent,#8a4b00)}"
+      "css": ".ds-widget{background:var(--surface,#fff);border:1px solid var(--line,#dde1df);border-radius:10px;padding:18px 22px;color:var(--ink,#181c20);font:17px/1.6 var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif)}.ds-look{font-size:.92rem;color:var(--muted,#545c63);margin:0 0 14px}.ds-look b{color:var(--ink,#181c20)}.ds-readout{font:500 .9rem var(--mono,'JetBrains Mono',ui-monospace,monospace);background:var(--panel,#eceeed);border-radius:6px;padding:8px 12px}.ds-wjh{border-top:1px solid var(--line,#dde1df);margin-top:16px;padding-top:12px;font-size:.96rem}"
     },
     {
       "name": "Left-rule Callout",
       "kind": "custom",
       "refersTo": "",
-      "description": "Notes, mistakes and the running example: a coloured left rule, no box.",
+      "description": "Notes and the running example take an ink rule; only the mistake callout is red.",
       "html": "<div class=\"ds-callout\"><b>Common mistake</b><p>Scaling the scores by the key width instead of its square root.</p></div>",
-      "css": ".ds-callout{--c:var(--warn,#b42318);border-left:3px solid var(--c);padding:2px 0 2px 16px;font:17px/1.65 var(--sans,system-ui);color:var(--ink,#1c2230)}.ds-callout>b{display:block;font:600 .86rem var(--sans,system-ui);color:var(--c)}.ds-callout p{margin:.35em 0}"
+      "css": ".ds-callout{--c:var(--warn,#b42318);border-left:3px solid var(--c);padding:2px 0 2px 16px;font:17px/1.6 var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif);color:var(--ink,#181c20)}.ds-callout>b{display:block;font:700 .86rem var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif);color:var(--c)}.ds-callout p{margin:.35em 0}"
     },
     {
       "name": "Quiz Option",
@@ -468,96 +471,104 @@
       "refersTo": "quiz-option",
       "description": "Answer buttons; right gets a green bar, wrong a red one.",
       "html": "<div><button class=\"ds-qo ds-right\">Divide by the square root of the key width</button><button class=\"ds-qo ds-wrong\">Divide by the key width</button><button class=\"ds-qo\">Multiply by the key width</button></div>",
-      "css": ".ds-qo{display:block;width:100%;text-align:left;font:400 .93rem var(--sans,system-ui);margin:6px 0;padding:8px 12px;border:1px solid var(--line,#e1dbce);border-radius:9px;background:var(--bg,#faf8f3);color:var(--ink,#1c2230);min-height:38px;cursor:pointer}.ds-qo:hover{border-color:var(--accent,#8a4b00)}.ds-qo.ds-right{border-color:var(--v,#1a7a4b);box-shadow:inset 5px 0 0 var(--v,#1a7a4b);font-weight:600}.ds-qo.ds-wrong{border-color:var(--warn,#b42318);box-shadow:inset 5px 0 0 var(--warn,#b42318)}.ds-qo:focus-visible{outline:3px solid var(--accent,#8a4b00);outline-offset:2px}"
+      "css": ".ds-qo{display:block;width:100%;text-align:left;font:400 .93rem var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif);margin:6px 0;padding:8px 12px;border:1px solid var(--line,#dde1df);border-radius:6px;background:var(--bg,#f6f7f6);color:var(--ink,#181c20);min-height:38px;cursor:pointer}.ds-qo:hover{border-color:var(--ink,#181c20)}.ds-qo.ds-right{border-color:var(--ok,#1f8a56);box-shadow:inset 5px 0 0 var(--ok,#1f8a56);font-weight:700}.ds-qo.ds-wrong{border-color:var(--warn,#b42318);box-shadow:inset 5px 0 0 var(--warn,#b42318)}.ds-qo:focus-visible{outline:2px solid var(--ink,#181c20);outline-offset:2px}"
     },
     {
       "name": "Level and Optional Pills",
       "kind": "chip",
       "refersTo": "level-pill-core",
-      "description": "The meta line under each section title.",
+      "description": "The meta line under each section title; the level pills are the only colour kept from the earlier design.",
       "html": "<p class=\"ds-rt\">about 15 min <span class=\"ds-pill ds-opt\">+5 min optional</span> <span class=\"ds-pill ds-lv0\">Foundation</span> <span class=\"ds-pill ds-lv1\">Core</span> <span class=\"ds-pill ds-lv2\">Deep dive</span></p>",
-      "css": ".ds-rt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font:600 .88rem var(--sans,system-ui);color:var(--muted,#5a6373)}.ds-pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.76rem;font-weight:600;line-height:1.6;white-space:nowrap}.ds-opt{background:color-mix(in srgb,var(--ink,#1c2230) 14%,var(--bg,#faf8f3));color:color-mix(in srgb,var(--ink,#1c2230) 60%,var(--muted,#5a6373))}.ds-lv0{background:var(--lv0-bg,#d9efe2);color:var(--lv0,#145c35)}.ds-lv1{background:var(--lv1-bg,#dce7fa);color:var(--lv1,#1d4894)}.ds-lv2{background:var(--lv2-bg,#ebdff7);color:var(--lv2,#5c2a8c)}"
+      "css": ".ds-rt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font:600 .88rem var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif);color:var(--muted,#545c63)}.ds-pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.76rem;font-weight:700;line-height:1.6;white-space:nowrap}.ds-opt{background:color-mix(in srgb,var(--ink,#181c20) 14%,var(--bg,#f6f7f6));color:color-mix(in srgb,var(--ink,#181c20) 60%,var(--muted,#545c63))}.ds-lv0{background:var(--lv0-bg,#d9efe2);color:var(--lv0,#145c35)}.ds-lv1{background:var(--lv1-bg,#dce7fa);color:var(--lv1,#1d4894)}.ds-lv2{background:var(--lv2-bg,#ebdff7);color:var(--lv2,#5c2a8c)}"
+    },
+    {
+      "name": "Settings Menu",
+      "kind": "nav",
+      "refersTo": "settings-menu",
+      "description": "A plain list in groups split by rules, muted line icons, an ink switch.",
+      "html": "<div class=\"ds-menu\"><div class=\"ds-mh\">Settings</div><div class=\"ds-grp\"><div class=\"ds-row\"><span class=\"ds-ic\"><svg viewBox=\"0 0 24 24\"><path d=\"M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z\"/></svg></span><span class=\"ds-l\">Dark theme</span><span class=\"ds-sw\"></span></div></div><div class=\"ds-grp\"><div class=\"ds-row\"><span class=\"ds-ic\"><svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><path d=\"M8.5 12.5l2.5 2.5 4.5-5\"/></svg></span><span class=\"ds-l\">Progress</span><span class=\"ds-val\">6 of 25</span></div></div><div class=\"ds-grp\"><div class=\"ds-row ds-danger\"><span class=\"ds-ic\"><svg viewBox=\"0 0 24 24\"><path d=\"M4 12a8 8 0 1 0 2.4-5.7M4 4v5h5\"/></svg></span><span class=\"ds-l\">Reset progress</span></div></div></div>",
+      "css": ".ds-menu{width:320px;padding:0 8px 6px;background:var(--surface,#fff);color:var(--ink,#181c20);border:1px solid var(--line,#dde1df);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.16),0 1px 3px rgba(0,0,0,.08);font:500 .94rem/1.35 var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif)}.ds-mh{margin:0 -8px;padding:14px 16px;border-bottom:1px solid var(--line,#dde1df);font-weight:700;font-size:1rem}.ds-grp{padding:6px 0;border-top:1px solid var(--line,#dde1df)}.ds-mh+.ds-grp{border-top:0}.ds-row{display:flex;align-items:center;gap:12px;min-height:42px;padding:7px 8px;border-radius:6px}.ds-row:hover{background:var(--panel,#eceeed)}.ds-ic{display:grid;place-items:center;width:20px;color:var(--muted,#545c63)}.ds-ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.ds-l{flex:1}.ds-val{color:var(--muted,#545c63);font-size:.86rem}.ds-danger,.ds-danger .ds-ic{color:var(--warn,#b42318)}.ds-sw{position:relative;width:38px;height:22px;border-radius:999px;background:var(--ink,#181c20)}.ds-sw::after{content:\"\";position:absolute;top:2px;left:18px;width:18px;height:18px;border-radius:50%;background:var(--surface,#fff)}"
     },
     {
       "name": "Mobile Navigation Pill",
       "kind": "nav",
       "refersTo": "mobile-nav-pill",
       "description": "Floating previous / current / next pill at 900px and below.",
-      "html": "<nav class=\"ds-mbar\"><span class=\"ds-mpb\"><i style=\"width:40%\"></i></span><button class=\"ds-mb\" aria-label=\"Previous\"><svg viewBox=\"0 0 24 24\"><path d=\"M15 6l-6 6 6 6\"/></svg></button><button class=\"ds-mid\"><span class=\"ds-num\">3/6</span><span class=\"ds-txt\">Self-attention</span></button><button class=\"ds-mb\" aria-label=\"Next\"><svg viewBox=\"0 0 24 24\"><path d=\"M9 6l6 6-6 6\"/></svg></button></nav>",
-      "css": ".ds-mbar{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:2px;height:52px;padding:0 4px;max-width:380px;border-radius:999px;background:color-mix(in srgb,var(--surface,#fff) 90%,transparent);backdrop-filter:blur(12px);border:1px solid var(--line,#e1dbce);box-shadow:0 8px 28px rgba(0,0,0,.2);overflow:hidden;font:16px var(--sans,system-ui)}.ds-mpb{position:absolute;top:0;left:24px;right:24px;height:3px;background:var(--line,#e1dbce);border-radius:0 0 3px 3px;overflow:hidden}.ds-mpb i{display:block;height:100%;background:var(--v,#1a7a4b)}.ds-mbar button{font:inherit;color:var(--ink,#1c2230);background:transparent;border:0;border-radius:999px;min-height:44px;cursor:pointer}.ds-mbar button:active{background:var(--accent-soft,#fbeed9)}.ds-mbar button:focus-visible{outline:3px solid var(--accent,#8a4b00);outline-offset:-3px}.ds-mb{display:grid;place-items:center;width:44px;height:44px;padding:0}.ds-mb svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.ds-mid{display:flex;align-items:center;gap:9px;padding:0 10px;min-width:0;text-align:left}.ds-num{flex:none;font:700 .76rem var(--mono,ui-monospace,monospace);color:var(--accent,#8a4b00);background:var(--accent-soft,#fbeed9);border-radius:999px;padding:3px 8px}.ds-txt{flex:1;min-width:0;font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
+      "html": "<nav class=\"ds-mbar\"><span class=\"ds-mpb\"><i style=\"width:40%\"></i></span><button class=\"ds-mb\" aria-label=\"Previous\"><svg viewBox=\"0 0 24 24\"><path d=\"M15 6l-6 6 6 6\"/></svg></button><button class=\"ds-mid\"><span class=\"ds-num\">3/6</span><span class=\"ds-txt\">Self-attention from scratch</span></button><button class=\"ds-mb\" aria-label=\"Next\"><svg viewBox=\"0 0 24 24\"><path d=\"M9 6l6 6-6 6\"/></svg></button></nav>",
+      "css": ".ds-mbar{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:2px;height:52px;padding:0 4px;max-width:380px;border-radius:999px;background:color-mix(in srgb,var(--surface,#fff) 90%,transparent);backdrop-filter:blur(12px);border:1px solid var(--line,#dde1df);box-shadow:0 8px 28px rgba(0,0,0,.2);overflow:hidden;font:16px var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif)}.ds-mpb{position:absolute;top:0;left:24px;right:24px;height:3px;background:var(--line,#dde1df);border-radius:0 0 3px 3px;overflow:hidden}.ds-mpb i{display:block;height:100%;background:var(--ok,#1f8a56)}.ds-mbar button{font:inherit;color:var(--ink,#181c20);background:transparent;border:0;border-radius:999px;min-height:44px;cursor:pointer}.ds-mbar button:active{background:var(--accent-soft,#e8ebe9)}.ds-mbar button:focus-visible{outline:2px solid var(--ink,#181c20);outline-offset:-3px}.ds-mb{display:grid;place-items:center;width:44px;height:44px;padding:0}.ds-mb svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.ds-mid{display:flex;align-items:center;gap:9px;padding:0 10px;min-width:0;text-align:left}.ds-num{flex:none;font:700 .78rem var(--sans,'Atkinson Hyperlegible Next',system-ui,sans-serif);font-variant-numeric:tabular-nums;color:var(--on-accent,#fff);background:var(--ink,#181c20);border-radius:4px;padding:2px 7px}.ds-txt{flex:1;min-width:0;font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
     }
   ],
   "narrative": {
-    "northStar": "The Annotated Notebook",
-    "overview": "The guide reads like a careful engineer's lab notebook: warm paper, serif headings set like chapter titles, margin notes in a thin coloured rule, and small live experiments worked out right on the page. The mood is calm, exact and warm. Prose is unhurried and set in a comfortable 17px sans; every number a widget prints is in monospace and shown to four decimals, because exactness is part of the voice. In the light theme the paper is cream and the accent is a lamp-lit amber; in the dark theme the page turns to a cool grey with only a hint of blue and the accent becomes a soft periwinkle.\n\nThe page itself stays flat and quiet. Depth appears only on things that float above the reading (menus, dialogs, the mobile navigation pill, tooltips) and as the soft colour halos behind the home title. Colour carries meaning, not decoration: blue, purple and green always mean Query, Key and Value; green, blue and purple pills mark Foundation, Core and Deep dive; the logo's four viridis squares echo the heatmaps inside the widgets.\n\nControls are refined and restrained: outlines rather than fills, tinted backgrounds for anything selected, and one solid button on the whole site. Settings borrows the iOS grouped list (coloured icon squares, small switches, sub-pages that slide in), which is the one place the system leans towards a native app.",
+    "northStar": "Colour is data",
+    "overview": "The interface is graphite on near-white (graphite on dark grey in the dark theme) and carries no brand colour at all. Every colour on the page is information: blue, purple and green are Query, Key and Value; the viridis ramp is the size of a number in a bar or a heatmap; green means done and red means wrong; the three level pills say how deep a section goes. When the reader sees colour, something is being measured.\n\nThe home page opens on the guide's running example, live: \"The cat sat on the ___\" with the probability of each next token drawn as bars coloured by their value, and buttons to sample a token and try another prompt. The caption says the scores are hand-written, because no trained model runs here.\n\nThe mood is calm and exact. One legible sans (Atkinson Hyperlegible Next, made for readers with low vision) carries headings, prose and controls; JetBrains Mono marks anything exact: every number a widget prints, shapes and code. The page is flat; only layers that float above it (menus, dialogs, sheets, the mobile pill, tooltips) cast a shadow.",
     "keyCharacteristics": [
-      "Warm cream paper (light) and cool blue-grey (dark), each a full theme of its own.",
-      "Serif headings, sans body, monospace for every number, shape and code.",
-      "Flat content; shadows only on floating layers and the home halos.",
-      "Colour is semantic: Q/K/V, levels, done (green), warning (red), accent for links and actions.",
+      "Graphite and white chrome; links and main buttons are ink, never a hue.",
+      "Colour only for data, state and level, each with exactly one meaning.",
+      "One sans for words, one mono for numbers and code, both self-hosted.",
+      "Flat content; shadows only on floating layers.",
       "Four box styles, never nested.",
       "Sentence case everywhere; no uppercase labels.",
       "Every text colour passes 4.5:1 on its background."
     ],
     "rules": [
       {
-        "name": "The One Meaning Rule",
-        "body": "Blue, purple and green mean Query, Key and Value and nothing else; the accent is never used for any of them, and new widgets reuse `--q`, `--k`, `--v` rather than inventing near-matches.",
+        "name": "The Colour Is Data Rule",
+        "body": "Chrome never takes a hue. A new button, link, tab or highlight is Ink, Muted or a Tint; a hue appears only when it encodes data, a state or a level.",
         "section": "colors"
       },
       {
-        "name": "The One Solid Button Rule",
-        "body": "The whole site has a single solid-filled button. Start, Continue, a widget's main action and the footer's next button are accent outlines; selection is a tint, not a fill.",
+        "name": "The One Meaning Rule",
+        "body": "Blue, purple and green mean Query, Key and Value; Done Green and Warning Red mean done and wrong. New widgets reuse `--q`, `--k`, `--v`, `--ok`, `--warn` rather than inventing near-matches.",
         "section": "colors"
       },
       {
         "name": "The 4.5:1 Floor",
-        "body": "Every text colour passes 4.5:1 on the background it sits on, in both themes. When a borrowed palette (Gruvbox, Dracula) fails, the colour is adjusted, and the adjustment is noted in a CSS comment.",
+        "body": "Every text colour passes 4.5:1 on the background it sits on, in both themes. When a borrowed palette fails, the colour is adjusted and the change is noted in a CSS comment.",
         "section": "colors"
       },
       {
-        "name": "The Serif Speaks First Rule",
-        "body": "Serif is for headings and the brand only. Anything the reader touches or scans (buttons, labels, menus, pills) is sans; anything exact is mono.",
+        "name": "The Mono Means Exact Rule",
+        "body": "Mono is for numbers a widget computes, shapes and code. Labels, counters and buttons stay in the sans, with tabular numerals where digits must line up. Mono never uses ligatures, so `==` and `<=` show as typed.",
         "section": "typography"
       },
       {
         "name": "The Sentence Case Rule",
-        "body": "No `text-transform: uppercase` anywhere, and no tracked-out caps labels. Labels are written in sentence case.",
+        "body": "No `text-transform: uppercase` and no tracked-out caps labels.",
         "section": "typography"
       },
       {
         "name": "The Symbols Are Maths Rule",
-        "body": "Symbols such as d_model or √d_k are never plain text: KaTeX in static HTML, `sym()` in widget output. Tensor shapes stay in code style.",
+        "body": "Symbols such as d_model or √d_k are never plain text: KaTeX in static HTML, `sym()` in widget output. Tensor shapes stay in code style. Prose keeps 2px of room at the end of a line for the strut KaTeX puts after a subscript.",
         "section": "typography"
       },
       {
         "name": "The Float-Only Shadow Rule",
-        "body": "If it scrolls with the text, it has no shadow. Shadows mark what floats (menus, dialogs, sheets, the mobile pill, tooltips); the glow vocabulary belongs to the home page.",
+        "body": "If it scrolls with the text, it has no shadow and no glow.",
         "section": "elevation"
       },
       {
         "name": "The Four Boxes Rule",
-        "body": "There are four box styles only: card (widget, drill question), tinted panel (worked example, sample answer), left-rule note (callout, running example, open \"why\" note) and code block. Boxes are never nested inside one another.",
+        "body": "Four box styles only: card (widget, drill question), tinted panel (worked example, sample answer), left-rule note (callout, running example, open \"why\" note) and code block. Boxes are never nested.",
         "section": "shapes"
       }
     ],
     "dos": [
-      "**Do** use `--q`, `--k`, `--v` for Query, Key and Value, and `--res` (dashed) for the residual stream, in every new widget.",
-      "**Do** make the main action of a new widget an accent outline (`.controls button.pri`), and show selection with the accent tint, accent border and accent text.",
-      "**Do** put shadows only on floating layers (menus, dialogs, sheets, the mobile pill, tooltips).",
-      "**Do** keep every interactive control at least 38px tall (44px in the mobile pill and Settings rows).",
-      "**Do** print every number a widget computes in monospace, to four decimals where it is a working value.",
-      "**Do** define every new colour as a variable on `:root` with a dark-theme override, and check it reaches 4.5:1 in both themes.",
-      "**Do** set new wide tables inside the sideways-scrolling box, with `--sbg` matching the background behind it.",
+      "**Do** use `--q`, `--k`, `--v` for Query, Key and Value, `--res` (dashed) for the residual stream and `viridis()` for magnitudes.",
+      "**Do** make a new widget's main action an Ink outline (`.controls button.pri`) and show selection with Tint, Ink border and Ink text.",
+      "**Do** use `--ok` for anything done and `--warn` for anything wrong.",
+      "**Do** print every number a widget computes in mono, to four decimals where it is a working value.",
+      "**Do** keep every interactive control at least 38px tall (42–44px in Settings rows and the mobile pill).",
+      "**Do** define every new colour as a variable on `:root` with a dark-theme override, and check 4.5:1 in both themes.",
       "**Do** turn off motion under `prefers-reduced-motion`."
     ],
     "donts": [
+      "**Don't** give chrome (links, buttons, tabs, headers, icons) a hue.",
       "**Don't** add a second solid-filled button.",
-      "**Don't** use `text-transform: uppercase` or tracked-out caps labels.",
-      "**Don't** nest one box style inside another, or invent a fifth box style.",
-      "**Don't** use the accent, or a near-match of blue, purple or green, for anything that is not its fixed meaning.",
-      "**Don't** add shadows to content that scrolls with the text, or bring the home glows onto other pages.",
-      "**Don't** load web fonts or any network resource beyond KaTeX; the site must work offline from `file://`.",
+      "**Don't** use mono for interface labels, or a second sans or a serif anywhere.",
+      "**Don't** use `text-transform: uppercase` or tracked-out caps.",
+      "**Don't** nest one box style inside another, or invent a fifth.",
+      "**Don't** add shadows or glows to content that scrolls with the text.",
+      "**Don't** load fonts or anything else from the network beyond KaTeX; the site must work offline from `file://`.",
       "**Don't** write symbols such as d_model as plain text.",
       "**Don't** use `alert` or `confirm`; use the themed modal dialog."
     ]

@@ -38,7 +38,7 @@ function check(D,W,job){
     sec.querySelectorAll('*').forEach(e=>{if(!shown(e))return;const r=e.getBoundingClientRect();if((r.right>sr.right+1||r.left<sr.left-1)&&!clipAnc(e,sec))off.add(e);});});
   [...off].filter(e=>!off.has(e.parentElement)).slice(0,10).forEach(e=>found.push('sticks out of its section: '+label(e)+' "'+e.textContent.trim().slice(0,50)+'"'));
   D.querySelectorAll('body *').forEach(e=>{if(!shown(e))return;const c=cs(e);
-    if(/hidden|clip/.test(c.overflowX)&&c.textOverflow!=='ellipsis'&&e.scrollWidth>e.clientWidth+1&&e.textContent.trim())found.push('clipped text: '+label(e)+' by '+(e.scrollWidth-e.clientWidth)+'px');
+    if(/hidden|clip/.test(c.overflowX)&&!e.classList.contains('vh')&&c.textOverflow!=='ellipsis'&&e.scrollWidth>e.clientWidth+1&&e.textContent.trim())found.push('clipped text: '+label(e)+' by '+(e.scrollWidth-e.clientWidth)+'px');
     if(/auto|scroll/.test(c.overflowX)&&e.clientWidth&&e.scrollWidth>e.clientWidth+1&&!e.matches('pre.py,pre.sh,.scroll,.tex.d,.katex-display,.dd-list,#toc')&&!e.closest('svg'))found.push('text box scrolls sideways: '+label(e)+' by '+(e.scrollWidth-e.clientWidth)+'px');});
   return found;
 }

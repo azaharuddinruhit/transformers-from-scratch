@@ -29,21 +29,29 @@
 <header class="hero">
 <h1>Transformers and LLMs from Scratch</h1>
 <p class="lede">How a GPT-style model turns text into a prediction of the next token, and how it learns to. Each idea comes with a diagram, the equation, a worked example and an interactive you can check by hand.</p>
-<p class="pre">You need programming and basic linear algebra. If the maths is rusty, start with <a class="xref" data-ref="maths"></a>: about 25 minutes.</p>
-<p class="pre" id="studyTime"></p>
 </header>
+<section class="demo" id="demo" aria-label="Try it: the next token">
+<p class="prompt" id="dPrompt" aria-live="polite"></p>
+<div class="dbars" id="dBars"></div>
+<div class="acts"><button type="button" class="btn out" id="dSample">Sample the next token</button><button type="button" class="btn" id="dNext">Try another prompt</button></div>
+<p class="hint">A model scores every token it knows, often tens of thousands, and turns the scores into probabilities. These eight scores are written by hand for illustration; no trained model runs here.</p>
+</section>
+<div class="start">
 <p id="resume"></p>
+<p class="pre" id="studyTime"></p>
+</div>
+<p class="pre">You need programming and basic linear algebra. If the maths is rusty, start with <a class="xref" data-ref="maths"></a>: about 25 minutes.</p>
 <section class="journey" aria-labelledby="jr-h">
 <h2 id="jr-h">The journey</h2>
 <ol id="journey"></ol>
 </section>
 <section class="more" aria-labelledby="mo-h">
 <h2 id="mo-h">Practise and look things up</h2>
-<div class="cards">
-<a class="card" href="interview.html"><b>Interview drill</b><span id="drillStat">Questions with answers to reveal and mark</span></a>
-<a class="card" href="reference.html#maths"><b>The maths you need</b><span>Vectors, matrices, logs, probability, sine and cosine, and gradients, each with one example</span></a>
-<a class="card" href="reference.html"><b>Reference</b><span>Glossary, notation and further learning</span></a>
-</div>
+<ul class="links">
+<li><a href="interview.html">Interview drill</a><span id="drillStat">Questions with answers to reveal and mark</span></li>
+<li><a href="reference.html#maths">The maths you need</a><span>Vectors, matrices, logs, probability, sine and cosine, and gradients, each with one example</span></li>
+<li><a href="reference.html">Reference</a><span>Glossary, notation and further learning</span></li>
+</ul>
 <details class="callout note" id="plan"><summary>Teaching this to a team: a six-session plan</summary>
 <div class="scroll"><table class="numt cmp">
 <thead><tr><th>Session (60 to 75 min)</th><th>Sections</th><th>The one thing people should leave with</th></tr></thead>
@@ -64,6 +72,7 @@
 </div>
 <div id="tip" role="tooltip"></div>
 <script src="assets/js/core.js"></script>
+<script src="assets/js/shared.js"></script>
 <script src="assets/js/site.js"></script>
 <script async src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous" onload="renderAllTex()" onerror="texFailed()"></script>
 </body>
