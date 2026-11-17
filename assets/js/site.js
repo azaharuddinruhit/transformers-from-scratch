@@ -190,8 +190,9 @@ function initSync(closeSet){
 }
 const minsOf=id=>SECS[id][1];
 const partStats=p=>{const n=p.secs.filter(id=>P.done[id]).length;return{n,total:p.secs.length,left:p.secs.filter(id=>!P.done[id]).reduce((a,id)=>a+minsOf(id),0)};};
-/* the study time of a section or of the whole guide: core minutes, then what the optional material adds */
-const timeText=(core,opt)=>'about '+fmtMin(core)+(opt?', +'+fmtMin(opt)+' optional':'');
+/* the study time of a section or of the whole guide, as HTML: core minutes, then an "Optional"-style pill with
+   what the optional material adds */
+const timeText=(core,opt)=>'about '+fmtMin(core)+(opt?' <span class="optpill">+'+fmtMin(opt)+' optional</span>':'');
 /* optional material (.opt) gets a small "Optional" pill on each optional heading and box, and at the start of
    each run of plain optional text; the Python boxes say what they are in their titles, so they are left unmarked */
 function initOptional(){
@@ -200,12 +201,15 @@ function initOptional(){
     const plain=e.matches('p,ul,ol,tr,.tex')||(e.matches('div')&&!e.matches('.widget,.worked,.callout'));
     if(!isOpt(e)||(plain&&isOpt(e.previousElementSibling)))return;
     const pill=document.createElement('span');pill.className='optpill';pill.textContent='Optional';
-    if(e.matches('.try'))$('b',e).append(pill);
-    else if(e.matches('details'))$('summary',e).append(pill);
-    else if(e.matches('.widget,.worked'))$('h4',e).append(pill);
-    else if(e.matches('tr'))e.cells[0].append(pill);
-    else if(e.matches('h3'))e.append(pill);
-    else if(!e.matches('ul,ol')){pill.classList.add('lead');e.prepend(pill);}
+    /* a real space beside the pill, so copied text and screen readers get "misconceptions Optional" and a narrow
+       screen wraps the pill at the space */
+    const after=t=>t.append(' ',pill);
+    if(e.matches('.try'))after($('b',e));
+    else if(e.matches('details'))after($('summary',e));
+    else if(e.matches('.widget,.worked'))after($('h4',e));
+    else if(e.matches('tr'))after(e.cells[0]);
+    else if(e.matches('h3'))after(e);
+    else if(!e.matches('ul,ol')){pill.classList.add('lead');e.prepend(pill,' ');}
   });
 }
 /* the Settings menu: an iOS-style grouped list built here once for every page, with sub-pages for the path, progress and
@@ -406,7 +410,7 @@ function initHome(){
   const h=location.hash.slice(1),r=h&&refInfo(h);if(r){location.replace(r.href);return;}
   function paint(){
     const sum=i=>Object.keys(SECS).reduce((a,id)=>a+SECS[id][i],0);
-    $('#studyTime').textContent='Study time: '+timeText(sum(1),sum(2))+'.';
+    $('#studyTime').innerHTML='Study time: '+timeText(sum(1),sum(2));
     const lastId=P.last&&P.last.split('#')[1];
     $('#resume').innerHTML=lastId&&SECS[lastId]?'<a class="btn pri big" href="'+P.last+'">Continue: '+SECS[lastId][0]+' →</a>':'<a class="btn pri big" href="part-a.html">Start with Part A →</a>';
     $('#journey').innerHTML=PARTS.map(p=>{const st=partStats(p),state=st.n===st.total?'complete':st.n?'started':'';

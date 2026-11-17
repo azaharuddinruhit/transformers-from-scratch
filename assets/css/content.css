@@ -37,8 +37,9 @@ ul.pit{padding-left:1.1em}ul.pit li{margin:.45em 0}
 details.exact{margin:10px 0 2px}
 details.exact>summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:.95rem}
 details.exact[open]>summary{margin-bottom:8px}
-.optpill{display:inline-block;margin-left:8px;padding:0 8px;border:1px solid var(--line);border-radius:999px;font:600 .72rem/1.6 var(--sans);color:var(--muted);vertical-align:middle;white-space:nowrap}
-.optpill.lead{margin:0 8px 0 0}div.opt>.optpill.lead{margin-bottom:6px}
+/* "Optional" pill: grey fill mixed from the theme's ink and page colours; text at least 7.9:1 on it in both themes */
+.optpill{display:inline-block;margin-left:.2em;padding:1px 9px;border-radius:999px;background:color-mix(in srgb,var(--ink) 14%,var(--bg));font:600 .72rem/1.6 var(--sans);color:color-mix(in srgb,var(--ink) 60%,var(--muted));vertical-align:middle;white-space:nowrap}
+.optpill.lead{margin:0 .2em 0 0}div.opt>.optpill.lead{margin-bottom:6px}
 /* equations */
 .tex{font-family:var(--mono);font-size:.86em;text-transform:none;letter-spacing:normal}
 .msym{text-transform:none;letter-spacing:normal;white-space:nowrap}.msym sub{font-size:.75em;line-height:0}
