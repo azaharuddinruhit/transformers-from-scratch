@@ -104,5 +104,110 @@ function initGqa(){
   $('#gq-kv').addEventListener('click',e=>{const b=e.target.closest('button');if(b){sgq.kv=+b.dataset.n;renderGqa();$('#gq-kv button[data-n="'+sgq.kv+'"]').focus();}});
   reg(renderGqa);
 }
+/* ================= Multimodal LLMs: an image becomes tokens ================= */
+/* A 48 x 48 picture drawn by code (a cat on a mat by a window), cut into square patches. */
+const PT_N=48,PT_Q=['What',' is',' the',' cat',' sitting',' on','?'];
+const PT_PIX=(()=>{
+  const px=[],inE=(x,y,cx,cy,rx,ry)=>((x-cx)/rx)**2+((y-cy)/ry)**2<=1;
+  for(let y=0;y<PT_N;y++){const row=[];for(let x=0;x<PT_N;x++){
+    let c=y<32?[232,222,200]:[176,138,98];                                   // wall, floor
+    if(y>=32&&(x+3*y)%12===0)c=[156,120,84];                                  // floorboards
+    if(x>=3&&x<=17&&y>=3&&y<=17)c=(x===3||x===17||y===3||y===17||x===10||y===10)?[110,82,58]:[158,204,236];
+    if(inE(x,y,7,7,2.2,2.2))c=[250,214,84];                                  // sun in the window
+    if(x>=6&&x<=43&&y>=37&&y<=44)c=y===40||y===41?[232,188,92]:[186,58,58];  // mat with a stripe
+    const tail=x>=8&&x<=14&&Math.abs(y-(33-(14-x)*1.5))<=1.1;
+    if(inE(x,y,21,32,9.5,5.5)||inE(x,y,32,25,5.5,5)||tail)c=[72,72,84];      // body, head, tail
+    if(y>=18&&y<=21&&(Math.abs(x-29)<=(y-17)*0.6||Math.abs(x-35)<=(y-17)*0.6))c=[72,72,84]; // ears
+    if((x===30||x===34)&&y===24)c=[186,226,86];                               // eyes
+    if(x===32&&y===27)c=[236,150,160];                                        // nose
+    if(y>=36&&y<=37&&(x===15||x===16||x===26||x===27))c=[60,60,70];           // paws
+    row.push(c);}px.push(row);}
+  return px;
+})();
+const spt={p:8,sel:0};
+const ptRGB=c=>'rgb('+c.join(',')+')';
+function ptPatch(i){const n=PT_N/spt.p,r=Math.floor(i/n),c=i%n,px=[];for(let y=0;y<spt.p;y++)for(let x=0;x<spt.p;x++)px.push(PT_PIX[r*spt.p+y][c*spt.p+x]);return{r,c,px};}
+function renderPatch(){
+  const p=spt.p,n=PT_N/p,N=n*n,sel=ptPatch(spt.sel);let g='';
+  PT_PIX.forEach((row,y)=>{let x=0;while(x<PT_N){let e=x;while(e+1<PT_N&&row[e+1].join()===row[x].join())e++;g+='<rect x="'+x+'" y="'+y+'" width="'+(e-x+1)+'" height="1" fill="'+ptRGB(row[x])+'" shape-rendering="crispEdges"/>';x=e+1;}});
+  for(let k=1;k<n;k++)g+='<line class="ipg" x1="'+k*p+'" y1="0" x2="'+k*p+'" y2="48"/><line class="ipg" x1="0" y1="'+k*p+'" x2="48" y2="'+k*p+'"/>';
+  g+='<rect class="ips o" x="'+sel.c*p+'" y="'+sel.r*p+'" width="'+p+'" height="'+p+'"/><rect class="ips" x="'+sel.c*p+'" y="'+sel.r*p+'" width="'+p+'" height="'+p+'"/>';
+  const img=$('#pt-img');img.innerHTML=g;img.setAttribute('aria-label','A 48 by 48 pixel picture of a cat on a mat, cut into '+N+' patches. Selected: row '+(sel.r+1)+', column '+(sel.c+1)+'. Use the arrow keys to move.');
+  $('#pt-zoom').setAttribute('viewBox','0 0 '+p+' '+p);
+  $('#pt-zoom').innerHTML=sel.px.map((c,k)=>'<rect x="'+k%p+'" y="'+Math.floor(k/p)+'" width="1" height="1" fill="'+ptRGB(c)+'" shape-rendering="crispEdges"/>').join('');
+  $('#pt-lab').textContent='Image token '+(spt.sel+1)+' of '+N+': row '+(sel.r+1)+', column '+(sel.c+1);
+  const nums=[].concat(...sel.px.map(c=>c.map(v=>(v/255).toFixed(2))));
+  $('#pt-nums').innerHTML=p+' × '+p+' pixels × 3 colours = '+nums.length.toLocaleString('en-US')+' numbers:<br>'+nums.slice(0,9).join(', ')+', …<br><small>red, green and blue for each pixel, row by row, scaled to 0–1. A learned matrix turns this row into one vector of width '+sym('d_model')+'.</small>';
+  $('#pt-stats').innerHTML=[['Patch grid',n+' × '+n],['Image tokens',N],['Numbers per patch',(p*p*3).toLocaleString('en-US')],['Pairs attention compares',((N+PT_Q.length)**2).toLocaleString('en-US')]].map(r=>'<div><b>'+r[1]+'</b><span>'+r[0]+'</span></div>').join('');
+  let s='';for(let i=0;i<N;i++){const px=ptPatch(i).px,avg=[0,1,2].map(k=>Math.round(px.reduce((a,c)=>a+c[k],0)/px.length));s+='<i data-i="'+i+'" class="'+(i===spt.sel?'on':'')+'" style="background:'+ptRGB(avg)+'"></i>';}
+  $('#pt-seq').innerHTML=s+PT_Q.map(t=>'<span class="chip tok">'+esc(t.trim())+'<small>text</small></span>').join('');
+  $$('#pt-size button').forEach(b=>{const on=+b.dataset.v===p;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);});
+}
+function initPatch(){
+  $('#pt-size').innerHTML=[4,8,12,16,24].map(v=>'<button class="chip" data-v="'+v+'" aria-pressed="false">'+v+'</button>').join('');
+  const at=(x,y)=>{const n=PT_N/spt.p;return Math.min(n-1,Math.floor(y/spt.p))*n+Math.min(n-1,Math.floor(x/spt.p));};
+  spt.sel=at(32,24);
+  $('#pt-size').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;spt.p=+b.dataset.v;spt.sel=at(32,24);renderPatch();$('#pt-size button[data-v="'+spt.p+'"]').focus();});
+  const img=$('#pt-img');
+  img.addEventListener('click',e=>{const r=img.getBoundingClientRect();spt.sel=at((e.clientX-r.left)/r.width*PT_N,(e.clientY-r.top)/r.height*PT_N);renderPatch();});
+  img.addEventListener('keydown',e=>{const n=PT_N/spt.p,d={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];if(!d)return;e.preventDefault();
+    const r=Math.max(0,Math.min(n-1,Math.floor(spt.sel/n)+d[1])),c=Math.max(0,Math.min(n-1,spt.sel%n+d[0]));spt.sel=r*n+c;renderPatch();});
+  $('#pt-seq').addEventListener('click',e=>{const t=e.target.closest('i[data-i]');if(t){spt.sel=+t.dataset.i;renderPatch();}});
+  reg(renderPatch);
+}
+/* ================= How diffusion models make images: noise to a spiral ================= */
+/* Each example is a 2-D point. The denoiser is the exact best guess for the 300 training points (a weighted
+   average of them), not a trained network; the widget says so. */
+const DF_DATA=(()=>{const r=mulberry32(3),d=[];for(let i=0;i<300;i++){const t=1.5+Math.sqrt(r())*2.6*Math.PI,rad=t/(1.5+2.6*Math.PI)*1.3;d.push([rad*Math.cos(t)+0.025*randn(r),rad*Math.sin(t)+0.025*randn(r)]);}return d;})();
+const DF_EPS=(()=>{const r=mulberry32(17);return DF_DATA.map(()=>[randn(r),randn(r)]);})();
+const sdf={mode:'gen',S:50,k:50,pts:null,seed:1,timer:null,lev:0.5};
+const dfAb=lev=>Math.max(1e-6,Math.cos(Math.PI/2*Math.min(lev,0.9999))**2);
+function dfGuess(u,a){
+  let m=-Infinity;const L=DF_DATA.map(d=>{const dx=u[0]-Math.sqrt(a)*d[0],dy=u[1]-Math.sqrt(a)*d[1],l=-(dx*dx+dy*dy)/(2*(1-a));if(l>m)m=l;return l;});
+  let s=0,x=0,y=0;L.forEach((l,i)=>{const w=Math.exp(l-m);s+=w;x+=w*DF_DATA[i][0];y+=w*DF_DATA[i][1];});return[x/s,y/s];
+}
+function dfReset(){const r=mulberry32(sdf.seed);sdf.rng=r;sdf.pts=DF_DATA.map(()=>[randn(r),randn(r)]);sdf.k=sdf.S;}
+/* one step from level k/S to (k-1)/S: guess the clean point, move part of the way towards it, add a little fresh noise */
+function dfStep(){
+  if(sdf.k<=0)return;
+  const a=dfAb(sdf.k/sdf.S),a2=sdf.k>1?dfAb((sdf.k-1)/sdf.S):1,sig=Math.sqrt((1-a2)/(1-a)*Math.max(0,1-a/a2)),c=Math.sqrt(Math.max(0,1-a2-sig*sig));
+  sdf.pts=sdf.pts.map(u=>{const g=dfGuess(u,a);return[0,1].map(j=>Math.sqrt(a2)*g[j]+c*(u[j]-Math.sqrt(a)*g[j])/Math.sqrt(1-a)+sig*randn(sdf.rng));});
+  sdf.k--;
+}
+const dfNear=p=>{let b=Infinity;DF_DATA.forEach(d=>{const v=Math.hypot(p[0]-d[0],p[1]-d[1]);if(v<b)b=v;});return b;};
+function renderDiff(){
+  const X=v=>(120+v*50).toFixed(1),Y=v=>(120-v*50).toFixed(1),cl=v=>Math.max(-2.3,Math.min(2.3,v));
+  const gen=sdf.mode==='gen',lev=gen?sdf.k/sdf.S:sdf.lev,a=dfAb(lev);
+  const pts=gen?sdf.pts:DF_DATA.map((d,i)=>[0,1].map(j=>Math.sqrt(a)*d[j]+Math.sqrt(1-a)*DF_EPS[i][j]));
+  let g=DF_DATA.map(d=>'<circle class="dfd" cx="'+X(d[0])+'" cy="'+Y(d[1])+'" r="1.3"/>').join('');
+  g+=pts.map(p=>'<circle class="dfp" cx="'+X(cl(p[0]))+'" cy="'+Y(cl(p[1]))+'" r="1.9"/>').join('');
+  const h=pts[0];g+='<circle class="dfr" cx="'+X(cl(h[0]))+'" cy="'+Y(cl(h[1]))+'" r="5"/>';
+  if(lev>0.001){const q=dfGuess(h,a);g+='<line class="dfl" x1="'+X(cl(h[0]))+'" y1="'+Y(cl(h[1]))+'" x2="'+X(q[0])+'" y2="'+Y(q[1])+'"/><path class="dfx" d="M'+(+X(q[0])-3.5)+' '+(+Y(q[1])-3.5)+'l7 7m0 -7l-7 7"/>';}
+  $('#df-svg').innerHTML=g;
+  const on=pts.filter(p=>dfNear(p)<0.03).length,pc=v=>Math.round(100*v)+'%';
+  /* covered: training points with a sample near them, so that samples piled on one spot do not count as success */
+  const cov=()=>DF_DATA.filter(d=>pts.some(p=>Math.hypot(p[0]-d[0],p[1]-d[1])<0.05)).length/DF_DATA.length;
+  $('#df-stats').innerHTML=(gen?[['Step',(sdf.S-sdf.k)+' / '+sdf.S],['Noise level',fmt(lev,2)],['Weight on the original',fmt(Math.sqrt(a),2)],['Samples on the spiral',pc(on/pts.length)],['Spiral covered by samples',pc(cov())]]
+    :[['Noise level',fmt(lev,2)],['Weight on the original',fmt(Math.sqrt(a),2)],['Points still on the spiral',pc(on/pts.length)]]).map(r=>'<div><b>'+r[1]+'</b><span>'+r[0]+'</span></div>').join('');
+  $('#df-play').textContent=sdf.timer?'❚❚ Pause':sdf.k<=0?'↺ Generate again':'▶ Generate';
+  $('#df-steps-c').hidden=$('#df-btns').hidden=!gen;$('#df-lev-c').hidden=gen;
+  [['df-mode',sdf.mode],['df-steps',String(sdf.S)]].forEach(([id,v])=>$$('#'+id+' button').forEach(b=>{const o=b.dataset.v===v;b.classList.toggle('on',o);b.setAttribute('aria-pressed',o);}));
+}
+function initDiff(){
+  dfReset();
+  const stop=()=>{if(sdf.timer){clearInterval(sdf.timer);sdf.timer=null;}};
+  const chips=(id,opts,set)=>{const el=$('#'+id);el.innerHTML=opts.map(o=>'<button class="chip" data-v="'+o[0]+'" aria-pressed="false">'+o[1]+'</button>').join('');
+    el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;stop();set(b.dataset.v);renderDiff();$('#'+id+' button[data-v="'+b.dataset.v+'"]').focus();});};
+  chips('df-mode',[['gen','Remove noise (generate)'],['fwd','Add noise (training)']],v=>{sdf.mode=v;});
+  chips('df-steps',[['1','1'],['3','3'],['10','10'],['50','50']],v=>{sdf.S=+v;dfReset();});
+  slider('df-lev',v=>v.toFixed(2),v=>{sdf.lev=v;renderDiff();});
+  $('#df-play').addEventListener('click',()=>{
+    if(sdf.timer){stop();renderDiff();return;}
+    if(sdf.k<=0)dfReset();
+    sdf.timer=setInterval(()=>{dfStep();if(sdf.k<=0)stop();renderDiff();},Math.max(60,1500/sdf.S));renderDiff();});
+  $('#df-step').addEventListener('click',()=>{stop();if(sdf.k<=0)dfReset();else dfStep();renderDiff();});
+  $('#df-new').addEventListener('click',()=>{stop();sdf.seed++;dfReset();renderDiff();});
+  reg(renderDiff);
+}
 
-PAGE_INITS.push(initCross,initCrossKeys,initLR,initRope,initGqa);
+PAGE_INITS.push(initCross,initCrossKeys,initLR,initRope,initGqa,initPatch,initDiff);

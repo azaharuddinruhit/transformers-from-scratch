@@ -170,6 +170,10 @@
   <div class="term"><dt>Chat template</dt><dd>The special tokens and layout that turn a list of messages into the single sequence a chat model was trained on.</dd></div>
   <div class="term"><dt>Reasoning model</dt><dd>A model trained with reinforcement learning on checkable tasks to write out intermediate steps before answering; better on hard problems, slower and costlier per answer.</dd></div>
   <div class="term"><dt>RLHF</dt><dd>Reinforcement learning from human feedback: optimising a model towards outputs people prefer.</dd></div>
+  <div class="term"><dt>Multimodal model</dt><dd>A model that accepts more than one kind of input, such as text and images. Images enter as patch tokens in the same sequence as the text.</dd></div>
+  <div class="term"><dt>Image patch</dt><dd>A small square of an image (often 14 or 16 pixels a side), flattened and projected into one token vector.</dd></div>
+  <div class="term"><dt>CLIP</dt><dd>A way of training an image encoder and a text encoder together, so that an image and its caption get similar embeddings. Often used to pretrain the vision encoder of a multimodal model.</dd></div>
+  <div class="term"><dt>Classifier-free guidance</dt><dd>In diffusion, running the network with and without the prompt and pushing the prediction further towards the prompt’s direction.</dd></div>
   <div class="term"><dt>Encoder</dt><dd>A Transformer stack with unmasked self-attention that reads a whole input sequence and outputs one vector per token.</dd></div>
   <div class="term"><dt>Decoder</dt><dd>A Transformer stack with causal self-attention that generates a sequence one token at a time.</dd></div>
   <div class="term"><dt>Cross-attention</dt><dd>Attention whose queries come from the decoder and whose keys and values come from the encoder output.</dd></div>
@@ -253,6 +257,12 @@
     <tr><th scope="row"><span class="tex">B</span></th><td>batch size: sequences processed together</td><td>integer</td></tr>
     <tr><th scope="row"><span class="tex">P,\ n</span></th><td>prompt length; number of tokens generated</td><td>integers</td></tr>
     <tr><th scope="row"><span class="tex">D</span></th><td>number of training tokens</td><td>integer</td></tr>
+    <tr><th scope="row"><span class="tex">W_{\text{patch}}</span></th><td>the matrix that turns a flattened image patch into a vector</td><td><code>[pixels per patch × 3, d_model]</code></td></tr>
+    <tr><th scope="row"><span class="tex">u_0,\ u_s</span></th><td>in diffusion: a clean example; the same example at noise level <span class="tex">s</span></td><td>one number per pixel value</td></tr>
+    <tr><th scope="row"><span class="tex">s,\ S</span></th><td>in diffusion: a noise level; the highest level, pure noise</td><td>0 … S</td></tr>
+    <tr><th scope="row"><span class="tex">\bar\alpha_s</span></th><td>in diffusion: the share of the clean example kept at level <span class="tex">s</span></td><td>0 … 1</td></tr>
+    <tr><th scope="row"><span class="tex">\varepsilon,\ \hat\varepsilon,\ \varepsilon_\theta</span></th><td>in diffusion: the noise added; its prediction; the network that predicts it</td><td>same shape as <span class="tex">u_0</span></td></tr>
+    <tr><th scope="row"><span class="tex">c,\ \gamma</span></th><td>the condition a generator follows, usually the prompt; the guidance scale</td><td>vectors; positive number</td></tr>
   </tbody>
 </table></div>
 <p>Where a source uses different letters (the 2017 paper writes <span class="tex">pos</span>, <span class="tex">n</span> and <span class="tex">d</span>, for instance), the section says so.</p>

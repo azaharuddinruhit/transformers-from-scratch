@@ -275,15 +275,15 @@ print("1000 draws     =", {str(t): int((draws == t).sum()) for t in tokens})
   <li>A <b>generative model</b> returns an example: a prompt in, a paragraph or an image out. Its output is large, thousands of tokens or millions of pixel values, and every part has to fit with every other part.</li>
 </ul>
 <p><b>What does each kind of model have to learn?</b> A classifier only needs the boundary between the classes. It never has to know what a typical email looks like, only which side of the line one falls on. A generator has to know what the data itself looks like, so that it can draw new examples from it. In the language of probability:</p>
-<div class="tex d">\text{classifier: } p(y\mid x)\qquad \text{generative model: } p(x)\qquad \text{with a prompt: } p(x\mid c)</div>
-<p class="sym"><span class="tex">x</span> is an example, such as a text or an image. <span class="tex">y</span> is a label. <span class="tex">c</span> is the condition, usually the prompt. <span class="tex">p(x)</span> is high for examples that look like the training data and low for everything else.</p>
-<p>Training a generative model makes its training examples probable. Generating means drawing a new <span class="tex">x</span> from the learned distribution, which is called <b>sampling</b>.</p>
+<div class="tex d">\text{classifier: } p(\text{label}\mid\text{example})\qquad \text{generative model: } p(\text{example})\qquad \text{with a prompt: } p(\text{example}\mid\text{prompt})</div>
+<p class="sym">An example is, say, a text or an image; a label is a class such as “spam”. <span class="tex">p(\text{example})</span> is high for examples that look like the training data and low for everything else.</p>
+<p>Training a generative model makes its training examples probable. Generating means drawing a new example from the learned distribution, which is called <b>sampling</b>.</p>
 <h3>Two ways to make something large</h3>
 <p>Choosing every token of a paragraph, or every pixel of an image, in one go is too hard, because the parts depend on each other. Every successful generator breaks the job into many small predictions. There are two main recipes.</p>
 <p><b>One piece at a time (autoregressive).</b> Predict the first token, then the second given the first, and so on. Each step is a choice over the vocabulary, the kind of prediction neural networks are good at. This is the chain rule from <a class="xref" data-ref="intro"></a>, and it is how LLMs work:</p>
-<div class="tex d">p(x)=\prod_{t=1}^{T}p(x_t\mid x_{\lt t})</div>
-<p class="sym"><span class="tex">x_t</span> is the piece at position <span class="tex">t</span>, usually a token. <span class="tex">x_{\lt t}</span> is every piece before it. <span class="tex">T</span> is the number of pieces.</p>
-<p><b>Remove noise, step by step (diffusion).</b> Start from pure random noise the size of the output, say an image. A network predicts which part of it is noise, and a little of that is removed. After many such steps, often 20 to 50, a clean image remains. Every step updates the whole image at once. Most image, video and audio generators work this way.</p>
+<div class="tex d">p(w_1,\dots,w_T)=\prod_{t=1}^{T}p(w_t\mid w_{\lt t})</div>
+<p class="sym"><span class="tex">w_t</span> is the token at position <span class="tex">t</span>, <span class="tex">w_{\lt t}</span> is every token before it, and <span class="tex">T</span> is the number of tokens.</p>
+<p><b>Remove noise, step by step (diffusion).</b> Start from pure random noise the size of the output, say an image. A network predicts which part of it is noise, and a little of that is removed. After many such steps, often 20 to 50, a clean image remains. Every step updates the whole image at once. Most image, video and audio generators work this way; <a class="xref" data-ref="diffusion"></a> shows how.</p>
 <div class="flow" role="img" aria-label="Diagram: an autoregressive model grows the text one token at a time; a diffusion model starts from noise and sharpens the whole image a little at each step">
   <div><b>Autoregressive</b><small>one token per step</small></div><i>:</i>
   <div><b>the</b><small>step 1</small></div><i>→</i>
@@ -390,13 +390,13 @@ for k in (1, 2, 3, 4):
   <thead><tr><th>Model family</th><th>Makes</th><th>How one sample is made</th><th>Network inside</th></tr></thead>
   <tbody>
     <tr><th scope="row">Large language model</th><td>Text and code</td><td>One token at a time</td><td>Decoder-only Transformer</td></tr>
-    <tr><th scope="row">Multimodal LLM</th><td>Text, from text and images</td><td>The image is cut into patches that become extra input tokens; then one token at a time</td><td>Transformer</td></tr>
-    <tr><th scope="row">Diffusion model</th><td>Images, video, audio</td><td>Start from noise and remove a little in each step</td><td>A convolutional network at first; now often a Transformer</td></tr>
+    <tr><th scope="row">Multimodal LLM</th><td>Text, from text and images</td><td>The image is cut into patches that become extra input tokens (<a class="xref" data-ref="multimodal"></a>); then one token at a time</td><td>Transformer</td></tr>
+    <tr><th scope="row">Diffusion model</th><td>Images, video, audio</td><td>Start from noise and remove a little in each step (<a class="xref" data-ref="diffusion"></a>)</td><td>A convolutional network at first; now often a Transformer</td></tr>
     <tr><th scope="row">Speech recognition</th><td>Text, from audio</td><td>One token at a time, while reading the audio</td><td>Encoder–decoder Transformer (<a class="xref" data-ref="encdec"></a>)</td></tr>
     <tr class="opt"><th scope="row">GAN</th><td>Images</td><td>One pass from random numbers</td><td>Convolutional network</td></tr>
   </tbody>
 </table></div>
-<p>The rest of this guide follows the most important pairing: a decoder-only Transformer trained to predict the next token.</p>
+<p>The rest of this guide follows the most important pairing: a decoder-only Transformer trained to predict the next token. <a class="xref" data-ref="multimodal"></a> and <a class="xref" data-ref="diffusion"></a> return to images at the end.</p>
 <h3 class="opt">Common misconceptions</h3>
 <ul class="pit opt">
   <li><b>“Generative AI means chatbots.”</b> Text is one kind of output. The same ideas produce code, images, audio and video.</li>

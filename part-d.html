@@ -530,7 +530,285 @@ print("gates for the first token:", gates[0].round(3))
 <fieldset><legend>3. A mixture-of-experts model has 46.7B parameters, 12.9B active per token. What does it need memory for?</legend><button type="button" class="qo">12.9B parameters</button><button type="button" class="qo" data-ok="1">All 46.7B parameters, plus the KV cache</button><button type="button" class="qo">Only the router</button><p class="qx" hidden aria-live="polite"><b></b> Any token may be routed to any expert, so all must be loaded. The active count sets the work per token.</p></fieldset>
 </div>
 <details class="talk"><summary>For team discussion</summary><ul><li>Pick an open model we might use and read its configuration file. Which of these refinements does it use, and what do they mean for the hardware we need?</li><li>A mixture-of-experts model is fast but large. When would we prefer it to a dense model of the same speed?</li></ul></details>
-<p class="bridge">That completes the explanation of the model. The <a href="interview.html">interview drill</a> turns it into interview answers and adds the applied topics: retrieval, fine-tuning, agents and production.</p>
+<p class="bridge">That completes the text model. <a class="xref" data-ref="multimodal"></a> shows how the same Transformer reads images.</p>
+</div>
+</section>
+<section class="ch" id="multimodal" data-title="Multimodal LLMs: reading images">
+<h2>Multimodal LLMs: how a model reads images</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Explain how an image is turned into tokens that an LLM can read.</li><li>Work out how many tokens an image costs, from its size and the patch size.</li><li>Name the three parts of a vision-language model, and how it is trained.</li></ul></div><p class="needs"><b>Builds on</b> Embeddings from <a class="xref" data-ref="tokens"></a>, <a class="xref" data-ref="attention"></a>, and the model families in <a class="xref" data-ref="genai"></a>.</p></div>
+<div class="story"><p>Show the model a photo of a cat on a mat and ask “What is the cat sitting on?”. The answer “mat” is still the next-token prediction you have followed all along. The only change is that some of the input tokens came from the photo instead of from text.</p></div>
+<p>A <b>multimodal</b> LLM accepts more than one kind of input: usually text and images, and sometimes audio or video. Most current assistants are multimodal. What is surprising is how little changes. The Transformer reads a sequence of vectors, and it does not care where the vectors came from. So the whole job is to turn an image into vectors of the right width.</p>
+<h3>From pixels to tokens</h3>
+<ol>
+  <li><b>Cut</b> the image into a grid of square <b>patches</b>, for example 14 × 14 pixels each.</li>
+  <li><b>Flatten</b> each patch into one list of numbers: 14 × 14 pixels × 3 colours (red, green, blue) = 588 numbers.</li>
+  <li><b>Project</b> that list to the model’s width by multiplying it by a learned matrix. This does the job of the embedding table: a text token’s vector is looked up, a patch’s vector is computed.</li>
+  <li><b>Add position</b>, which for an image has two directions: the row and the column of the patch.</li>
+</ol>
+<p>This is the recipe of the Vision Transformer (ViT), from a 2020 paper titled “An image is worth 16×16 words”.</p>
+<div class="flow" role="img" aria-label="Diagram: an image is cut into patches; each patch is flattened and projected to a vector; a vision encoder processes them; a projector maps them to the LLM's width; the LLM reads them alongside the text tokens">
+  <div><b>Image</b><small>pixels</small></div><i>→</i>
+  <div><b>Patches</b><small>flatten, project, add position</small></div><i>→</i>
+  <div class="fa"><b>Vision encoder</b><small>a Transformer</small></div><i>→</i>
+  <div><b>Projector</b><small>to the LLM’s width</small></div><i>→</i>
+  <div class="fa"><b>LLM</b><small>image tokens + text tokens</small></div>
+</div>
+<p><b>How many tokens does an image cost?</b> One per patch. The patches form a grid, so count the patches along each side and multiply:</p>
+<div class="tex d">\text{image tokens}=\frac{\text{height}}{\text{patch}}\times\frac{\text{width}}{\text{patch}}</div>
+<p class="sym">Height and width are in pixels. Patch is the side of one patch in pixels. Halving the patch size doubles both fractions, so it multiplies the tokens by 4.</p>
+<p><b>How does a patch become a vector?</b> Exactly as a layer does in <a class="xref" data-ref="nn"></a>: a row of numbers times a matrix.</p>
+<div class="tex d">\text{patch vector}=\operatorname{flatten}(\text{patch})\;W_{\text{patch}}</div>
+<p class="sym"><span class="tex">\operatorname{flatten}(\text{patch})</span> is the patch’s pixel values in one row: 588 numbers for a 14-pixel patch. <span class="tex">W_{\text{patch}}</span> is a learned matrix with 588 rows and <span class="tex">d_{\text{model}}</span> columns. The result is one vector of width <span class="tex">d_{\text{model}}</span>, the same width as a text token’s.</p>
+<div class="worked">
+  <h4>Worked example: the cost of one photo</h4>
+  <div class="x-only"><p>A 336 × 336 image with 14-pixel patches: <span class="tex">336/14=24</span> patches per side, so <span class="tex">24\times24=576</span> image tokens. Each patch is <span class="tex">14\times14\times3=588</span> numbers before projection.</p>
+  <p>The question “What is the cat sitting on?” is about 8 text tokens. The image is about 70 times longer than the question.</p>
+  <p>A model that reads a 1,344 × 1,344 image by cutting it into 336-pixel tiles needs <span class="tex">4\times4=16</span> tiles, so <span class="tex">16\times576=9{,}216</span> tokens, before any extra overview image.</p></div>
+  <p class="s-only">A 336 × 336 image cut into 14-pixel patches makes a 24 × 24 grid: 576 image tokens. The question about it is about 8 tokens, so the image is around 70 times longer. A large image cut into tiles can cost thousands of tokens.</p>
+</div>
+<details class="callout code opt"><summary>In Python: cut an image into patch tokens</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s16_patches.py"><code>import numpy as np
+
+rng = np.random.default_rng(0)
+height, width, patch, d_model = 336, 336, 14, 64
+
+image = rng.random((height, width, 3))  # stands in for a photo: values 0 to 1 for red, green, blue
+
+# Cut into a grid of patches, then flatten each patch into one row of numbers
+rows, cols = height // patch, width // patch
+patches = (image.reshape(rows, patch, cols, patch, 3)
+                .transpose(0, 2, 1, 3, 4)       # [rows, cols, patch, patch, 3]
+                .reshape(rows * cols, patch * patch * 3))
+print("image          ", image.shape)
+print("patches        ", patches.shape, " one row per image token")
+
+# Project every patch to the model's width with one learned matrix (random here, untrained)
+W_patch = rng.normal(0, 0.02, (patch * patch * 3, d_model))
+tokens = patches @ W_patch
+print("image tokens   ", tokens.shape, " the same width as text token vectors")
+
+# The first patch is the top-left 14 x 14 corner, read row by row
+assert np.allclose(patches[0], image[:patch, :patch].reshape(-1))
+
+# Token cost for some common sizes
+for side in (224, 336, 448, 672):
+    n = (side // patch) ** 2
+    print(f"{side} x {side} pixels -&gt; {n:5,} tokens")
+
+# Output:
+# image           (336, 336, 3)
+# patches         (576, 588)  one row per image token
+# image tokens    (576, 64)  the same width as text token vectors
+# 224 x 224 pixels -&gt;   256 tokens
+# 336 x 336 pixels -&gt;   576 tokens
+# 448 x 448 pixels -&gt; 1,024 tokens
+# 672 x 672 pixels -&gt; 2,304 tokens</code></pre></details>
+<div class="widget" id="w-patch">
+  <h4 class="wt">Interactive · an image becomes tokens</h4>
+  <p class="look"><b>The point:</b> To the model, an image is a grid of patches, and each patch is one token made of plain numbers. <b>Do this:</b> Choose a patch size, then click patches in the picture. <b>Watch for:</b> The token count, which grows four times when the patch size halves, and the sequence below the picture, where image tokens and text tokens sit side by side.</p>
+  <div class="controls">
+    <div class="ctl"><span>Patch size (pixels)</span><div class="chips" id="pt-size" role="group" aria-label="Patch size in pixels"></div></div>
+  </div>
+  <div class="ptwrap">
+    <svg id="pt-img" viewBox="0 0 48 48" tabindex="0" role="img" aria-label="A 48 by 48 pixel picture of a cat on a mat, with the patch grid drawn over it"></svg>
+    <div class="ptside">
+      <span class="lab" id="pt-lab"></span>
+      <svg id="pt-zoom" role="img" aria-label="The selected patch, enlarged"></svg>
+      <p class="readout" id="pt-nums"></p>
+    </div>
+  </div>
+  <div class="stats" id="pt-stats" aria-live="polite"></div>
+  <span class="lab">The sequence the LLM reads: image tokens (each square shows its patch’s average colour), then the question</span>
+  <div class="ptseq" id="pt-seq"></div>
+  <small>What is simplified: the picture is 48 × 48 pixels, drawn by code, so that its patches are big enough to see; real models use images of a few hundred pixels per side and 14- or 16-pixel patches. The matrix that turns each patch into a vector is not shown, because its values only mean something after training.</small>
+  <div class="wjh"><b>What just happened?</b> Every patch you clicked is just a list of colour values, three per pixel, read row by row. The model never sees “a cat”; it sees these numbers, projected into vectors, and attention finds the patterns across them. Smaller patches keep finer detail, but the token count grows with the square of the number of patches per side, and attention compares every pair of tokens, so its work grows faster still. Real models settle on about 14 to 16 pixels per patch, and shrink or tile large images.</div>
+</div>
+<h3>The three parts of a vision-language model</h3>
+<ol>
+  <li><b>A vision encoder.</b> A Transformer that reads the patch vectors, with no causal mask, so every patch can attend to every other. Its output vectors describe what is in each part of the image. It is often trained first on its own, in the style of <b>CLIP</b> (2021): given hundreds of millions of images with their captions, learn embeddings in which an image and its own caption are close (high cosine similarity) and mismatched pairs are far apart.</li>
+  <li><b>A projector.</b> A small MLP, sometimes a single matrix, that maps the encoder’s vectors to the LLM’s width.</li>
+  <li><b>The LLM.</b> The decoder-only Transformer of <a class="xref" data-ref="architecture"></a>. The image tokens sit in the prompt where the image was placed, among the text tokens. With the causal mask, every text token after the image can attend to all of the image tokens.</li>
+</ol>
+<p><b>Training.</b> A common recipe takes a pretrained vision encoder and a pretrained LLM, and connects them in two stages. First, only the projector is trained, on images with captions, so that image tokens start to land where the LLM expects meaningful vectors. Then the projector and the LLM are fine-tuned together on conversations about images. As in <a class="xref" data-ref="posttrain"></a>, the loss counts only the tokens of the answer. Some models are instead trained on images and text together from the start.</p>
+<h3 class="opt">Other inputs, and images as output</h3>
+<ul class="opt">
+  <li><b>Audio.</b> Sound is turned into a <b>spectrogram</b>, the strength of each frequency over time, and short slices of it become tokens. Speech recognisers such as Whisper read them with an encoder–decoder Transformer (<a class="xref" data-ref="encdec"></a>).</li>
+  <li><b>Video.</b> A few frames per second are sampled and each frame is cut into patches. The token count climbs fast, so models sample frames sparingly and merge neighbouring patches.</li>
+  <li><b>Images as output.</b> Reading an image is not the same as making one. Some systems pass the request to a separate image generator, usually a diffusion model (<a class="xref" data-ref="diffusion"></a>). Others generate image tokens one at a time and decode them back into pixels.</li>
+</ul>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“The model first describes the image in words, then reads the description.”</b> The image tokens go straight into the sequence as vectors. No caption is written in between.</li>
+  <li><b>“An image costs about as much as a word.”</b> It costs hundreds to thousands of tokens, which count against the context window and the price.</li>
+  <li><b>“The model sees every pixel at full resolution.”</b> Large images are resized or tiled to a budget. Small print in a big image can be lost before the model reads it.</li>
+  <li><b>Pitfall:</b> sending every image at the highest resolution by default. Check how your provider counts image tokens, and test whether a smaller image gives the same answers.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>An image becomes tokens by cutting it into patches, flattening each patch, and projecting it to the model’s width.</li><li>Image tokens = (height ÷ patch) × (width ÷ patch); halving the patch size multiplies them by 4.</li><li>A vision-language model is a vision encoder, a projector and an LLM; the LLM reads image and text tokens in one sequence.</li><li>Images are expensive: hundreds to thousands of tokens each.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. A 448 × 448 image is cut into 14-pixel patches. How many image tokens is that?</legend><button type="button" class="qo">448</button><button type="button" class="qo">64</button><button type="button" class="qo" data-ok="1">1,024</button><p class="qx" hidden aria-live="polite"><b></b> 448 ÷ 14 = 32 patches per side, and 32 × 32 = 1,024.</p></fieldset>
+<fieldset><legend>2. What does the projector in a vision-language model do?</legend><button type="button" class="qo" data-ok="1">It maps the vision encoder’s vectors to the LLM’s width, so they can sit among the text tokens</button><button type="button" class="qo">It turns the model’s answer into an image</button><button type="button" class="qo">It compresses the image file before upload</button><p class="qx" hidden aria-live="polite"><b></b> The encoder and the LLM have different widths and were trained apart. The projector connects them.</p></fieldset>
+<fieldset><legend>3. You halve the patch size. By how much does the number of image tokens grow?</legend><button type="button" class="qo">2 times</button><button type="button" class="qo" data-ok="1">4 times</button><button type="button" class="qo">16 times</button><p class="qx" hidden aria-live="polite"><b></b> Each side has twice as many patches, so the grid has 4 times as many. (Attention, which compares every pair, does about 16 times the work.)</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Which of our documents should we send as images (scans, charts, screenshots) and which as extracted text, given what an image costs in tokens?</li><li>Small print in a large image can be lost when it is resized. How would we test a model on our own scanned documents?</li></ul></details>
+<p class="bridge">Reading images is half the story. <a class="xref" data-ref="diffusion"></a> explains how models make them.</p>
+</div>
+</section>
+<section class="ch" id="diffusion" data-title="How diffusion models make images">
+<h2>How diffusion models make images</h2>
+<div class="sopen"><div class="learn"><b>You will be able to</b><ul><li>Describe how a diffusion model is trained: add noise, then learn to predict it.</li><li>Explain why generating takes many small steps, and what goes wrong with too few.</li><li>Say how a text prompt steers the image, and where a Transformer fits.</li></ul></div><p class="needs"><b>Builds on</b> The two recipes in <a class="xref" data-ref="genai"></a>, the training loop in <a class="xref" data-ref="nn"></a>, and cross-attention from <a class="xref" data-ref="encdec"></a>.</p></div>
+<div class="story"><p>Ask an image model for “a cat sitting on a mat”. It does not draw the cat stroke by stroke, the way an LLM writes the sentence token by token. It starts from a screen of random static and, in a few dozen steps, cleans it up until a cat on a mat is all that is left.</p></div>
+<p>An LLM builds its output one piece at a time. A <b>diffusion model</b> works on the whole output at every step: it starts from pure noise and removes a little of it each time. The idea is easiest to follow in two halves: how the model is trained, and how it is then used to generate.</p>
+<div class="flow" role="img" aria-label="Diagram: training adds noise to a real image and teaches a network to predict that noise; generating starts from pure noise and removes the predicted noise a little at a time">
+  <div><b>Training</b><small>real image + noise</small></div><i>→</i>
+  <div class="fa"><b>Network</b><small>predicts the noise</small></div><i>·</i>
+  <div><b>Generating</b><small>pure noise</small></div><i>→</i>
+  <div class="fa"><b>Remove a little, many times</b><small>20 to 50 steps</small></div><i>→</i>
+  <div><b>New image</b><small>clean</small></div>
+</div>
+<h3>Training: add noise, learn to predict it</h3>
+<p><b>Step 1: make noisy examples.</b> Take a clean training image and mix it with random noise. A <b>noise level</b> controls the mix: at the lowest level the image is untouched, at the highest it is pure noise. Training uses every level, so the network learns to clean images that are slightly noisy and images that are almost all noise.</p>
+<div class="tex d">u_s=\sqrt{\bar\alpha_s}\,u_0+\sqrt{1-\bar\alpha_s}\;\varepsilon</div>
+<p class="sym"><span class="tex">u_0</span> is the clean example: every pixel value of the image in one list. <span class="tex">s</span> is the noise level, from 0 (clean) up to <span class="tex">S</span> (pure noise), and <span class="tex">u_s</span> is the example at that level. <span class="tex">\varepsilon</span> is random noise of the same size, drawn fresh each time from a normal distribution. <span class="tex">\bar\alpha_s</span> is the share of the original kept: 1 at level 0, close to 0 at level <span class="tex">S</span>.</p>
+<details class="why"><summary>Why the square roots?</summary><div class="whyb">The square roots keep the overall size of the values the same at every level. The variance of the mix is <span class="tex">\bar\alpha_s</span> times the image’s variance plus <span class="tex">1-\bar\alpha_s</span> times the noise’s, and with both scaled to 1 that is always 1. So the network always sees inputs of the same scale, whatever the noise level.</div></details>
+<p><b>Step 2: predict the noise.</b> We know exactly which noise we added, so we can ask the network to recover it. That is ordinary supervised learning: the input is the noisy image and its noise level, the right answer is the noise, and the loss is the mean squared error.</p>
+<div class="tex d">\mathcal{L}=\big\lVert\,\varepsilon-\varepsilon_\theta(u_s,\,s,\,c)\,\big\rVert^2</div>
+<p class="sym"><span class="tex">\varepsilon_\theta</span> is the network, with parameters <span class="tex">\theta</span>; its output is its guess at the noise. <span class="tex">c</span> is the condition, usually the embedding of the text prompt. <span class="tex">\lVert\cdot\rVert^2</span> is the sum of the squared differences.</p>
+<h3>Generating: remove a little noise, many times</h3>
+<p>To make a new image, start from pure noise at level <span class="tex">S</span>. At each step:</p>
+<ol>
+  <li>The network predicts the noise, <span class="tex">\hat\varepsilon</span>.</li>
+  <li>Undo the mixing formula to get a guess at the clean image:</li>
+</ol>
+<div class="tex d">\hat u_0=\frac{u_s-\sqrt{1-\bar\alpha_s}\;\hat\varepsilon}{\sqrt{\bar\alpha_s}}</div>
+<ol start="3">
+  <li>Do not jump to that guess. Move to the next, slightly lower noise level, part of the way towards it, with a little fresh noise. Then repeat.</li>
+</ol>
+<p class="sym"><span class="tex">\hat\varepsilon</span> is the predicted noise and <span class="tex">\hat u_0</span> the current guess at the clean image; the hat marks an estimate.</p>
+<p><b>Why not jump straight to the guess?</b> From pure noise, the clean image could have been almost anything. The network’s best single guess is then the average of everything it could have been: a grey blur. Each small step commits to a little more detail, and lowers the noise so that the next guess can be sharper. Too few steps, and the blur stays.</p>
+<div class="worked">
+  <h4>Worked example: one pixel, noised and cleaned</h4>
+  <div class="x-only"><p>A clean pixel <span class="tex">u_0=0.8</span>, noise <span class="tex">\varepsilon=-1.5</span>, and a level with <span class="tex">\bar\alpha_s=0.64</span>, so <span class="tex">\sqrt{\bar\alpha_s}=0.8</span> and <span class="tex">\sqrt{1-\bar\alpha_s}=0.6</span>.</p>
+  <p>Noised: <span class="tex">u_s=0.8\times0.8+0.6\times(-1.5)=0.64-0.9=-0.26</span>.</p>
+  <p>If the network predicts the noise exactly, <span class="tex">\hat\varepsilon=-1.5</span>: <span class="tex">\hat u_0=(-0.26+0.9)/0.8=0.8</span>, the original.</p>
+  <p>If it predicts <span class="tex">\hat\varepsilon=-1.0</span>: <span class="tex">\hat u_0=(-0.26+0.6)/0.8=0.425</span>. An error of 0.5 in the noise moves the guess by about 0.375. That is why the model takes small steps and keeps correcting.</p></div>
+  <p class="s-only">A pixel of 0.8 mixed with noise becomes −0.26. If the network predicts the noise exactly, undoing the mix gives back 0.8. If its prediction is off by a third, the guess comes out at about 0.43 instead. Small steps let later, less noisy predictions fix such errors.</p>
+</div>
+<details class="callout code opt"><summary>In Python: diffusion on a spiral of points</summary>
+<div class="cbar"><small>Runs on its own · Python 3 + NumPy</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s17_diffusion.py"><code>import numpy as np
+
+rng = np.random.default_rng(0)
+
+# Training data: 300 points on a spiral. Each "image" here is just two numbers.
+t = 1.5 + np.sqrt(rng.random(300)) * 2.6 * np.pi
+data = np.stack([np.cos(t), np.sin(t)], axis=1) * (t / (1.5 + 2.6 * np.pi) * 1.3)[:, None]
+data += rng.normal(0, 0.025, data.shape)
+
+
+def alpha_bar(level):
+    """Share of the clean example kept: 1 at level 0 (clean), near 0 at level 1 (pure noise)."""
+    return np.maximum(1e-6, np.cos(np.pi / 2 * np.minimum(level, 0.9999)) ** 2)
+
+
+# Training examples: mix clean points with noise (the network would learn to predict eps)
+u0 = data[:4]
+eps = rng.normal(size=u0.shape)
+a = alpha_bar(0.5)
+u_s = np.sqrt(a) * u0 + np.sqrt(1 - a) * eps
+print("clean      ", u0.round(2).tolist())
+print("level 0.5  ", u_s.round(2).tolist())
+
+
+def guess_clean(u, a):
+    """The best guess at u0 for these 300 points: a weighted average of them.
+    A real model learns to approximate this with a network."""
+    d2 = ((u[:, None, :] - np.sqrt(a) * data[None]) ** 2).sum(-1)
+    w = np.exp(-(d2 - d2.min(1, keepdims=True)) / (2 * (1 - a)))
+    return (w / w.sum(1, keepdims=True)) @ data
+
+
+def generate(steps, n=300):
+    u = rng.normal(size=(n, 2))                       # start from pure noise
+    for k in range(steps, 0, -1):
+        a, a_next = alpha_bar(k / steps), (alpha_bar((k - 1) / steps) if k &gt; 1 else 1.0)
+        u0_hat = guess_clean(u, a)
+        eps_hat = (u - np.sqrt(a) * u0_hat) / np.sqrt(1 - a)
+        sigma = np.sqrt((1 - a_next) / (1 - a) * (1 - a / a_next))
+        u = np.sqrt(a_next) * u0_hat + np.sqrt(max(0.0, 1 - a_next - sigma**2)) * eps_hat \
+            + sigma * rng.normal(size=u.shape)        # move towards the guess, add a little fresh noise
+    return u
+
+
+for steps in (1, 3, 10, 50):
+    u = generate(steps)
+    dist = np.sqrt(((u[:, None] - data[None]) ** 2).sum(-1)).min(1)
+    print(f"{steps:2} step{'s' if steps &gt; 1 else ' '}: spread {u.std(0).mean():.2f}, "
+          f"on the spiral {np.mean(dist &lt; 0.03):4.0%}")
+
+# Output:
+# clean       [[-0.16, 1.06], [0.67, -0.43], [-0.4, 0.03], [-0.27, 0.21]]
+# level 0.5   [[-0.6, 1.69], [0.08, 0.25], [-0.29, -0.48], [0.76, 0.56]]
+#  1 step : spread 0.00, on the spiral   0%
+#  3 steps: spread 0.45, on the spiral   1%
+# 10 steps: spread 0.59, on the spiral  75%
+# 50 steps: spread 0.64, on the spiral  94%</code></pre></details>
+<div class="widget" id="w-diff">
+  <h4 class="wt">Interactive · from noise to a spiral</h4>
+  <p class="look"><b>The point:</b> Diffusion turns noise into data by many small steps, and the number of steps decides the quality. <b>Do this:</b> With 50 steps, press Generate and watch the cloud. Then try 10, 3 and 1. Finally, choose “Add noise” and drag the slider to see the examples that training uses. <b>Watch for:</b> The ringed sample and its × (its current guess at a clean point); and, with 1 step, every sample landing on the same spot.</p>
+  <div class="controls">
+    <div class="ctl"><span>Direction</span><div class="chips" id="df-mode" role="group" aria-label="Direction"></div></div>
+    <div class="ctl" id="df-steps-c"><span>Steps</span><div class="chips" id="df-steps" role="group" aria-label="Number of denoising steps"></div></div>
+    <label class="ctl" id="df-lev-c"><span class="row">Noise level <output id="df-lev-o"></output></span><input type="range" id="df-lev" min="0" max="1" step="0.02" value="0.5"></label>
+  </div>
+  <div class="controls" id="df-btns"><button class="pri" id="df-play">▶ Generate</button><button id="df-step">Step ›</button><button id="df-new">New noise</button></div>
+  <svg id="df-svg" viewBox="0 0 240 240" role="img" aria-label="Training points on a spiral in grey, and the samples being denoised in colour"></svg>
+  <div class="lg"><span>· grey: the 300 training points</span><span>● samples</span><span>◯ one sample, × its current guess</span></div>
+  <div class="stats" id="df-stats" aria-live="polite"></div>
+  <small>What is simplified: each example is two numbers (a point) instead of a million pixel values, and the training data are 300 points on a spiral. The denoiser is not a trained network: it is the best possible guess for these 300 points, computed by formula as a weighted average of them. A real model learns to approximate that guess with a network, and cannot match it exactly; that imperfection is part of what lets it make new images rather than copies of its training set.</small>
+  <div class="wjh"><b>What just happened?</b> At each step every sample asked which training points it could have come from, moved part of the way towards their average, and received a little fresh noise. With lots of noise the answer is “almost anywhere”, so the × sits near the middle of the data. As the noise falls, it narrows to one part of the spiral. With 1 step, every sample jumps straight to its first guess, the average of all the training points, so they all land on one spot: the toy version of a blurry image. With 3 steps they spread out but mostly miss the spiral; with 10, about three in four land on it; with 50, nearly all do, and together they cover the whole spiral. Fewer steps are faster but worse, which is why fast image models need extra training to work in only a few steps.</div>
+</div>
+<h3>Steering with a prompt</h3>
+<p>A text-to-image model passes the prompt through a text encoder, a Transformer like the ones in this guide, and gives the resulting vectors to the denoising network as the condition <span class="tex">c</span>. Inside the network, <b>cross-attention</b> (<a class="xref" data-ref="encdec"></a>) lets every part of the image read from the prompt’s tokens, just as the decoder read from the source sentence in translation.</p>
+<p class="opt"><b>Guidance.</b> On its own the condition steers only weakly. <b>Classifier-free guidance</b> runs the network twice per step, once with the prompt and once without, and pushes the prediction further in the direction the prompt made it move:</p>
+<div class="tex d opt">\hat\varepsilon=\hat\varepsilon_{\text{without}}+\gamma\,\big(\hat\varepsilon_{\text{with}}-\hat\varepsilon_{\text{without}}\big)</div>
+<p class="sym opt"><span class="tex">\gamma</span> is the guidance scale. With <span class="tex">\gamma=1</span> this is the ordinary prediction with the prompt; larger values follow the prompt more closely at some cost to variety. Values around 5 to 8 are common.</p>
+<h3>Where the Transformer fits</h3>
+<ul>
+  <li><b>The text encoder</b> that reads the prompt is a Transformer.</li>
+  <li><b>The denoising network</b> was at first a convolutional network (a U-Net) with attention layers added. Many newer models use a Transformer instead: the noisy image is cut into patches, exactly as in <a class="xref" data-ref="multimodal"></a>, and the patches are the tokens.</li>
+  <li class="opt"><b>Latent diffusion.</b> Denoising every pixel of a large image is expensive, so most models first compress the image with a separate network (an autoencoder) to a grid several times smaller in each direction, run diffusion there, and decode the result back to pixels at the end.</li>
+</ul>
+<div class="scroll"><table class="numt cmp">
+  <thead><tr><th></th><th>Autoregressive LLM</th><th>Diffusion model</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">One step produces</th><td>One more token</td><td>A slightly cleaner version of the whole output</td></tr>
+    <tr><th scope="row">Number of steps</th><td>One per token, so it grows with the length</td><td>Fixed, often 20 to 50, whatever the size</td></tr>
+    <tr><th scope="row">Trained to predict</th><td>The next token (cross-entropy)</td><td>The added noise (mean squared error)</td></tr>
+    <tr><th scope="row">Best suited to</th><td>Text, code, anything made of discrete tokens</td><td>Images, video, audio: continuous values</td></tr>
+  </tbody>
+</table></div>
+<h3 class="opt">Common misconceptions</h3>
+<ul class="pit opt">
+  <li><b>“The model searches its training images and blends them.”</b> No images are stored. The network has learned to predict noise, and the image emerges from many of those predictions.</li>
+  <li><b>“Diffusion means a different kind of network.”</b> Diffusion is the recipe. The network inside can be a convolutional network or a Transformer.</li>
+  <li><b>“More steps always means a better image.”</b> Quality improves quickly at first and then levels off; past a point, extra steps only cost time.</li>
+  <li><b>Pitfall:</b> treating the same prompt as giving the same image. A different starting noise gives a different image; fix the random seed to reproduce one.</li>
+</ul>
+<div class="wrapup">
+<h3>Key takeaways</h3>
+<ul class="take"><li>Training mixes clean examples with noise at random levels and teaches a network to predict the noise.</li><li>Generating starts from pure noise and removes a little of the predicted noise at each of many steps.</li><li>One big step gives the average of all possible images, a blur; many small steps let detail emerge.</li><li>The prompt steers each step through cross-attention, and the denoising network is now often a Transformer over image patches.</li></ul>
+<h3 class="checkh">Check yourself <span class="qscore"></span></h3>
+<div class="quiz">
+<fieldset><legend>1. During training, what is the diffusion network asked to predict?</legend><button type="button" class="qo">The next pixel</button><button type="button" class="qo" data-ok="1">The noise that was mixed into the image</button><button type="button" class="qo">The text prompt</button><p class="qx" hidden aria-live="polite"><b></b> The noise was added on purpose, so the right answer is known, and the loss is the squared error of the guess.</p></fieldset>
+<fieldset><legend>2. In the interactive, why do all samples land on one spot with a single step?</legend><button type="button" class="qo">The random noise was the same for every sample</button><button type="button" class="qo">One step adds too much noise</button><button type="button" class="qo" data-ok="1">From pure noise, the best guess is the average of all the training data, and one step jumps straight to it</button><p class="qx" hidden aria-live="polite"><b></b> Pure noise says almost nothing about where a sample came from, so every guess is the same average. With images, that average is a blur.</p></fieldset>
+<fieldset><legend>3. How does a text-to-image model let the image follow the prompt?</legend><button type="button" class="qo" data-ok="1">The prompt’s vectors are fed to the denoising network, which reads them through cross-attention at every step</button><button type="button" class="qo">An LLM writes a description, and the image is searched for</button><button type="button" class="qo">The prompt is added to the noise at the start</button><p class="qx" hidden aria-live="polite"><b></b> The prompt is the condition <span class="tex">c</span>, read by cross-attention in every step.</p></fieldset>
+</div>
+<details class="talk"><summary>For team discussion</summary><ul><li>Generating an image takes a fixed number of steps, each a full pass of a large network. What does that mean for the cost and speed of an image feature compared with a text one?</li><li>The same prompt gives different images each time. When is that a feature for us, and when do we need a fixed seed?</li></ul></details>
+<p class="bridge">That completes the explanation of the models. The <a href="interview.html">interview drill</a> turns it into interview answers and adds the applied topics: retrieval, fine-tuning, agents and production.</p>
 </div>
 </section>
 <section class="view complete" id="complete" data-title="Part D complete"><div id="partDone"></div></section>
