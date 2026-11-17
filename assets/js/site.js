@@ -32,16 +32,175 @@ function refInfo(id){
   return null;
 }
 const fmtMin=m=>m>=60?Math.floor(m/60)+' h'+(m%60?' '+m%60+' min':''):m+' min';
-/* one saved record: path, done sections, correct quiz answers, last place, drill marks */
+/* ---------- progress: one saved record, with a time for every item so two browsers' copies merge ---------- */
+/* record: path, done {id: bool}, quiz {section: [question indexes]}, last (url), drill {id: 'got'|'again'},
+   resetAt, and ts, the time each item last changed (a deleted drill mark keeps its time, so the deletion wins too) */
+const PROG_KEY='tfs-progress',PROG_MAPS=['done','quiz','drill'];
+const progObj=o=>o&&typeof o==='object'&&!Array.isArray(o)?o:{};
+function progNorm(raw){
+  const d=progObj(raw),t=progObj(d.ts);
+  const r={path:d.path==='quick'?'quick':'full',done:{...progObj(d.done)},quiz:{},last:typeof d.last==='string'?d.last:null,drill:{...progObj(d.drill)},resetAt:+d.resetAt||0,
+    ts:{path:+t.path||0,last:+t.last||0,done:{...progObj(t.done)},quiz:{...progObj(t.quiz)},drill:{...progObj(t.drill)}}};
+  Object.entries(progObj(d.quiz)).forEach(([k,v])=>{if(Array.isArray(v))r.quiz[k]=v.filter(Number.isInteger);});
+  /* an item with no time (a record saved before sync existed) counts as older than any change made since */
+  if(d.path&&!r.ts.path)r.ts.path=1;
+  if(r.last&&!r.ts.last)r.ts.last=1;
+  PROG_MAPS.forEach(k=>Object.keys(r[k]).forEach(id=>{if(!(+r.ts[k][id]>0))r.ts[k][id]=1;}));
+  return r;
+}
+/* the newer copy of each item wins; anything not changed after the latest reset on either side is dropped;
+   quiz answers only ever add up, so a section keeps the answers of both copies */
+function progMerge(a,b){
+  const R=Math.max(a.resetAt,b.resetAt),o={path:'full',last:null,done:{},quiz:{},drill:{},resetAt:R,ts:{path:0,last:0,done:{},quiz:{},drill:{}}};
+  const w=b.ts.path>a.ts.path?b:a;o.path=w.path;o.ts.path=w.ts.path;
+  const wl=b.ts.last>a.ts.last?b:a;if(wl.ts.last>R){o.last=wl.last;o.ts.last=wl.ts.last;}
+  ['done','drill'].forEach(k=>{
+    new Set([...Object.keys(a.ts[k]),...Object.keys(b.ts[k])]).forEach(id=>{
+      const ta=+a.ts[k][id]||0,tb=+b.ts[k][id]||0,s=tb>ta?b:a,t=Math.max(ta,tb);
+      if(t<=R)return;o.ts[k][id]=t;if(id in s[k])o[k][id]=s[k][id];});});
+  new Set([...Object.keys(a.quiz),...Object.keys(b.quiz)]).forEach(id=>{
+    const keep=[a,b].filter(s=>(+s.ts.quiz[id]||0)>R&&s.quiz[id]);if(!keep.length)return;
+    o.quiz[id]=[...new Set([].concat(...keep.map(s=>s.quiz[id])))].sort((x,y)=>x-y);
+    o.ts.quiz[id]=Math.max(...keep.map(s=>+s.ts.quiz[id]));});
+  return o;
+}
+/* stamps every item that differs from the last saved copy; true when anything did */
+function progStamp(r,old,now){
+  let any=false;const st=k=>{r.ts[k]=now;any=true;};
+  if(r.path!==old.path)st('path');
+  if(r.last!==old.last)st('last');
+  PROG_MAPS.forEach(k=>new Set([...Object.keys(r[k]),...Object.keys(old[k])]).forEach(id=>{
+    if(JSON.stringify(r[k][id])!==JSON.stringify(old[k][id])){r.ts[k][id]=now;any=true;}}));
+  return any;
+}
+/* a canonical text of a record, to tell whether a merge changed it */
+function progSig(r){
+  const c=v=>v&&typeof v==='object'&&!Array.isArray(v)?'{'+Object.keys(v).sort().map(k=>k+':'+c(v[k])).join(',')+'}':JSON.stringify(v);
+  return c({path:r.path,last:r.last,done:r.done,quiz:r.quiz,drill:r.drill,resetAt:r.resetAt,ts:r.ts});
+}
+const onProgress=[];
 const store=(()=>{
-  const K='tfs-progress';let d=null;
-  try{d=JSON.parse(localStorage.getItem(K));}catch(e){}
-  if(!d||typeof d!=='object')d={};
-  d={path:d.path==='quick'?'quick':'full',done:d.done||{},quiz:d.quiz||{},last:d.last||null,drill:d.drill||{}};
-  try{const old=localStorage.getItem('tfs-done');if(old){JSON.parse(old).forEach(id=>{if(SECS[id])d.done[id]=true;});localStorage.removeItem('tfs-done');}}catch(e){}
-  return{d,save(){try{localStorage.setItem(K,JSON.stringify(d));}catch(e){}}};
+  let raw=null;try{raw=JSON.parse(localStorage.getItem(PROG_KEY));}catch(e){}
+  const d=progNorm(raw);
+  try{const old=localStorage.getItem('tfs-done');if(old){JSON.parse(old).forEach(id=>{if(SECS[id]){d.done[id]=true;d.ts.done[id]=1;}});localStorage.removeItem('tfs-done');}}catch(e){}
+  let snap=JSON.parse(JSON.stringify(d));
+  const write=()=>{try{localStorage.setItem(PROG_KEY,JSON.stringify(d));}catch(e){}snap=JSON.parse(JSON.stringify(d));};
+  /* folds in what another tab saved and, from a sync, the gist's copy; d stays the same object, so P keeps working */
+  function absorb(remote){
+    progStamp(d,snap,Date.now());
+    let m=d,cur=null;try{cur=JSON.parse(localStorage.getItem(PROG_KEY));}catch(e){}
+    if(cur)m=progMerge(m,progNorm(cur));if(remote)m=progMerge(m,remote);
+    const before=progSig(d),pathWas=d.path;Object.assign(d,m);write();
+    if(progSig(d)!==before)progApplied(d.path!==pathWas);
+  }
+  return{d,absorb,
+    save(){if(progStamp(d,snap,Date.now())){absorb(null);syncSoon();}else write();},
+    reset(){const now=Date.now();Object.assign(d,{done:{},quiz:{},drill:{},last:null,resetAt:now,ts:{path:d.ts.path,last:0,done:{},quiz:{},drill:{}}});write();}};
 })();
 const P=store.d;
+/* a merge brought in changes: redraw what shows progress */
+function progApplied(pathChanged){
+  if(pathChanged){applyPath();rerender();onPathChange.forEach(f=>f());}
+  onProgress.forEach(f=>f());
+}
+window.addEventListener('storage',e=>{if(e.key===PROG_KEY)store.absorb(null);});
+
+/* ---------- sync through a secret GitHub gist ----------
+   localStorage stays the working copy; the gist holds a copy every browser can reach, merged item by item (progMerge).
+   The token is pasted once per browser in Settings and kept only in that browser: never write it into a file. */
+const GIST_ID='393397f29e536c680c5b06da85df9093',GIST_FILE='tfs-progress.json',GIST_API='https://api.github.com/gists/'+GIST_ID;
+const TOKEN_KEY='tfs-gist-token',SYNC_AT_KEY='tfs-sync-at',SYNC_DELAY=2000;
+const sync={timer:null,running:null,again:false,busy:false,err:''};
+const syncToken=()=>{try{return localStorage.getItem(TOKEN_KEY)||'';}catch(e){return '';}};
+const syncAt=()=>{try{return +localStorage.getItem(SYNC_AT_KEY)||0;}catch(e){return 0;}};
+function syncSoon(){if(!syncToken())return;clearTimeout(sync.timer);sync.timer=setTimeout(()=>syncNow(),SYNC_DELAY);}
+async function gistRead(token){
+  const res=await fetch(GIST_API,{cache:'no-store',headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json'}});
+  if(res.status===401)throw new Error('GitHub rejected the token');
+  if(res.status===403||res.status===404)throw new Error('the gist was not found, or the token cannot reach it (it needs the gist scope)');
+  if(!res.ok)throw new Error('GitHub answered HTTP '+res.status);
+  const file=(await res.json()).files[GIST_FILE];
+  if(!file)return null;   // a fresh gist: the first sync adds the file
+  let text=file.content;
+  if(file.truncated)text=await (await fetch(file.raw_url,{cache:'no-store'})).text();
+  if(!text.trim())return null;
+  try{return progNorm(JSON.parse(text));}catch(e){throw new Error(GIST_FILE+' in the gist is not valid JSON');}
+}
+async function gistWrite(token,rec,keepalive){
+  const body=JSON.stringify({files:{[GIST_FILE]:{content:JSON.stringify(rec,null,1)}}});
+  const res=await fetch(GIST_API,{method:'PATCH',keepalive:!!keepalive&&body.length<60000,headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json'},body});
+  if(!res.ok)throw new Error('GitHub answered HTTP '+res.status+' while saving');
+}
+/* reads the gist, merges it in, and writes the merge back when the gist lacks something; never two at once */
+function syncNow(keepalive){
+  const token=syncToken();if(!token)return Promise.resolve();
+  clearTimeout(sync.timer);sync.timer=null;
+  if(sync.running){sync.again=true;return sync.running;}
+  sync.busy=true;paintSync();
+  sync.running=(async()=>{
+    try{
+      const remote=await gistRead(token);
+      store.absorb(remote);
+      if(!remote||progSig(remote)!==progSig(P))await gistWrite(token,P,keepalive);
+      sync.err='';try{localStorage.setItem(SYNC_AT_KEY,String(Date.now()));}catch(e){}
+    }catch(e){sync.err=e&&e.message||String(e);}
+    finally{sync.running=null;sync.busy=false;paintSync();if(sync.again){sync.again=false;syncNow();}}
+  })();
+  return sync.running;
+}
+document.addEventListener('visibilitychange',()=>{
+  if(!syncToken())return;
+  if(document.visibilityState==='hidden'){if(sync.timer)syncNow(true);}else syncNow();
+});
+const agoText=t=>{const s=Math.round((Date.now()-t)/1000);return s<60?'just now':s<3600?Math.round(s/60)+' min ago':s<86400?Math.round(s/3600)+' h ago':new Date(t).toLocaleDateString();};
+function paintSync(){
+  const st=$('#syncStat');if(!st)return;const on=!!syncToken();
+  st.textContent=!on?'Off. Progress is kept in this browser only.':sync.busy?'Syncing…':sync.err?'The last sync failed: '+sync.err+'.':syncAt()?'On. Last synced '+agoText(syncAt())+'.':'On.';
+  st.classList.toggle('bad',on&&!sync.busy&&!!sync.err);
+  $('#syncOn').hidden=on;$('#syncOnRow').hidden=!on;$('#syncNowBtn').disabled=sync.busy;
+}
+function initSync(closeSet){
+  const reset=$('#pgReset');if(!reset)return;
+  const g=document.createElement('div');g.className='sgrp';
+  g.innerHTML='<span class="slab">Sync with GitHub</span>'
+    +'<button type="button" class="btn full" id="syncOn">Connect a gist token</button>'
+    +'<div class="srow" id="syncOnRow" hidden><button type="button" class="btn" id="syncNowBtn">Sync now</button><button type="button" class="btn" id="syncOff">Disconnect</button></div>'
+    +'<small class="shint" id="syncStat" aria-live="polite"></small>';
+  reset.closest('.sgrp').insertAdjacentElement('beforebegin',g);
+  const dlg=document.createElement('dialog');dlg.className='dlg';dlg.setAttribute('aria-labelledby','syTitle');
+  dlg.innerHTML='<form method="dialog"><h2 id="syTitle">Sync progress with GitHub</h2>'
+    +'<p>Paste a GitHub token that can write gists: a classic token with the <code>gist</code> scope, or a fine-grained token with Gists set to read and write. <a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Transformers%20guide%20sync" target="_blank" rel="noopener">Create a classic token</a>.</p>'
+    +'<p>The token is kept only in this browser and sent only to GitHub. Your progress here is merged with the gist’s copy, so nothing is lost on either side.</p>'
+    +'<label class="ctl" style="max-width:none">Token<input type="password" id="syTok" autocomplete="off" spellcheck="false"></label>'
+    +'<p class="syerr" id="syErr" role="alert" hidden></p>'
+    +'<div class="acts"><button type="button" class="btn" id="syNo">Cancel</button><button class="btn pri" id="syGo" value="connect">Connect</button></div></form>';
+  const off=document.createElement('dialog');off.className='dlg';off.setAttribute('aria-labelledby','soTitle');
+  off.innerHTML='<form method="dialog"><h2 id="soTitle">Disconnect sync?</h2><p>This browser stops syncing and forgets the token. Progress saved here and in the gist is kept. To connect again you will need a token.</p>'
+    +'<div class="acts"><button type="button" class="btn" id="soNo" autofocus>Cancel</button><button type="button" class="btn" id="soYes">Disconnect</button></div></form>';
+  document.body.append(dlg,off);
+  [dlg,off].forEach(x=>x.addEventListener('click',e=>{if(e.target===x)x.close('cancel');}));
+  const err=$('#syErr',dlg),inp=$('#syTok',dlg),go=$('#syGo',dlg);
+  $('#syNo',dlg).addEventListener('click',()=>dlg.close('cancel'));
+  $('#syncOn').addEventListener('click',()=>{closeSet(false);inp.value='';err.hidden=true;dlg.returnValue='';dlg.showModal();inp.focus();});
+  $('form',dlg).addEventListener('submit',async e=>{
+    e.preventDefault();const tok=inp.value.trim();
+    if(!tok){err.textContent='Paste a token first.';err.hidden=false;inp.focus();return;}
+    go.disabled=true;go.textContent='Checking…';err.hidden=true;
+    try{await gistRead(tok);}catch(x){err.textContent='Could not connect: '+x.message+'.';err.hidden=false;go.disabled=false;go.textContent='Connect';inp.focus();return;}
+    go.disabled=false;go.textContent='Connect';
+    try{localStorage.setItem(TOKEN_KEY,tok);}catch(x){err.textContent='This browser does not allow saving the token.';err.hidden=false;return;}
+    dlg.close('connected');paintSync();syncNow();
+  });
+  dlg.addEventListener('close',()=>{if(dlg.returnValue!=='connected')$('#setBtn').focus();});
+  $('#syncOff').addEventListener('click',()=>{closeSet(false);off.returnValue='';off.showModal();});
+  $('#soNo',off).addEventListener('click',()=>off.close());
+  $('#soYes',off).addEventListener('click',()=>{try{localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(SYNC_AT_KEY);}catch(e){}clearTimeout(sync.timer);sync.err='';paintSync();off.close();});
+  off.addEventListener('close',()=>$('#setBtn').focus());
+  $('#syncNowBtn').addEventListener('click',()=>syncNow());
+  $('#setBtn').addEventListener('click',paintSync);
+  paintSync();
+  syncNow();
+}
 const minsOf=id=>SECS[id][P.path==='quick'?2:1];
 const partStats=p=>{const n=p.secs.filter(id=>P.done[id]).length;return{n,total:p.secs.length,left:p.secs.filter(id=>!P.done[id]).reduce((a,id)=>a+minsOf(id),0)};};
 const onPathChange=[];
@@ -67,17 +226,18 @@ function initSettings(){
   const closeSet=ret=>{if(setMenu.hidden)return;setMenu.hidden=true;setBtn.setAttribute('aria-expanded','false');if(ret)setBtn.focus();};
   /* reset asks first in a modal <dialog>: it traps focus, closes on Escape and returns "reset" only from its button */
   const dlg=document.createElement('dialog');dlg.className='dlg';dlg.setAttribute('aria-labelledby','rsTitle');
-  dlg.innerHTML='<form method="dialog"><h2 id="rsTitle">Reset progress?</h2><p>This clears the finished sections, quiz answers and drill marks saved in this browser. Your path, theme and code settings stay. You cannot undo this.</p>'
+  dlg.innerHTML='<form method="dialog"><h2 id="rsTitle">Reset progress?</h2><p>This clears the finished sections, quiz answers and drill marks saved in this browser and, when sync is on, in every synced browser. Your path, theme and code settings stay. You cannot undo this.</p>'
     +'<div class="acts"><button class="btn" value="cancel" autofocus>Cancel</button><button class="btn danger" value="reset">Reset progress</button></div></form>';
   document.body.append(dlg);
   dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close('cancel');});
-  dlg.addEventListener('close',()=>{if(dlg.returnValue==='reset'){P.done={};P.quiz={};P.drill={};P.last=null;store.save();location.reload();}else setBtn.focus();});
+  dlg.addEventListener('close',()=>{if(dlg.returnValue==='reset'){store.reset();location.reload();}else setBtn.focus();});
   $('#pgReset').addEventListener('click',()=>{closeSet(false);dlg.returnValue='';dlg.showModal();});
   setBtn.addEventListener('click',()=>{if(setMenu.hidden){setMenu.hidden=false;setBtn.setAttribute('aria-expanded','true');const f=setMenu.querySelector('[aria-pressed="true"]')||setMenu.querySelector('button');if(f)f.focus();}else closeSet(true);});
   document.addEventListener('click',e=>{if(!setMenu.hidden&&!e.target.closest('.setwrap'))closeSet(false);});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!setMenu.hidden)closeSet(true);});
   setMenu.addEventListener('focusout',e=>{if(e.relatedTarget&&!e.relatedTarget.closest('.setwrap'))closeSet(false);});
   let rt=null,lastW=window.innerWidth;window.addEventListener('resize',()=>{if(window.innerWidth===lastW)return;lastW=window.innerWidth;clearTimeout(rt);rt=setTimeout(rerender,150);});
+  initSync(closeSet);
   const bar=$('#progBar');window.addEventListener('scroll',()=>{const h=document.documentElement;bar.style.width=(100*Math.max(0,Math.min(1,h.scrollTop/Math.max(1,h.scrollHeight-h.clientHeight)))).toFixed(1)+'%';},{passive:true});
 }
 /* cross-references show the target's name and link across pages */
@@ -167,7 +327,7 @@ function initPart(){
   const route=()=>{const h=decodeURIComponent(location.hash.slice(1));if(MOVED[h]){location.replace(refInfo(h).href);return;}const el=h&&document.getElementById(h),v=el&&el.closest('#main>section');show(v?v.id:h,h);};
   window.addEventListener('hashchange',route);
   initQuiz(()=>paint());
-  onPathChange.push(paint);
+  onPathChange.push(paint);onProgress.push(paint);
 
   /* contents: side list on wide screens, bottom sheet behind the pill on narrow ones */
   const openSheet=()=>{mbar.classList.remove('hid');toc.classList.add('open');scrim.hidden=false;mMid.setAttribute('aria-expanded','true');const t=$('li.on a',toc)||$('a',toc);if(t)t.focus({preventScroll:true});};
@@ -205,7 +365,7 @@ function initHome(){
     const got=Object.values(P.drill).filter(v=>v==='got').length;
     if(got)$('#drillStat').textContent=got+' question'+(got>1?'s':'')+' marked “Got it” so far';
   }
-  onPathChange.push(paint);paint();
+  onPathChange.push(paint);onProgress.push(paint);paint();
 }
 /* ---------------- interview drill ---------------- */
 function initDrill(){
@@ -241,7 +401,7 @@ function initDrill(){
     const shown=qas.filter(q=>!q.hidden).length;
     $('.dcount').textContent=got+' of '+qas.length+' got it · '+again+' to review again'+(shown<qas.length?' · showing '+shown:'');
   }
-  paint();
+  onProgress.push(paint);paint();
   const h=location.hash.slice(1);if(h&&document.getElementById(h))document.getElementById(h).scrollIntoView();
 }
 

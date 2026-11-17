@@ -30,7 +30,7 @@ Each section in Parts A to D shows its level (Foundation, Core or Deep dive) and
 - Step-by-step attention, KV-cache, GPU-memory, parameter-count and inference-cost calculators, plus interactives for the chat template, preference tuning, rotary positions and grouped-query attention.
 - "In Python" boxes with runnable NumPy and PyTorch code and its real output, collapsed by default.
 - The interview drill hides each answer behind "Show answer"; mark questions "Got it" or "Review again" and filter by topic or status.
-- Progress (sections done, quiz answers, drill marks, where you left off) is saved in your browser only, so it does not sync between devices. Settings has a progress reset, the path, a Light or Dark theme (the system setting is used until you choose), and whether code boxes start expanded.
+- Progress (sections done, quiz answers, drill marks, where you left off) is saved in your browser. Optionally, Settings → Sync with GitHub keeps it in a secret gist so it follows you between browsers: paste a GitHub token with the `gist` scope once per browser (it stays in that browser), and the copies merge item by item. Settings also has a progress reset, the path, a Light or Dark theme (the system setting is used until you choose), and whether code boxes start expanded.
 - On phones, a floating bar with previous and next buttons, the current section and a progress line; tapping it opens the contents as a bottom sheet.
 - "The maths you need": a 25-minute refresher on vectors, matrices and tensors, logs, softmax and sigmoid, conditional probability, variance, sine and cosine, gradients and the chain rule, each with one example to check by hand.
 - A six-session plan on the home page for teaching the material to a team.
@@ -39,7 +39,7 @@ All numbers are computed in the browser. No pretrained model is used; where a de
 
 ## Using it
 
-Open `index.html` in any modern browser. There is no build step, and every page also works opened straight from disk. The only network request loads the KaTeX maths renderer from a CDN; offline, equations show as LaTeX source and everything else still works.
+Open `index.html` in any modern browser. There is no build step, and every page also works opened straight from disk. The only network requests load the KaTeX maths renderer from a CDN and, if you turn on sync, reach the GitHub API; offline, equations show as LaTeX source and everything else still works.
 
 To serve it the way GitHub Pages does, run `python -m http.server 8000` and open http://localhost:8000.
 
@@ -54,6 +54,7 @@ To serve it the way GitHub Pages does, run `python -m http.server 8000` and open
 
 - `python tools/snippets.py --check`: every snippet still prints the output shown on the page (needs NumPy and PyTorch). Run it without `--check` to refresh the boxes after editing a snippet.
 - `node tools/test-model.js`: the toy model still trains to a validation loss of about 0.31.
+- `node tools/test-sync.js`: the progress merge rules for gist sync still hold.
 - `tools/check.html`: open in Chrome started with `--allow-file-access-from-files`. It loads every page at phone, tablet and desktop widths on both paths and reports overflow, clipped text and unrendered maths. It should end with "done: no problems".
 
 ## Deployment

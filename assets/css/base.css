@@ -59,7 +59,7 @@ mark{background:var(--mark);color:inherit;border-radius:4px;padding:0 .25em}
 .ctl output{font:600 .84rem var(--mono);color:var(--ink);float:right}
 .ctl>span.row{display:flex;justify-content:space-between;gap:8px}
 input[type=range]{width:100%;accent-color:var(--accent);height:26px;margin:0}
-input[type=text],input[type=number],textarea{font:inherit;font-size:.95rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;width:100%;min-height:38px}
+input[type=text],input[type=number],input[type=password],textarea{font:inherit;font-size:.95rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;width:100%;min-height:38px}
 .chk{display:inline-flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600;min-height:38px;cursor:pointer}
 .chk input{width:18px;height:18px;accent-color:var(--accent)}
 .btn,.controls button,.chip{font:600 .88rem var(--sans);border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:9px;padding:8px 14px;cursor:pointer;min-height:38px}
@@ -136,6 +136,10 @@ select.dd-native{display:none}
 .seg.full{display:flex;width:100%}.seg.full button{flex:1;padding:9px 6px;font-size:.84rem}
 .btn.full{width:100%}
 .shint{display:block;color:var(--muted);font-size:.78rem;margin-top:5px;line-height:1.35}
+.srow{display:flex;gap:8px}.srow .btn{flex:1}.srow[hidden]{display:none}
+#syncStat.bad,.syerr{color:var(--warn)}
+.dlg .syerr{margin:-6px 0 14px;color:var(--warn)}
+.dlg .ctl{margin:0 0 16px}
 @media (max-width:900px){.btn.icon{padding:6px 9px}}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .btn.big{min-height:46px;padding:11px 20px;font-size:1rem;text-decoration:none;display:inline-flex;align-items:center}
