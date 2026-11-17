@@ -206,26 +206,24 @@ function applyPath(){
   const quick=P.path==='quick';
   state.exact=!quick;document.body.classList.toggle('simple',quick);document.body.classList.toggle('ess',quick);
   $$('.pathBtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===P.path));
-  /* the Quick tour hides the Python boxes (optional material), so their switch would do nothing there */
-  const sw=$('#codeSw');if(sw){sw.disabled=quick;const n=$('#codeSwSub');n.hidden=!quick;n.textContent='Hidden on the Quick tour';}
 }
 function setPath(p){P.path=p;store.save();applyPath();rerender();onPathChange.forEach(f=>f());}
 /* the Settings menu: an iOS-style grouped list built here once for every page, with sub-pages for the path, progress and
    sync; a popover under its button, a bottom sheet on phones */
 const ICONS={path:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/>',
-  theme:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',code:'<path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/>',
+  theme:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
   prog:'<circle cx="12" cy="12" r="8"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',sync:'<path d="M7 18a4 4 0 0 1-.6-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/>',
   reset:'<path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v5h5"/>',chev:'<path d="M9 6l6 6-6 6"/>',back:'<path d="M15 6l-6 6 6 6"/>',
   check:'<path d="M5 12.5l4.5 4.5L19 7"/>'};
 const svgI=k=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+ICONS[k]+'</svg>';
 const sIc=k=>'<span class="sic ic-'+k+'">'+svgI(k)+'</span>';
 const sNav=(to,k,label,valId)=>'<button type="button" class="sitem" data-go="'+to+'">'+sIc(k)+'<span class="slbl">'+label+'</span><span class="sval" id="'+valId+'"></span><span class="schev">'+svgI('chev')+'</span></button>';
-const sSwitch=(id,k,label)=>'<button type="button" class="sitem" role="switch" aria-checked="false" id="'+id+'">'+sIc(k)+'<span class="slbl">'+label+'<small class="ssub" id="'+id+'Sub" hidden></small></span><span class="swt" aria-hidden="true"></span></button>';
+const sSwitch=(id,k,label)=>'<button type="button" class="sitem" role="switch" aria-checked="false" id="'+id+'">'+sIc(k)+'<span class="slbl">'+label+'</span><span class="swt" aria-hidden="true"></span></button>';
 const SET_PAGES={main:'Settings',path:'Path',prog:'Progress',sync:'GitHub sync'};
 const SET_MENU='<div class="smhead"><button type="button" class="sbtn" id="setBack" aria-label="Back to Settings" hidden>'+svgI('back')+'</button><span id="setTitle">Settings</span></div>'
   +'<div class="spages">'
   +'<div class="spage" data-page="main">'
-  +'<div class="sgroup">'+sNav('path','path','Path','pathVal')+sSwitch('thSw','theme','Dark theme')+sSwitch('codeSw','code','Expand Python code')+'</div>'
+  +'<div class="sgroup">'+sNav('path','path','Path','pathVal')+sSwitch('thSw','theme','Dark theme')+'</div>'
   +'<div class="sgroup">'+sNav('prog','prog','Progress','progVal')+sNav('sync','sync','GitHub sync','syncVal')+'</div>'
   +'<div class="sgroup"><button type="button" class="sitem danger" id="pgReset">'+sIc('reset')+'<span class="slbl">Reset progress</span></button></div>'
   +'<p class="sver" id="setVer"></p></div>'
@@ -236,7 +234,7 @@ const SET_MENU='<div class="smhead"><button type="button" class="sbtn" id="setBa
   +'<div class="spage" data-page="sync"><div class="sgroup"><div class="sitem sinfo"><span class="slbl">Status</span><span class="sval"><i class="sdot" aria-hidden="true" hidden></i><span id="syncStat" aria-live="polite"></span></span></div></div>'
   +'<p class="sfoot" id="syncNote"></p>'
   +'<div class="sgroup"><button type="button" class="sitem saccent" id="syncOn"><span class="slbl">Connect a gist token…</span></button><button type="button" class="sitem saccent" id="syncNowBtn"><span class="slbl">Sync now</span></button><button type="button" class="sitem danger" id="syncOff"><span class="slbl">Disconnect</span></button></div>'
-  +'<p class="sfoot">The token is kept only in this browser and sent only to GitHub. Theme and code settings stay per browser.</p></div>'
+  +'<p class="sfoot">The token is kept only in this browser and sent only to GitHub. The theme stays per browser.</p></div>'
   +'</div>';
 function paintProgSum(){
   const v=$('#progVal');if(!v)return;
@@ -287,7 +285,7 @@ function initSettings(){
   const openSet=()=>{go('main',false);paintProgSum();paintSync();markTheme();place();menu.hidden=false;scrim.hidden=false;setBtn.setAttribute('aria-expanded','true');$('.sitem',menu).focus();};
   /* reset asks first in a modal <dialog>: it traps focus, closes on Escape and returns "reset" only from its button */
   const dlg=document.createElement('dialog');dlg.className='dlg';dlg.setAttribute('aria-labelledby','rsTitle');
-  dlg.innerHTML='<form method="dialog"><h2 id="rsTitle">Reset progress?</h2><p>This clears the finished sections, quiz answers and drill marks saved in this browser and, when sync is on, in every synced browser. Your path, theme and code settings stay. You cannot undo this.</p>'
+  dlg.innerHTML='<form method="dialog"><h2 id="rsTitle">Reset progress?</h2><p>This clears the finished sections, quiz answers and drill marks saved in this browser and, when sync is on, in every synced browser. Your path and theme stay. You cannot undo this.</p>'
     +'<div class="acts"><button class="btn" value="cancel" autofocus>Cancel</button><button class="btn danger" value="reset">Reset progress</button></div></form>';
   document.body.append(dlg);
   dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close('cancel');});
