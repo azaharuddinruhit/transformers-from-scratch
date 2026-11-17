@@ -39,27 +39,29 @@ All numbers are computed in the browser. No pretrained model is used; where a de
 
 ## Using it
 
-Open `index.html` in any modern browser. There is no build step, and every page also works opened straight from disk. The only network requests load the KaTeX maths renderer from a CDN and, if you turn on sync, reach the GitHub API; offline, equations show as LaTeX source and everything else still works.
+Open `site/index.html` in any modern browser. There is no build step, and every page also works opened straight from disk. The only network requests load the KaTeX maths renderer from a CDN and, if you turn on sync, reach the GitHub API; offline, equations show as LaTeX source and everything else still works.
 
-To serve it the way GitHub Pages does, run `python -m http.server 8000` and open http://localhost:8000.
+To serve it the way GitHub Pages does, run `python -m http.server 8000 --directory site` and open http://localhost:8000.
 
 ## Project layout
 
-- `index.html`, `part-a.html` to `part-d.html`, `interview.html`, `reference.html`: the pages.
-- `assets/css/` and `assets/js/`: shared styles and scripts; each part page loads only its own widgets.
+- `site/`: everything that is published.
+  - `index.html`, `part-a.html` to `part-d.html`, `interview.html`, `reference.html`: the pages.
+  - `assets/css/`, `assets/js/` and `assets/fonts/`: shared styles, scripts and self-hosted fonts; each part page loads only its own widgets.
 - `snippets/`: the source of every "In Python" box.
 - `tools/`: checks, below.
+- `DESIGN.md`: the visual system.
 
 ## Checking changes
 
-- `python tools/snippets.py --check`: every snippet still prints the output shown on the page (needs NumPy and PyTorch). Run it without `--check` to refresh the boxes after editing a snippet.
+- `python tools/snippets.py --check`: every snippet still prints the output shown on the page (needs Python 3.11, NumPy and PyTorch). Run it without `--check` to refresh the boxes after editing a snippet.
 - `node tools/test-model.js`: the toy model still trains to a validation loss of about 0.31.
 - `node tools/test-sync.js`: the progress merge rules for gist sync still hold.
 - `tools/check.html`: open in Chrome started with `--allow-file-access-from-files`. It loads every page at phone, tablet and desktop widths and reports overflow, clipped text and unrendered maths. It should end with "done: no problems".
 
 ## Deployment
 
-`.github/workflows/pages.yml` publishes the pages and `assets/` on every push to `main` or `master`.
+`.github/workflows/pages.yml` publishes the contents of `site/` as the site root on every push to `main` or `master`.
 
 Each deployment carries the version in `VERSION` (`major.minor.patch`), shown at the bottom of the Settings menu. Bump it before pushing: patch for fixes and wording, minor for new sections or features, major for restructures. A local copy shows "Version: local copy".
 

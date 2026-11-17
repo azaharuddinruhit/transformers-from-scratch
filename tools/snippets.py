@@ -34,7 +34,7 @@ def run(name):
 def main():
     check = "--check" in sys.argv[1:]
     stale, seen = [], set()
-    for page in sorted(glob.glob(os.path.join(ROOT, "*.html"))):
+    for page in sorted(glob.glob(os.path.join(ROOT, "site", "*.html"))):
         text = open(page, encoding="utf-8").read()
 
         def refresh(m):

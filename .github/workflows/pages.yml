@@ -27,13 +27,12 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
 
-      # Publish the pages and their assets; snippets/ and tools/ stay out of the site.
+      # Publish site/ as the site root, so the web addresses do not include "site/"; snippets/ and tools/ stay out.
       - name: Assemble site
         run: |
-          test -f index.html
+          test -f site/index.html
           mkdir -p _site
-          cp *.html _site/
-          cp -r assets _site/
+          cp -r site/. _site/
 
       # Stamp the version from VERSION (major.minor.patch) into the published site.js.
       - name: Stamp version

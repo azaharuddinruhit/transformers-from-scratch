@@ -45,7 +45,7 @@ function check(D,W,job){
 function next(){
   const job=jobs.shift();
   if(!job){st.textContent='done: '+(problems?problems+' problem(s)':'no problems');return;}
-  const f=document.createElement('iframe');f.style.width=job.w+'px';f.src='../'+job.p+'.html';document.body.appendChild(f);
+  const f=document.createElement('iframe');f.style.width=job.w+'px';f.src='../site/'+job.p+'.html';document.body.appendChild(f);
   f.onload=()=>setTimeout(()=>{
     const D=f.contentDocument,W=f.contentWindow;
     D.querySelectorAll('#main>section').forEach(v=>{v.hidden=false;});   // part pages show one view at a time

@@ -217,7 +217,7 @@ A neutral grey scale for the interface and a small set of semantic hues that eac
 
 ## Typography
 
-**Sans:** Atkinson Hyperlegible Next (variable, 200 to 800, with italics), self-hosted in `assets/fonts` under the OFL.
+**Sans:** Atkinson Hyperlegible Next (variable, 200 to 800, with italics), self-hosted in `site/assets/fonts` under the OFL.
 **Mono:** JetBrains Mono (variable, 100 to 800), self-hosted under the OFL.
 
 **Character:** one sans designed for legibility carries the whole interface, so headings are distinguished by size and weight, not by a second family. Atkinson's only zero is slashed, so the zero alone comes from Hanken Grotesk: a family "Plain zero" holding just U+0030 (upright and italic, under 2 KB each) is listed first in `--sans`. Every other character, digits 1 to 9 included, stays Atkinson's. Code keeps JetBrains Mono's dotted zero. The mono marks anything exact and is never used for interface labels.

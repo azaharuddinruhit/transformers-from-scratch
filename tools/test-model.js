@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const js = path.join(__dirname, '..', 'assets', 'js');
+const js = path.join(__dirname, '..', 'site', 'assets', 'js');
 const context = vm.createContext({});
 for (const file of ['shared.js', 'toy-model.js']) {
   vm.runInContext(fs.readFileSync(path.join(js, file), 'utf8'), context, { filename: file });

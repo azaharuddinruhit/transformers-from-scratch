@@ -3,7 +3,7 @@
 //     node tools/test-sync.js
 'use strict';
 const fs = require('fs');
-const src = fs.readFileSync(__dirname + '/../assets/js/site.js', 'utf8');
+const src = fs.readFileSync(__dirname + '/../site/assets/js/site.js', 'utf8');
 const a = src.indexOf('const PROG_KEY='), b = src.indexOf('const onProgress=');
 if (a < 0 || b < a) throw new Error('progress functions not found in site.js');
 const { progNorm, progMerge, progStamp, progSig } = new Function(src.slice(a, b) + ';return { progNorm, progMerge, progStamp, progSig };')();
