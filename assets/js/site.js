@@ -149,8 +149,7 @@ function paintSync(){
   $('#syncVal').innerHTML=(on?'<i class="sdot'+(bad?' bad':'')+'" aria-hidden="true"></i>':'')+txt;
   const note=$('#syncNote');note.classList.toggle('bad',bad);
   note.textContent=!on?'Keeps your progress and path in a secret GitHub gist, so they follow you between browsers.':bad?'The last sync failed: '+sync.err+'.':'Syncs when a page opens, two seconds after a change, and when you leave or return to the tab.';
-  [$('#syncStat').previousElementSibling,$('#setBtn .bdot')].forEach(d=>{if(!d)return;d.hidden=!on;d.classList.toggle('bad',bad);});
-  $('#setBtn').setAttribute('aria-label','Settings'+(bad?', sync failed':''));
+  const dot=$('#syncStat').previousElementSibling;dot.hidden=!on;dot.classList.toggle('bad',bad);
   $('#syncOn').hidden=on;$('#syncNowBtn').hidden=$('#syncOff').hidden=!on;$('#syncNowBtn').disabled=sync.busy;
 }
 function initSync(closeSet){
@@ -251,7 +250,6 @@ function initSettings(){
   /* the header's backdrop blur would trap a fixed element, so the menu lives in <body> */
   const scrim=document.createElement('div');scrim.className='setscrim';scrim.hidden=true;
   document.body.append(scrim,menu);
-  const dot=document.createElement('i');dot.className='bdot';dot.hidden=true;dot.setAttribute('aria-hidden','true');setBtn.append(dot);
   const root=document.documentElement,thSw=$('#thSw');
   // Light or dark; until the reader chooses, the page follows the system setting
   const sysTheme=()=>window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
@@ -341,7 +339,7 @@ function initPart(){
   function paint(){
     const st=partStats(part),pos=secs.findIndex(s=>s.id===cur);
     secs.forEach((s,i)=>{const on=!!P.done[s.id],q=quizScore(s);
-      $('.rt',s).innerHTML='Part '+L+' · '+(i+1)+' of '+secs.length+' · '+timeText(minsOf(s.id),SECS[s.id][2])+' <span class="lvl">'+LEVELS[SECS[s.id][3]]+'</span>';
+      $('.rt',s).innerHTML='Part '+L+' · '+(i+1)+' of '+secs.length+' · '+timeText(minsOf(s.id),SECS[s.id][2])+' <span class="lvl lv'+SECS[s.id][3]+'">'+LEVELS[SECS[s.id][3]]+'</span>';
       const b=$('.doneBtn',s);b.setAttribute('aria-pressed',on);b.classList.toggle('on',on);b.textContent=on?'✓ Done':'Mark as done';
       const qs=$('.qscore',s);if(qs&&q)qs.textContent=q.got?q.got+' of '+q.n+' correct':'';});
     toc.innerHTML='<div class="tochead"><a href="index.html" class="tochome">← All parts</a><button type="button" class="btn tiny" id="tocClose">Close</button></div>'

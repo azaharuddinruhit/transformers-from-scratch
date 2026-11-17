@@ -58,7 +58,9 @@ footer{padding:30px 0;color:var(--muted);font-size:.9rem}
 .kicker{font:600 .9rem var(--sans);color:var(--accent);margin:0}
 .hero.slim{padding:40px 0 16px}
 .rt{font:600 .88rem var(--sans);color:var(--muted);margin:-.4em 0 1.2em}
-.lvl{display:inline-block;margin-left:6px;padding:1px 9px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);font-size:.78rem;font-weight:600;white-space:nowrap;vertical-align:1px}
+.lvl{display:inline-block;margin-left:6px;padding:1px 9px;border-radius:999px;font-size:.78rem;font-weight:600;line-height:1.6;vertical-align:middle;white-space:nowrap}
+/* level pills: soft fill and matching text per level (--lv0 to --lv2 on :root), each at least 6.6:1 */
+.lv0{background:var(--lv0-bg);color:var(--lv0)}.lv1{background:var(--lv1-bg);color:var(--lv1)}.lv2{background:var(--lv2-bg);color:var(--lv2)}
 /* contents rail */
 #toc .tochead{margin-bottom:10px}
 .tochome{font-size:.88rem;text-decoration:none}

@@ -2,7 +2,7 @@
 :root{
   --bg:#faf8f3;--surface:#ffffff;--panel:#f3efe6;--ink:#1c2230;--muted:#5a6373;--line:#e1dbce;
   --accent:#8a4b00;--accent-soft:#fbeed9;--on-accent:#fff;--fill:#a35a00;--fill-hover:#8a4b00;--on-fill:#fff;
-  color-scheme:light;--q:#2a62c9;--k:#7b3fb0;--v:#1a7a4b;--res:#b02a7c;--warn:#b42318;--ok:#1f8a56;--halo:20%;--mark:#ffe7a0;
+  color-scheme:light;--q:#2a62c9;--k:#7b3fb0;--v:#1a7a4b;--res:#b02a7c;--warn:#b42318;--ok:#1f8a56;--halo:20%;--logo-bg:#ffffff;--lv0-bg:#d9efe2;--lv0:#145c35;--lv1-bg:#dce7fa;--lv1:#1d4894;--lv2-bg:#ebdff7;--lv2:#5c2a8c;--mark:#ffe7a0;
   --shadow:0 1px 2px rgba(20,25,40,.06),0 8px 24px rgba(20,25,40,.06);
   --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
@@ -12,14 +12,14 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   color-scheme:dark;--bg:#13151a;--surface:#1c1f26;--panel:#171a20;--ink:#e9ebef;--muted:#a2a7b1;--line:#30343d;
   --accent:#8ea5ff;--accent-soft:#222838;--on-accent:#0f1320;--fill:#4c66e0;--fill-hover:#4259cf;--on-fill:#fff;
-  --q:#73a7ff;--k:#c9a0ff;--v:#5fd09a;--res:#f07fc4;--warn:#ff8a80;--ok:#5fd09a;--halo:24%;--mark:#5b4a12;
+  --q:#73a7ff;--k:#c9a0ff;--v:#5fd09a;--res:#f07fc4;--warn:#ff8a80;--ok:#5fd09a;--halo:24%;--logo-bg:#1c2230;--lv0-bg:#1b3a2a;--lv0:#93e3b5;--lv1-bg:#1e2d4c;--lv1:#acc8ff;--lv2-bg:#33264b;--lv2:#d8bcff;--mark:#5b4a12;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.25);
   --cd-bg:#1c1f26;--cd-fg:#f8f8f2;--cd-line:#30343d;--cd-c:#8a96c8;--cd-k:#ff79c6;--cd-s:#f1fa8c;--cd-n:#ffb86c;--cd-f:#50fa7b;--cd-b:#8be9fd;
 }}
 :root[data-theme="dark"]{
   color-scheme:dark;--bg:#13151a;--surface:#1c1f26;--panel:#171a20;--ink:#e9ebef;--muted:#a2a7b1;--line:#30343d;
   --accent:#8ea5ff;--accent-soft:#222838;--on-accent:#0f1320;--fill:#4c66e0;--fill-hover:#4259cf;--on-fill:#fff;
-  --q:#73a7ff;--k:#c9a0ff;--v:#5fd09a;--res:#f07fc4;--warn:#ff8a80;--ok:#5fd09a;--halo:24%;--mark:#5b4a12;
+  --q:#73a7ff;--k:#c9a0ff;--v:#5fd09a;--res:#f07fc4;--warn:#ff8a80;--ok:#5fd09a;--halo:24%;--logo-bg:#1c2230;--lv0-bg:#1b3a2a;--lv0:#93e3b5;--lv1-bg:#1e2d4c;--lv1:#acc8ff;--lv2-bg:#33264b;--lv2:#d8bcff;--mark:#5b4a12;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.25);
   --cd-bg:#1c1f26;--cd-fg:#f8f8f2;--cd-line:#30343d;--cd-c:#8a96c8;--cd-k:#ff79c6;--cd-s:#f1fa8c;--cd-n:#ffb86c;--cd-f:#50fa7b;--cd-b:#8be9fd;
 }
@@ -44,6 +44,7 @@ mark{background:var(--mark);color:inherit;border-radius:4px;padding:0 .25em}
 .brand{font-family:var(--serif);font-weight:600;font-size:1.02rem;flex:1;min-width:0;display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;white-space:nowrap}
 .brand span{overflow:hidden;text-overflow:ellipsis}
 .logo{width:30px;height:30px;flex:none;border-radius:7px;box-shadow:0 0 0 1px var(--line)}
+.logo .lgbg{fill:var(--logo-bg)}
 .progress{position:absolute;left:0;right:0;bottom:-1px;height:3px}
 #progBar{height:100%;width:0;background:var(--accent)}
 .seg{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
@@ -161,9 +162,8 @@ button.sitem:hover,a.sitem:hover{background:color-mix(in srgb,var(--ink) 5%,tran
 .spl.full{border-color:var(--v);background:var(--v);color:var(--surface)}
 .sbar{display:block;height:4px;margin-top:6px;border-radius:2px;background:color-mix(in srgb,var(--ink) 10%,transparent);overflow:hidden}
 .sbar i{display:block;height:100%;background:var(--v);border-radius:2px}
-.sdot,.bdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
-.sdot.bad,.bdot.bad{background:var(--warn)}.sdot[hidden],.bdot[hidden]{display:none}
-#setBtn{position:relative}.bdot{position:absolute;top:6px;right:6px;box-shadow:0 0 0 2px var(--bg)}
+.sdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+.sdot.bad{background:var(--warn)}.sdot[hidden]{display:none}
 .sver{margin:-4px 0 8px;font:500 .76rem var(--sans);color:var(--muted);text-align:center}
 @media (max-width:600px){
   .setmenu{left:0;right:0;bottom:0;top:auto!important;width:auto;max-width:none;max-height:88vh;border-radius:18px 18px 0 0;border-bottom:0;padding:0 14px calc(10px + env(safe-area-inset-bottom));animation:smUp .22s ease-out}
