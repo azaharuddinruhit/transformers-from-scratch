@@ -24,8 +24,8 @@ details.callout.code[open]>summary::before{transform:rotate(90deg)}
 .cpy svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .cpy .i-ok,.cpy.ok .i-cp{display:none}.cpy.ok .i-ok{display:block}.cpy.ok{color:var(--v)}
 /* Code colours (--cd-* variables): Gruvbox Light in the light theme, with comments (#665c54) and strings (#5f5b0a) darkened
-   to pass 4.5:1, on a paler cream background (#fcf9f1); Dracula (draculatheme.com/spec) in the dark theme, with the comment colour lightened from
-   #6272a4 to #8a96c8 for 4.9:1. */
+   to pass 4.5:1, on a paler cream background (#fcf9f1); Dracula's token colours (draculatheme.com/spec) in the dark theme, on the theme's card colour (#1c1f26) with its
+   line colour as the border instead of Dracula's own #282a36, and the comment colour lightened from #6272a4 to #8a96c8 for 5.7:1. */
 pre.py,pre.sh{margin:0;padding:12px 14px;background:var(--cd-bg);color:var(--cd-fg);border:1px solid var(--cd-line);border-radius:8px;overflow-x:auto;font:.8rem/1.6 var(--mono);tab-size:4;scrollbar-color:var(--cd-c) var(--cd-bg)}
 pre.py ::selection,pre.sh ::selection{background:var(--cd-line)}
 pre.py code,pre.sh code{background:none;border:0;padding:0;font:inherit;white-space:pre}
