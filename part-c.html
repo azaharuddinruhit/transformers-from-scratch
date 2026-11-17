@@ -1220,7 +1220,7 @@ for name, bpw in [("bf16", 16), ("int8", 8 + 16 / 32), ("int4", 4 + 16 / 32)]:
 <h3 class="opt">Methods and formats you will meet</h3>
 <ul class="opt">
   <li><b>Round-to-nearest</b>: what the interactive does. Good enough at 8 bits.</li>
-  <li><b>GPTQ</b>: quantizes a layer a column at a time, and adjusts the weights not yet quantized to cancel the error so far, using a few hundred example inputs (calibration data).</li>
+  <li><b>GPTQ</b>: quantizes a layer a column at a time, and adjusts the weights not yet quantized to cancel the error so far, using a small set of example inputs, the calibration data (128 text samples of 2,048 tokens in the paper).</li>
   <li><b>AWQ</b> (activation-aware): finds the weights that meet the largest activations and scales them up before rounding, so the weights that matter most lose least.</li>
   <li><b>GGUF</b> files for llama.cpp and Ollama, with names like <code>Q4_K_M</code>: about 4 bits, “K” for a scheme with scales inside scales, and “M” for a medium mix in which some tensors keep more bits.</li>
   <li><b>NF4</b>: the 4-bit format of QLoRA. Its 16 levels are not evenly spaced; they follow the bell shape of typical weights, so more levels sit near zero.</li>
