@@ -210,3 +210,11 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 #bp-text{resize:vertical;font-family:var(--mono);font-size:.85rem;line-height:1.45}
 .bpp{display:inline-block;font:500 .82rem var(--mono);padding:1px 6px;margin:1px 3px 1px 0;border:1px solid var(--line);border-radius:5px;background:var(--bg)}
 #bp-merges .chip{cursor:default}
+/* attention matrix: hover linking (Part B) */
+#at-mat .hm .hr.lq{color:var(--q);font-weight:800}
+#at-mat .hm .hh.lk{color:var(--k);font-weight:800}
+#at-mat.lnk .hc:not(.lrow):not(.lcol){opacity:.35}
+#at-mat .hc.lcell,#at-maskgrid .hc.lcell{outline:3px solid var(--ink);outline-offset:-1px}
+.atl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;align-items:center;font-size:.9rem;margin-top:4px}
+.atl-l{color:var(--muted);white-space:nowrap}
+@media (max-width:600px){.atl{grid-template-columns:1fr;gap:2px}.atl-l{margin-top:6px}}

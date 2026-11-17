@@ -560,14 +560,15 @@ print("X", X.shape, "-&gt; weights", A.shape, "-&gt; output", out.shape)
 # X (5, 8) -&gt; weights (5, 5) -&gt; output (5, 4)</code></pre></details>
 <div class="widget" id="w-mat">
   <h4 class="wt">Interactive · attention matrix and causal mask</h4>
-  <p class="look"><b>The point:</b> All queries at once form a square table, and the causal mask blanks its upper triangle. <b>Do this:</b> Tick the mask and compare one row before and after. <b>Watch for:</b> Every row still sums to 1; the weight that was on later tokens is redistributed to earlier ones.</p>
+  <p class="look"><b>The point:</b> All queries at once form a square table, and the causal mask blanks its upper triangle. <b>Do this:</b> Hover over or tab to a few cells, then tick the mask and compare one row before and after. <b>Watch for:</b> Each cell is one query row meeting one key column. Every row still sums to 1; with the mask, the weight that was on later tokens is redistributed to earlier ones.</p>
   <label class="chk"><input type="checkbox" id="at-mask2"> Apply causal mask</label>
   <div class="grid2">
     <div><span class="lab">Attention weights (rows = query, columns = key)</span><div id="at-mat"></div></div>
     <div><span class="lab">Mask added to the scores before softmax</span><div id="at-maskgrid"></div></div>
   </div>
-  <small>Hover, tap or tab to a cell for the exact value. Click a row to make it the query in the simulator above. Hatched cells are masked.</small>
-  <div class="wjh"><b>What just happened?</b> With the mask on, everything above the diagonal becomes zero and each row is re-normalised over the tokens that remain, forming a lower triangle. The first token can only attend to itself, so its weight there is exactly 1.</div>
+  <div id="at-link" aria-live="polite"></div>
+  <small>Hover, tap or tab to a cell: its query row and key column light up, and the panel shows how that one number is made and where it goes. Click a cell to make its row the query in the simulator above. Hatched cells are masked.</small>
+  <div class="wjh"><b>What just happened?</b> With the mask on, everything above the diagonal becomes zero and each row is re-normalised over the tokens that remain, forming a lower triangle. The first token can only attend to itself, so its weight there is exactly 1. Each cell links three things: its row’s query, its column’s key (which sets the score) and its column’s value (which the weight scales into the row’s output).</div>
 </div>
 <h3 class="opt">Common misconceptions</h3>
 <ul class="pit opt">

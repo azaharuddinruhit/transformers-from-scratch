@@ -154,7 +154,7 @@ function initPE(){
   reg(renderPE);reg(renderOrder);
 }
 /* ================= self-attention ================= */
-const s4={q:2,tau:1,mask:false,step:0,timer:null};
+const s4={q:2,tau:1,mask:false,step:0,timer:null,hov:null};
 const AT_STEP=['Look up','Dot products','Scale','Softmax','Weighted sum'];
 function attnCalc(i){
   const den=Math.sqrt(4)*s4.tau,dots=AT.K.map(k=>dot(AT.Q[i],k)),scaled=dots.map((s,j)=>s4.mask&&j>i?-Infinity:s/den),exps=scaled.map(Math.exp),w=softmax(scaled);
@@ -186,6 +186,29 @@ function renderMat(){
   const A=AT.tok.map((_,i)=>attnCalc(i).w);
   $('#at-mat').innerHTML=heat(A,AT.tok,AT.tok,{click:true,sel:s4.q,mask:(i,j)=>s4.mask&&j>i,tip:(i,j,v,mk)=>'query <b>'+AT.tok[i]+'</b> → key <b>'+AT.tok[j]+'</b><br>weight '+v.toFixed(6)+(mk?'<br>masked: j &gt; i':'')});
   $('#at-maskgrid').innerHTML='<div class="hm maskg" style="grid-template-columns:auto repeat(5,minmax(0,1fr))"><span></span>'+AT.tok.map(t=>'<span class="hh">'+t+'</span>').join('')+AT.tok.map((t,i)=>'<span class="hr">'+t+'</span>'+AT.tok.map((u,j)=>'<span class="hc'+(j>i?' masked':'')+'" data-tip="'+esc('row '+i+' ('+t+'), column '+j+' ('+u+'): '+(j>i?'j &gt; i, add −∞ (blocked)':'j ≤ i, add 0 (allowed)'))+'">'+(j>i?'−∞':'0')+'</span>').join('')).join('')+'</div><small>'+(s4.mask?'Applied. ':'Not applied yet: tick the box. ')+'0 = allowed, −∞ = blocked (hatched).</small>';
+  attnLink();
+}
+/* hover linking: one cell of the matrix ↔ its query row, key column and value */
+function attnLink(){
+  const c0=attnCalc(s4.q),best=c0.w.indexOf(Math.max(...c0.w)),[i,j]=s4.hov||[s4.q,best],c=attnCalc(i),mk=s4.mask&&j>i,ti=AT.tok[i],tj=AT.tok[j],a=c.w[j];
+  $$('#at-mat .hc').forEach(e=>{e.classList.toggle('lrow',+e.dataset.i===i);e.classList.toggle('lcol',+e.dataset.j===j);e.classList.toggle('lcell',+e.dataset.i===i&&+e.dataset.j===j);});
+  $$('#at-mat .hr').forEach((e,k)=>e.classList.toggle('lq',k===i));$$('#at-mat .hh').forEach((e,k)=>e.classList.toggle('lk',k===j));
+  $$('#at-maskgrid .hc').forEach((e,k)=>e.classList.toggle('lcell',k===i*AT.tok.length+j));
+  const ex=AT.Q[i].map((x,d)=>x+'·'+AT.K[j][d]).join(' + ').replace(/-/g,'−');
+  const row=(l,h)=>'<span class="atl-l">'+l+'</span><span>'+h+'</span>';
+  $('#at-link').innerHTML='<span class="lab">Row <b class="tq">'+ti+'</b> (the query), column <b class="tk">'+tj+'</b> (the key and value)</span><div class="atl">'+
+    row('<b class="tq">q</b> for “'+ti+'”',vec(AT.Q[i],'q',1,2))+
+    row('<b class="tk">k</b> for “'+tj+'”',vec(AT.K[j],'k',1,2))+
+    row('Score',mk?'masked: “'+tj+'” comes after “'+ti+'”, so the score becomes −∞':'q · k = '+ex+' = <b>'+fmt(c.dots[j],0)+'</b>, ÷ '+fmt(c.den,2)+' = <b>'+fmt(c.scaled[j])+'</b>')+
+    row('Weight',mk?'<b>0</b>':'softmax over row “'+ti+'” gives <b>'+fmt(a)+'</b>, the number in the cell')+
+    row('<b class="tv">v</b> for “'+tj+'”',vec(AT.V[j],'v',1,2))+
+    row('Weight × <b class="tv">v</b>',vec(AT.V[j].map(v=>a*v),'v',2,2))+
+    row('Output for “'+ti+'”',vec(c.ctx,'ctx',2,2)+' <small>the sum of weight × <b class="tv">v</b> over the row’s '+(s4.mask?i+1:AT.tok.length)+' cells; this cell supplies '+(mk?'nothing':'the line above')+'</small>')+'</div>';
+}
+function initAttnLink(){
+  const m=$('#at-mat'),set=e=>{const h=e.target.closest('.hc');if(!h)return;const v=[+h.dataset.i,+h.dataset.j];if(s4.hov&&s4.hov[0]===v[0]&&s4.hov[1]===v[1]&&m.classList.contains('lnk'))return;s4.hov=v;m.classList.add('lnk');attnLink();};
+  m.addEventListener('pointerover',set);m.addEventListener('focusin',set);
+  const off=()=>m.classList.remove('lnk');m.addEventListener('pointerleave',off);m.addEventListener('focusout',off);
 }
 function attnStop(){if(s4.timer){clearInterval(s4.timer);s4.timer=null;}}
 function initAttn(){
@@ -201,7 +224,7 @@ function initAttn(){
   reg(renderAttn);
 }
 function initAttnKeys(){
-  gridKeys('#at-mat');
+  gridKeys('#at-mat');initAttnLink();
   ['#at-toks','#at-steps'].forEach(sel=>$(sel).addEventListener('click',e=>{if(e.target.closest('button')){const n=$(sel+' button.on');if(n)n.focus();}}));
 }
 /* ================= multi-head attention ================= */
