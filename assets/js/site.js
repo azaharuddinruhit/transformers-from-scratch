@@ -10,7 +10,7 @@ const PARTS=[
 /* title, study minutes for Full depth and Quick tour, then the level (an index into LEVELS).
    Minutes: words / 110 + 3 per interactive, rounded to 5, code boxes left out (Full depth drops .s-only; Quick tour
    drops .opt and .x-only). Recount when a section changes a lot. */
-const SECS={intro:['What is an LLM?',10,10,0],nn:['Neural networks in 15 minutes',15,15,0],genai:['Generative AI: the big picture',15,15,0],why:['Why Transformers?',10,10,0],tokens:['Tokenization and embeddings',15,10,0],position:['Positional information',15,15,1],
+const SECS={intro:['What is an LLM?',10,10,0],nn:['Neural networks in 15 minutes',15,15,0],genai:['Generative AI: the big picture',15,15,0],why:['Why Transformers?',10,10,0],tokens:['Tokenization and embeddings',20,15,0],position:['Positional information',15,15,1],
   attention:['Self-attention from scratch',15,15,1],multihead:['Multi-head attention',10,10,1],block:['FFN, residuals and normalization',20,15,1],architecture:['Full decoder-only architecture',15,10,1],
   training:['Training an LLM',20,15,1],generation:['Generation and decoding',10,10,0],hardware:['GPUs and CUDA',20,15,1],quant:['Quantization',15,10,1],flash:['FlashAttention',15,10,2],inference:['Inference in practice',15,10,1],posttrain:['From base model to assistant',10,10,1],prefs:['Preference tuning and reasoning',15,10,1],
   encdec:['Encoder–decoder and the 2017 paper',25,15,1],modern:['What modern LLMs change',25,20,2],

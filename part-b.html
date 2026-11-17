@@ -74,7 +74,7 @@
   <li><b>Subwords</b> (what real LLMs use): common words stay whole, rare words are assembled from pieces. “played” becomes <code>play</code> + <code>##ed</code>. Nothing is ever out of vocabulary, and sequences stay short.</li>
 </ul>
 <p><b>Where the vocabulary comes from.</b> Most GPT-style tokenizers learn it with <b>byte-pair encoding</b> (BPE). Start from single characters, count every adjacent pair in a large sample of text, merge the most frequent pair into one new token, and repeat until the vocabulary reaches the size you want. In the words “low” ×5, “lower” ×2, “newest” ×6 and “widest” ×3, the pairs <code>e s</code> and <code>s t</code> each occur 9 times; merging <code>e s</code> makes <code>es</code>, and then <code>es t</code> is the most frequent pair and becomes <code>est</code>. Frequent words end up as single tokens; rare ones stay in pieces.</p>
-<details class="why"><summary>Why do real tokenizers never produce an unknown token?</summary><div class="whyb"><p><b>Byte-level</b> BPE starts from the 256 possible byte values instead of characters, so any text in any language, emoji and code included, can be written as bytes and therefore as tokens. GPT-2’s vocabulary has 50,257 entries and Llama 3’s about 128,000. The toy tokenizer below uses greedy longest-match, as WordPiece does; the pieces differ from BPE’s, but the idea is the same.</p></div></details>
+<details class="why"><summary>Why do real tokenizers never produce an unknown token?</summary><div class="whyb"><p><b>Byte-level</b> BPE starts from the 256 possible byte values instead of characters, so any text in any language, emoji and code included, can be written as bytes and therefore as tokens. GPT-2’s vocabulary has 50,257 entries and Llama 3’s about 128,000. The first tokenizer below uses greedy longest-match over a fixed vocabulary, as WordPiece does. The second learns its vocabulary with BPE, merge by merge.</p></div></details>
 <div class="flow" role="img" aria-label="Diagram: text is split into tokens, tokens become IDs, IDs select rows of the embedding table">
   <div><b>“The cats played”</b><small>text</small></div><i>→</i>
   <div><b>the · cat · ##s · play · ##ed</b><small>tokens</small></div><i>→</i>
@@ -173,6 +173,86 @@ print("both 'the' rows equal:", np.array_equal(X[0], X[4]))
   <div class="wjh"><b>What just happened?</b> Each word was matched against the vocabulary from the left, always taking the longest piece available. Words in the vocabulary stay whole; others fall apart into smaller pieces, down to single letters if necessary. Each token then became an ID, and the ID selected one row of <span class="tex">E</span>.</div>
 </div>
 <div class="callout try opt"><b>Try this</b><p>Type <code>unhappy</code>, then <code>jumping quickly</code>, then a word the vocabulary has never seen, such as <code>zebra</code>. Watch the token count change while the character count barely moves.</p></div>
+<div class="widget" id="w-bpe">
+  <h4 class="wt">Interactive · learn a vocabulary with BPE</h4>
+  <p class="look"><b>The point:</b> BPE builds its vocabulary by repeatedly merging the most frequent pair of neighbouring tokens. <b>Do this:</b> Press “Merge the top pair” a few times and watch the words, then type a new word to encode. Try the short sentences too, or type your own text. <b>Watch for:</b> Frequent words becoming single tokens, the token count falling as the vocabulary grows, and new words built from learned pieces.</p>
+  <div class="controls">
+    <div class="ctl"><span>Training text</span><div class="chips" id="bp-preset" role="group" aria-label="Training text"></div></div>
+  </div>
+  <label class="ctl" style="max-width:none">Or type your own<textarea id="bp-text" rows="2" maxlength="400" spellcheck="false"></textarea></label>
+  <div class="controls"><button class="pri" id="bp-next">Merge the top pair ›</button><button id="bp-ten">Merge 10</button><button id="bp-undo">Undo</button><button id="bp-reset">Reset</button></div>
+  <span class="lab">Most frequent neighbouring pairs, counted over every word × its count</span>
+  <div id="bp-pairs"></div>
+  <span class="lab">Words in the training text, as tokens</span>
+  <div class="scroll" id="bp-words"></div>
+  <span class="lab">Merges learned, in order (each adds one token to the vocabulary)</span>
+  <div class="chips" id="bp-merges"></div>
+  <div class="stats" id="bp-stats" aria-live="polite"></div>
+  <label class="ctl" style="max-width:none">Encode a new word with the learned merges<input type="text" id="bp-word" value="lowest" maxlength="30" autocomplete="off" spellcheck="false"></label>
+  <p class="readout" id="bp-enc" aria-live="polite"></p>
+  <small>What is simplified: the text is split into lowercase words first, and merges never cross a word boundary; letters are the starting units, where real byte-level BPE starts from the 256 byte values. Real tokenizers learn tens of thousands of merges from gigabytes of text. Ties are broken by taking the pair seen first.</small>
+  <div class="wjh"><b>What just happened?</b> Each press counted every pair of neighbouring tokens, weighted by how often each word occurs, and merged the most frequent pair everywhere it appears. With the example text, <code>e + s</code> and then <code>es + t</code> come first, because “newest” and “widest” share the ending; then <code>low</code> forms. Every merge adds one entry to the vocabulary and removes tokens from the text. To encode a new word, the merges are applied in the order they were learned, so “lowest” becomes <code>low</code> + <code>est</code> although the word never appeared.</div>
+</div>
+<details class="callout code opt"><summary>In Python: learn BPE merges and encode new words</summary>
+<div class="cbar"><small>Runs on its own · Python 3, standard library only</small><button type="button" class="cpy" aria-label="Copy code" title="Copy code"><svg class="i-cp" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></div>
+<pre class="py" data-src="s03b_bpe.py"><code>from collections import Counter
+
+# Word counts from the text in this section: "low" 5 times, "lower" twice, and so on
+words = {"low": 5, "lower": 2, "newest": 6, "widest": 3}
+corpus = {tuple(w): n for w, n in words.items()}   # every word starts as single characters
+
+
+def count_pairs(corpus):
+    pairs = Counter()
+    for pieces, n in corpus.items():
+        for a, b in zip(pieces, pieces[1:]):
+            pairs[a, b] += n
+    return pairs
+
+
+def merge(pieces, pair):
+    out, i = [], 0
+    while i &lt; len(pieces):
+        if pieces[i:i + 2] == pair:
+            out.append(pieces[i] + pieces[i + 1])
+            i += 2
+        else:
+            out.append(pieces[i])
+            i += 1
+    return tuple(out)
+
+
+merges = []
+for step in range(6):
+    pairs = count_pairs(corpus)
+    best = max(pairs, key=pairs.get)                # ties go to the pair seen first
+    merges.append(best)
+    corpus = {merge(p, best): n for p, n in corpus.items()}
+    print(f"merge {step + 1}: {' + '.join(best):8} ({pairs[best]} times) -&gt;",
+          "  ".join(" ".join(p) for p in corpus))
+
+
+def encode(word):
+    """Apply the learned merges, in the order they were learned."""
+    pieces = tuple(word)
+    for pair in merges:
+        pieces = merge(pieces, pair)
+    return list(pieces)
+
+
+for w in ["lowest", "newer", "wider"]:
+    print(f"{w:7} -&gt; {encode(w)}")
+
+# Output:
+# merge 1: e + s    (9 times) -&gt; l o w  l o w e r  n e w es t  w i d es t
+# merge 2: es + t   (9 times) -&gt; l o w  l o w e r  n e w est  w i d est
+# merge 3: l + o    (7 times) -&gt; lo w  lo w e r  n e w est  w i d est
+# merge 4: lo + w   (7 times) -&gt; low  low e r  n e w est  w i d est
+# merge 5: n + e    (6 times) -&gt; low  low e r  ne w est  w i d est
+# merge 6: ne + w   (6 times) -&gt; low  low e r  new est  w i d est
+# lowest  -&gt; ['low', 'est']
+# newer   -&gt; ['new', 'e', 'r']
+# wider   -&gt; ['w', 'i', 'd', 'e', 'r']</code></pre></details>
 <h3>What training does to embeddings</h3>
 <p>At the start the vectors are random. Training nudges them so that tokens used in similar contexts end up with similar vectors. Real embeddings have hundreds or thousands of dimensions; squashed to two for plotting, related tokens tend to sit near each other.</p>
 <div class="widget opt" id="w-scatter">

@@ -299,4 +299,50 @@ function initArch(){
   reg(renderArch);reg(renderParams);
 }
 
-PAGE_INITS.push(initTok,initPE,initAttn,initAttnKeys,initMH,initBlock,initArch);
+/* ================= BPE: learn a vocabulary, merge by merge ================= */
+const BPE_PRESETS={
+  classic:'low low low low low lower lower newest newest newest newest newest newest widest widest widest',
+  text:'the cat sat on the mat. the cats sat on the mats. the dog sat on the log. a cat and a dog sat on a mat. the dogs and the cats sat.'};
+const sbp={preset:'classic',merges:[],word:'lowest'};
+function bpeWords(text){const c={};(text.toLowerCase().match(/[a-z]+/g)||[]).forEach(w=>{c[w]=(c[w]||0)+1;});return Object.keys(c).map(w=>({w,n:c[w]}));}
+function bpeMerge(p,a,b){const o=[];for(let i=0;i<p.length;i++){if(i<p.length-1&&p[i]===a&&p[i+1]===b){o.push(a+b);i++;}else o.push(p[i]);}return o;}
+function bpeState(){
+  const words=bpeWords($('#bp-text').value).map(o=>({w:o.w,n:o.n,p:o.w.split('')}));
+  sbp.merges.forEach(([a,b])=>words.forEach(o=>{o.p=bpeMerge(o.p,a,b);}));
+  const pairs=new Map();
+  words.forEach(o=>{for(let i=0;i<o.p.length-1;i++){const k=o.p[i]+'\u0001'+o.p[i+1];pairs.set(k,(pairs.get(k)||0)+o.n);}});
+  const list=[...pairs].map(([k,n])=>({a:k.split('\u0001')[0],b:k.split('\u0001')[1],n}));
+  const best=list.reduce((m,x)=>!m||x.n>m.n?x:m,null);             // ties go to the pair seen first
+  return{words,list:list.slice().sort((x,y)=>y.n-x.n),best};
+}
+function bpeEncode(word){let p=word.toLowerCase().replace(/[^a-z]/g,'').split('');const used=[];sbp.merges.forEach(([a,b],i)=>{const q=bpeMerge(p,a,b);if(q.length<p.length)used.push(i+1);p=q;});return{p,used};}
+function renderBpe(){
+  const S=bpeState(),chars=new Set();S.words.forEach(o=>o.w.split('').forEach(c=>chars.add(c)));
+  const piece=t=>'<span class="bpp">'+esc(t)+'</span>';
+  $('#bp-pairs').innerHTML=S.list.length?bars(S.list.slice(0,6).map(x=>({label:esc(x.a)+' + '+esc(x.b),p:x.n,cls:x===S.best?'hit':'',right:x.n+'×'+(x===S.best?' · next merge':'')})),S.best.n):'<p class="cap">No pairs left: every word is a single token.</p>';
+  const ws=S.words.slice().sort((x,y)=>y.n-x.n).slice(0,12);
+  $('#bp-words').innerHTML='<table class="numt"><thead><tr><th>Word</th><th>Count</th><th>Current tokens</th></tr></thead><tbody>'+ws.map(o=>'<tr><td>'+esc(o.w)+'</td><td>'+o.n+'</td><td>'+o.p.map(piece).join('')+'</td></tr>').join('')+'</tbody></table>'+(S.words.length>12?'<small>The 12 most frequent of '+S.words.length+' different words.</small>':'');
+  $('#bp-merges').innerHTML=sbp.merges.length?sbp.merges.map(([a,b],i)=>'<span class="chip tok">'+esc(a)+' + '+esc(b)+' → '+esc(a+b)+'<small>merge '+(i+1)+'</small></span>').join(''):'<small>None yet. Press “Merge the top pair”.</small>';
+  const total=S.words.reduce((s,o)=>s+o.n*o.p.length,0),nw=S.words.reduce((s,o)=>s+o.n,0);
+  $('#bp-stats').innerHTML=[['Vocabulary: letters + merges',chars.size+' + '+sbp.merges.length+' = '+(chars.size+sbp.merges.length)],['Tokens for the whole text',total],['Tokens per word',nw?fmt(total/nw,2):'–']].map(r=>'<div><b>'+r[1]+'</b><span>'+r[0]+'</span></div>').join('');
+  const E=bpeEncode(sbp.word);
+  $('#bp-enc').innerHTML=E.p.length?E.p.map(piece).join('')+' <small>'+E.p.length+' token'+(E.p.length>1?'s':'')+(E.used.length?'; merges used, in order: '+E.used.join(', '):'; no learned merge applies')+'</small>':'<small>Type a word made of letters.</small>';
+  $('#bp-next').disabled=$('#bp-ten').disabled=!S.best;$('#bp-undo').disabled=!sbp.merges.length;
+  $$('#bp-preset button').forEach(b=>{const on=b.dataset.v===sbp.preset;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);});
+}
+function initBpe(){
+  const el=$('#bp-preset');
+  el.innerHTML=[['classic','The example above'],['text','Short sentences']].map(o=>'<button class="chip" data-v="'+o[0]+'" aria-pressed="false">'+o[1]+'</button>').join('');
+  el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;sbp.preset=b.dataset.v;$('#bp-text').value=BPE_PRESETS[sbp.preset];sbp.merges=[];sbp.word=$('#bp-word').value=sbp.preset==='classic'?'lowest':'hats';renderBpe();$('#bp-preset button[data-v="'+sbp.preset+'"]').focus();});
+  $('#bp-text').value=BPE_PRESETS.classic;
+  $('#bp-text').addEventListener('input',()=>{sbp.preset='';sbp.merges=[];renderBpe();});
+  const step=()=>{const S=bpeState();if(S.best)sbp.merges.push([S.best.a,S.best.b]);};
+  $('#bp-next').addEventListener('click',()=>{step();renderBpe();});
+  $('#bp-ten').addEventListener('click',()=>{for(let i=0;i<10;i++)step();renderBpe();});
+  $('#bp-undo').addEventListener('click',()=>{sbp.merges.pop();renderBpe();});
+  $('#bp-reset').addEventListener('click',()=>{sbp.merges=[];renderBpe();});
+  $('#bp-word').addEventListener('input',e=>{sbp.word=e.target.value;renderBpe();});
+  reg(renderBpe);
+}
+
+PAGE_INITS.push(initTok,initBpe,initPE,initAttn,initAttnKeys,initMH,initBlock,initArch);

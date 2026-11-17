@@ -206,3 +206,7 @@ table.tf th{font:600 .86rem var(--sans);color:var(--muted);text-align:right}
 .moet small{display:flex;gap:3px;justify-content:center;margin-top:2px}
 .moet small i{display:inline-block;width:8px;height:8px;border-radius:50%;box-shadow:0 0 0 1px var(--line)}
 .moesw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* BPE merges (Part B) */
+#bp-text{resize:vertical;font-family:var(--mono);font-size:.85rem;line-height:1.45}
+.bpp{display:inline-block;font:500 .82rem var(--mono);padding:1px 6px;margin:1px 3px 1px 0;border:1px solid var(--line);border-radius:5px;background:var(--bg)}
+#bp-merges .chip{cursor:default}

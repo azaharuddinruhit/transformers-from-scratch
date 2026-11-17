@@ -22,7 +22,7 @@ An interactive guide used to learn Transformers and LLMs, train an engineering t
 ## Structure
 
 - **Part A, the big picture**: `intro`, `nn` (the neural-network primer, with a network trained in the browser), `genai` (generative versus classifying, autoregressive versus diffusion, where the Transformer sits), `why` (includes the MLP, CNN, RNN and Transformer comparison)
-- **Part B, building the model**: `tokens`, `position`, `attention`, `multihead`, `block`, `architecture`
+- **Part B, building the model**: `tokens` (a greedy tokenizer, and a BPE widget that learns merges step by step), `position`, `attention`, `multihead`, `block`, `architecture`
 - **Part C, training and using it**: `training` (includes scale: compute and tokens per parameter), `posttrain`, `prefs`, `generation`, `inference`, `hardware`, `quant` (int8 and int4 by hand, group scales, methods and formats, with a rounding widget), `flash` (FlashAttention: on-chip memory, online softmax, a tile-by-tile widget)
 - **Part D, the wider picture**: `encdec` (includes the 2017 paper), `modern` (with a mixture-of-experts routing widget), `multimodal` (images as patch tokens, vision-language models), `diffusion` (with a toy sampler whose denoiser is the exact formula for its 300 training points, not a trained network)
 - **Interview drill** topics: `iv-core`, `iv-rag`, `iv-ft`, `iv-agents`, `iv-prod`, `iv-hw`
