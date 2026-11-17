@@ -65,8 +65,12 @@ input[type=text],input[type=number],input[type=password],textarea{font:inherit;f
 .chk input{width:18px;height:18px;accent-color:var(--accent)}
 .btn,.controls button,.chip{font:600 .88rem var(--sans);border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:9px;padding:8px 14px;cursor:pointer;min-height:38px}
 .btn:hover,.controls button:hover,.chip:hover{border-color:var(--accent)}
-.btn.pri,.controls button.pri{background:var(--fill);border-color:var(--fill);color:var(--on-fill)}
-.btn.pri:hover,.controls button.pri:hover{background:var(--fill-hover);border-color:var(--fill-hover)}
+.btn.pri{background:var(--fill);border-color:var(--fill);color:var(--on-fill)}
+.btn.pri:hover{background:var(--fill-hover);border-color:var(--fill-hover)}
+/* a widget's main button: an accent outline, so only page-level actions are solid */
+.controls button.pri{background:transparent;border:1.5px solid var(--accent);color:var(--accent)}
+.controls button.pri:hover{background:var(--accent-soft)}
+.controls button:disabled{opacity:.45;cursor:default}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
 .chip.tok{display:inline-flex;flex-direction:column;align-items:center;padding:5px 10px;font-family:var(--mono);line-height:1.25}
