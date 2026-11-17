@@ -88,10 +88,11 @@ function initCode(){
     code.innerHTML=out+esc(src.slice(last));
   });
   /* collapsed or expanded: a Settings choice, stored under tfs-code only when expanded (collapsed is the default) */
-  const applyCode=v=>{$$('details.code').forEach(d=>{d.open=v==='open';});$$('.codeBtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.c===v));};
+  const sw=$('#codeSw');
+  const applyCode=v=>{$$('details.code').forEach(d=>{d.open=v==='open';});if(sw)sw.setAttribute('aria-checked',v==='open');};
   let saved='closed';try{saved=localStorage.getItem('tfs-code')==='open'?'open':'closed';}catch(e){}
   applyCode(saved);
-  $$('.codeBtn').forEach(b=>b.addEventListener('click',()=>{const v=b.dataset.c;applyCode(v);try{if(v==='closed')localStorage.removeItem('tfs-code');else localStorage.setItem('tfs-code',v);}catch(e){}}));
+  if(sw)sw.addEventListener('click',()=>{const v=sw.getAttribute('aria-checked')==='true'?'closed':'open';applyCode(v);try{if(v==='closed')localStorage.removeItem('tfs-code');else localStorage.setItem('tfs-code',v);}catch(e){}});
   $$('.cpy').forEach(b=>b.addEventListener('click',()=>{
     const text=b.closest('details').querySelector('pre code').textContent;
     const done=()=>{b.classList.add('ok');b.setAttribute('aria-label','Copied');setTimeout(()=>{b.classList.remove('ok');b.setAttribute('aria-label','Copy code');},1500);};

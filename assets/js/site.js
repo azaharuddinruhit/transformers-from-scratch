@@ -155,11 +155,12 @@ document.addEventListener('visibilitychange',()=>{
 const agoText=t=>{const s=Math.round((Date.now()-t)/1000);return s<60?'just now':s<3600?Math.round(s/60)+' min ago':s<86400?Math.round(s/3600)+' h ago':new Date(t).toLocaleDateString();};
 function paintSync(){
   const st=$('#syncStat');if(!st)return;const on=!!syncToken(),bad=on&&!sync.busy&&!!sync.err;
-  st.textContent=!on?'Off':sync.busy?'Syncing…':bad?'Failed':syncAt()?'On · synced '+agoText(syncAt()):'On';
-  const note=$('#syncNote');
-  note.textContent=!on?'Keeps your progress in a GitHub gist, so it follows you between browsers.':bad?'The last sync failed: '+sync.err+'.':'';
-  note.hidden=!note.textContent;note.classList.toggle('bad',bad);
-  [$('.sdot'),$('#setBtn .bdot')].forEach(d=>{if(!d)return;d.hidden=!on;d.classList.toggle('bad',bad);});
+  const txt=!on?'Off':sync.busy?'Syncing…':bad?'Failed':syncAt()?'Synced '+agoText(syncAt()):'On';
+  st.textContent=txt;
+  $('#syncVal').innerHTML=(on?'<i class="sdot'+(bad?' bad':'')+'" aria-hidden="true"></i>':'')+txt;
+  const note=$('#syncNote');note.classList.toggle('bad',bad);
+  note.textContent=!on?'Keeps your progress and path in a secret GitHub gist, so they follow you between browsers.':bad?'The last sync failed: '+sync.err+'.':'Syncs when a page opens, two seconds after a change, and when you leave or return to the tab.';
+  [$('#syncStat').previousElementSibling,$('#setBtn .bdot')].forEach(d=>{if(!d)return;d.hidden=!on;d.classList.toggle('bad',bad);});
   $('#setBtn').setAttribute('aria-label','Settings'+(bad?', sync failed':''));
   $('#syncOn').hidden=on;$('#syncNowBtn').hidden=$('#syncOff').hidden=!on;$('#syncNowBtn').disabled=sync.busy;
 }
@@ -207,44 +208,81 @@ function applyPath(){
   $$('.pathBtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===P.path));
 }
 function setPath(p){P.path=p;store.save();applyPath();rerender();onPathChange.forEach(f=>f());}
-/* the Settings menu: built here once for every page; a popover under its button, a bottom sheet on phones */
-const SET_MENU='<div class="smhead"><span>Settings</span><button type="button" class="btn tiny" id="setClose">Close</button></div>'
-  +'<p class="sgh">Reading</p>'
-  +'<div class="sline"><span id="lab-path">Path</span><div class="seg" role="group" aria-labelledby="lab-path"><button type="button" class="pathBtn" data-p="quick" aria-pressed="false">Quick tour</button><button type="button" class="pathBtn" data-p="full" aria-pressed="false">Full depth</button></div></div>'
-  +'<div class="sline"><span id="lab-code">Python code</span><div class="seg" role="group" aria-labelledby="lab-code"><button type="button" class="codeBtn" data-c="closed" aria-pressed="true">Collapsed</button><button type="button" class="codeBtn" data-c="open" aria-pressed="false">Expanded</button></div></div>'
-  +'<p class="sgh">Appearance</p>'
-  +'<div class="sline"><span id="lab-theme">Theme</span><div class="seg" role="group" aria-labelledby="lab-theme"><button type="button" class="thBtn" data-t="light" aria-pressed="false">Light</button><button type="button" class="thBtn" data-t="dark" aria-pressed="false">Dark</button></div></div>'
-  +'<p class="sgh">Progress</p>'
-  +'<p class="sprog" id="progSum"></p>'
-  +'<div class="sline"><span>Sync with GitHub</span><span class="sstat"><i class="sdot" aria-hidden="true"></i><span id="syncStat" aria-live="polite"></span></span></div>'
-  +'<p class="snote" id="syncNote"></p>'
-  +'<div class="sacts"><button type="button" class="btn tiny" id="syncOn">Connect…</button><button type="button" class="btn tiny" id="syncNowBtn">Sync now</button><button type="button" class="btn tiny" id="syncOff">Disconnect</button><button type="button" class="btn tiny danger" id="pgReset">Reset progress…</button></div>';
+/* the Settings menu: an iOS-style grouped list built here once for every page, with sub-pages for the path, progress and
+   sync; a popover under its button, a bottom sheet on phones */
+const ICONS={path:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/>',
+  theme:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',code:'<path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/>',
+  prog:'<circle cx="12" cy="12" r="8"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',sync:'<path d="M7 18a4 4 0 0 1-.6-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/>',
+  reset:'<path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v5h5"/>',chev:'<path d="M9 6l6 6-6 6"/>',back:'<path d="M15 6l-6 6 6 6"/>',
+  close:'<path d="M6 6l12 12M18 6L6 18"/>',check:'<path d="M5 12.5l4.5 4.5L19 7"/>'};
+const svgI=k=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+ICONS[k]+'</svg>';
+const sIc=k=>'<span class="sic ic-'+k+'">'+svgI(k)+'</span>';
+const sNav=(to,k,label,valId)=>'<button type="button" class="sitem" data-go="'+to+'">'+sIc(k)+'<span class="slbl">'+label+'</span><span class="sval" id="'+valId+'"></span><span class="schev">'+svgI('chev')+'</span></button>';
+const sSwitch=(id,k,label)=>'<button type="button" class="sitem" role="switch" aria-checked="false" id="'+id+'">'+sIc(k)+'<span class="slbl">'+label+'</span><span class="swt" aria-hidden="true"></span></button>';
+const SET_PAGES={main:'Settings',path:'Path',prog:'Progress',sync:'GitHub sync'};
+const SET_MENU='<div class="smhead"><button type="button" class="sbtn" id="setBack" aria-label="Back to Settings" hidden>'+svgI('back')+'</button><span id="setTitle">Settings</span><button type="button" class="sbtn" id="setClose" aria-label="Close settings">'+svgI('close')+'</button></div>'
+  +'<div class="spages">'
+  +'<div class="spage" data-page="main">'
+  +'<div class="sgroup">'+sNav('path','path','Path','pathVal')+sSwitch('thSw','theme','Dark theme')+sSwitch('codeSw','code','Expand Python code')+'</div>'
+  +'<div class="sgroup">'+sNav('prog','prog','Progress','progVal')+sNav('sync','sync','GitHub sync','syncVal')+'</div>'
+  +'<div class="sgroup"><button type="button" class="sitem danger" id="pgReset">'+sIc('reset')+'<span class="slbl">Reset progress</span></button></div>'
+  +'<p class="sver" id="setVer"></p></div>'
+  +'<div class="spage" data-page="path"><div class="sgroup">'
+  +Object.keys(PATHS).map(k=>'<button type="button" class="sitem sopt pathBtn" data-p="'+k+'" aria-pressed="false"><span class="slbl"><b>'+PATHS[k].name+'</b><small>'+PATHS[k].desc+'</small><small class="stime" data-p="'+k+'"></small></span><span class="schk">'+svgI('check')+'</span></button>').join('')
+  +'</div><p class="sfoot">Your path is saved, and synced when GitHub sync is on.</p></div>'
+  +'<div class="spage" data-page="prog"><div class="sgroup" id="progList"></div><div class="sgroup" id="progDrill"></div><p class="sfoot">A section is done when every quiz question has been answered correctly once, or when you press its Done button.</p></div>'
+  +'<div class="spage" data-page="sync"><div class="sgroup"><div class="sitem sinfo"><span class="slbl">Status</span><span class="sval"><i class="sdot" aria-hidden="true" hidden></i><span id="syncStat" aria-live="polite"></span></span></div></div>'
+  +'<p class="sfoot" id="syncNote"></p>'
+  +'<div class="sgroup"><button type="button" class="sitem saccent" id="syncOn"><span class="slbl">Connect a gist token…</span></button><button type="button" class="sitem saccent" id="syncNowBtn"><span class="slbl">Sync now</span></button><button type="button" class="sitem danger" id="syncOff"><span class="slbl">Disconnect</span></button></div>'
+  +'<p class="sfoot">The token is kept only in this browser and sent only to GitHub. Theme and code settings stay per browser.</p></div>'
+  +'</div>';
 function paintProgSum(){
-  const el=$('#progSum');if(!el)return;
-  const ids=Object.keys(SECS),n=ids.filter(id=>P.done[id]).length,got=Object.values(P.drill).filter(v=>v==='got').length;
-  el.textContent=n+' of '+ids.length+' sections done'+(got?' · '+got+' drill “Got it”':'');
+  const v=$('#progVal');if(!v)return;
+  const ids=Object.keys(SECS),n=ids.filter(id=>P.done[id]).length;
+  v.textContent=n+' of '+ids.length;
+  $('#progList').innerHTML=PARTS.map(p=>{const st=partStats(p);
+    return '<div class="sitem sinfo"><span class="spl'+(st.n===st.total?' full':'')+'" aria-hidden="true">'+p.id.toUpperCase()+'</span><span class="slbl">'+p.name+'<span class="sbar"><i style="width:'+(100*st.n/st.total)+'%"></i></span></span><span class="sval">'+st.n+' of '+st.total+'</span></div>';}).join('');
+  const marks=Object.values(P.drill),got=marks.filter(m=>m==='got').length,again=marks.filter(m=>m==='again').length;
+  $('#progDrill').innerHTML='<a class="sitem" href="interview.html"><span class="slbl">Interview drill</span><span class="sval">'+(got||again?got+' got it · '+again+' to review':'Not started')+'</span><span class="schev">'+svgI('chev')+'</span></a>';
+  const total=k=>Object.keys(SECS).reduce((a,id)=>a+SECS[id][k==='quick'?2:1],0);
+  $$('.stime').forEach(s=>{s.textContent='About '+fmtMin(total(s.dataset.p))+' of study';});
+  $('#pathVal').textContent=PATHS[P.path].name;
 }
 function initSettings(){
   const setBtn=$('#setBtn'),menu=$('#setMenu');
   menu.innerHTML=SET_MENU;
-  const v=document.createElement('p');v.className='sver';v.textContent=SITE_VERSION.startsWith('__')?'Version: local copy':'Version '+SITE_VERSION;menu.append(v);
+  $('#setVer').textContent=SITE_VERSION.startsWith('__')?'Version: local copy':'Version '+SITE_VERSION;
   /* the header's backdrop blur would trap a fixed element, so the menu lives in <body> */
   const scrim=document.createElement('div');scrim.className='setscrim';scrim.hidden=true;
   document.body.append(scrim,menu);
   const dot=document.createElement('i');dot.className='bdot';dot.hidden=true;dot.setAttribute('aria-hidden','true');setBtn.append(dot);
-  const root=document.documentElement;
+  const root=document.documentElement,thSw=$('#thSw');
   // Light or dark; until the reader chooses, the page follows the system setting
   const sysTheme=()=>window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
-  const markTheme=()=>{const t=root.getAttribute('data-theme')||sysTheme();$$('.thBtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));};
-  const applyTheme=t=>{root.setAttribute('data-theme',t);try{localStorage.setItem('tfs-theme',t);}catch(e){}markTheme();};
+  const curTheme=()=>root.getAttribute('data-theme')||sysTheme();
+  const markTheme=()=>thSw.setAttribute('aria-checked',curTheme()==='dark');
   try{const t=localStorage.getItem('tfs-theme');if(t==='light'||t==='dark')root.setAttribute('data-theme',t);}catch(e){}
   markTheme();applyPath();
-  $$('.thBtn').forEach(b=>b.addEventListener('click',()=>applyTheme(b.dataset.t)));
-  $$('.pathBtn').forEach(b=>b.addEventListener('click',()=>setPath(b.dataset.p)));
+  thSw.addEventListener('click',()=>{const t=curTheme()==='dark'?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('tfs-theme',t);}catch(e){}markTheme();});
+  $$('.pathBtn',menu).forEach(b=>b.addEventListener('click',()=>{setPath(b.dataset.p);paintProgSum();}));
+  /* sub-pages slide in from the right; the box animates to the new page's height */
+  const pages=$('.spages',menu),back=$('#setBack'),title=$('#setTitle');let cur='main',from=null;
+  const go=(to,anim)=>{
+    const h0=pages.offsetHeight;
+    $$('.spage',menu).forEach(p=>{p.classList.toggle('on',p.dataset.page===to);p.classList.toggle('left',to!=='main'&&p.dataset.page==='main');});
+    if(to!=='main')from=cur==='main'?$('[data-go="'+to+'"]',menu):from;
+    cur=to;back.hidden=to==='main';title.textContent=SET_PAGES[to];
+    const h1=$('.spage.on',menu).offsetHeight;
+    if(anim&&h0!==h1){pages.style.height=h0+'px';pages.offsetHeight;pages.style.height=h1+'px';setTimeout(()=>{pages.style.height='';},260);}
+    const f=to==='main'?from:back;if(anim&&f)f.focus();
+  };
+  $$('[data-go]',menu).forEach(b=>b.addEventListener('click',()=>go(b.dataset.go,true)));
+  back.addEventListener('click',()=>go('main',true));
+  go('main',false);
   const phone=()=>window.matchMedia('(max-width:600px)').matches;
   const place=()=>{if(phone()){menu.style.top=menu.style.right='';return;}const r=setBtn.getBoundingClientRect();menu.style.top=(r.bottom+10)+'px';menu.style.right=(document.documentElement.clientWidth-r.right)+'px';};
   const closeSet=ret=>{if(menu.hidden)return;menu.hidden=true;scrim.hidden=true;setBtn.setAttribute('aria-expanded','false');if(ret)setBtn.focus();};
-  const openSet=()=>{paintProgSum();paintSync();place();menu.hidden=false;scrim.hidden=false;setBtn.setAttribute('aria-expanded','true');const f=menu.querySelector('[aria-pressed="true"]')||menu.querySelector('button');if(f)f.focus();};
+  const openSet=()=>{go('main',false);paintProgSum();paintSync();markTheme();place();menu.hidden=false;scrim.hidden=false;setBtn.setAttribute('aria-expanded','true');$('.sitem',menu).focus();};
   /* reset asks first in a modal <dialog>: it traps focus, closes on Escape and returns "reset" only from its button */
   const dlg=document.createElement('dialog');dlg.className='dlg';dlg.setAttribute('aria-labelledby','rsTitle');
   dlg.innerHTML='<form method="dialog"><h2 id="rsTitle">Reset progress?</h2><p>This clears the finished sections, quiz answers and drill marks saved in this browser and, when sync is on, in every synced browser. Your path, theme and code settings stay. You cannot undo this.</p>'
@@ -256,10 +294,10 @@ function initSettings(){
   setBtn.addEventListener('click',()=>{if(menu.hidden)openSet();else closeSet(true);});
   $('#setClose').addEventListener('click',()=>closeSet(true));
   const inside=el=>el&&(menu.contains(el)||setBtn.contains(el));
-  document.addEventListener('click',e=>{if(!menu.hidden&&!inside(e.target))closeSet(false);});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!menu.hidden)closeSet(true);});
+  document.addEventListener('click',e=>{if(!menu.hidden&&e.target.isConnected&&!inside(e.target))closeSet(false);});
+  document.addEventListener('keydown',e=>{if(e.key!=='Escape'||menu.hidden)return;if(cur!=='main')go('main',true);else closeSet(true);});
   menu.addEventListener('focusout',e=>{if(e.relatedTarget&&!inside(e.relatedTarget))closeSet(false);});
-  onProgress.push(paintProgSum);
+  onProgress.push(paintProgSum);onPathChange.push(paintProgSum);
   let rt=null,lastW=window.innerWidth;window.addEventListener('resize',()=>{if(!menu.hidden)place();if(window.innerWidth===lastW)return;lastW=window.innerWidth;clearTimeout(rt);rt=setTimeout(rerender,150);});
   initSync(closeSet);
   const bar=$('#progBar');window.addEventListener('scroll',()=>{const h=document.documentElement;bar.style.width=(100*Math.max(0,Math.min(1,h.scrollTop/Math.max(1,h.scrollHeight-h.clientHeight)))).toFixed(1)+'%';},{passive:true});
