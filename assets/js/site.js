@@ -366,7 +366,7 @@ function initPart(){
       +(n?'<p>You have answered '+got+' of '+n+' check questions correctly.</p>':'')
       /* the unfinished sections, in the opening screen's list style, each keeping its number in the part */
       +(st.n<st.total?'<h3>Not yet done</h3><ol class="partlist">'+secs.map((s,i)=>P.done[s.id]?'':'<li style="counter-set:p '+(i+1)+'"><a href="#'+s.id+'">'+SECS[s.id][0]+'</a><small>'+minsOf(s.id)+' min</small></li>').join('')+'</ol>':'')
-      +'<p class="acts">'+(next?'<a class="btn pri big" href="'+partUrl(next)+'">Start Part '+next.id.toUpperCase()+': '+next.name+' →</a>':'<a class="btn pri big" href="interview.html">Go to the interview drill →</a>')+' <a class="btn big" href="index.html">All parts</a></p>'
+      +'<p class="acts">'+(next?'<a class="btn out big" href="'+partUrl(next)+'">Start Part '+next.id.toUpperCase()+': '+next.name+' →</a>':'<a class="btn out big" href="interview.html">Go to the interview drill →</a>')+' <a class="btn big" href="index.html">All parts</a></p>'
       +'<h2>Key takeaways</h2>'+secs.map(s=>'<h3>'+SECS[s.id][0]+'</h3>'+$('ul.take',s).outerHTML).join('');
     renderTex($('#partDone'));
   }
